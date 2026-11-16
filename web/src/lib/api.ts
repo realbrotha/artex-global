@@ -123,7 +123,7 @@ function getToken(): string | null {
   return localStorage.getItem("artex_token");
 }
 
-export async function http<T>(path: string, init?: RequestInit): Promise<T> {
+export async function http<T>(path: string, init?: RequestInit, responseType: "json" | "blob" = "json"): Promise<T> {
   if (MOCK) return mockHandle<T>(init?.method ?? "GET", path, init?.body ?? null);
   const token = getToken();
   const r = await fetch(`/api${path}`, {
@@ -156,6 +156,7 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(message, r.status);
   }
   if (r.status === 204) return undefined as T;
+  if (responseType === "blob") return (await r.blob()) as T;
   return r.json();
 }
 

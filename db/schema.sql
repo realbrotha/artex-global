@@ -1384,3 +1384,59 @@ CREATE INDEX IF NOT EXISTS idx_notification_deliveries_batch
     ON notification_deliveries(batch_id) WHERE batch_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notification_deliveries_channel
     ON notification_deliveries(channel_id, id DESC);
+
+-- Defensive: Splunk log connections used by autonomous hunting.
+CREATE TABLE IF NOT EXISTS security_sources (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision > 0),
+    config JSONB NOT NULL,
+    secret_cipher BYTEA NOT NULL DEFAULT ''::bytea,
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Independent vulnerability-led Defensive hunting; no scenario/finding FK.
+CREATE TABLE IF NOT EXISTS defensive_hunts (
+    id BIGSERIAL PRIMARY KEY,
+    status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','running','completed','insufficient_data','budget_exhausted','cancelled','interrupted','model_error','research_failed','failed')),
+    request JSONB NOT NULL CHECK (jsonb_typeof(request)='object'),
+    events JSONB NOT NULL DEFAULT '[]' CHECK (jsonb_typeof(events)='array'),
+    result JSONB NOT NULL DEFAULT '{}',
+    error TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS defensive_hunts_one_active
+    ON defensive_hunts ((true)) WHERE status IN ('queued','running');
+
+-- Public threat reports are leads, not authorization to query a log source.
+CREATE TABLE IF NOT EXISTS defensive_hunt_trends (
+    topic_key TEXT PRIMARY KEY,
+    report JSONB NOT NULL CHECK (jsonb_typeof(report)='object'),
+    published_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX IF NOT EXISTS defensive_hunt_trends_recent ON defensive_hunt_trends(published_at DESC);
+CREATE TABLE IF NOT EXISTS defensive_hunt_trend_collection (
+    singleton BOOLEAN PRIMARY KEY DEFAULT true CHECK (singleton),
+    lease_until TIMESTAMPTZ NOT NULL DEFAULT '-infinity',
+    last_attempt TIMESTAMPTZ,
+    last_success TIMESTAMPTZ,
+    last_error TEXT NOT NULL DEFAULT ''
+);
+
+-- Defensive: Wazuh connections for protected-asset inventory. snapshot holds
+-- the last successfully built asset graph; sync_error the last failure.
+CREATE TABLE IF NOT EXISTS wazuh_sources (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision > 0),
+    config JSONB NOT NULL,
+    secret_cipher BYTEA NOT NULL DEFAULT ''::bytea,
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    snapshot JSONB NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(snapshot)='object'),
+    synced_at TIMESTAMPTZ,
+    sync_error TEXT NOT NULL DEFAULT '',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);

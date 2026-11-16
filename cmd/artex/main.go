@@ -13,13 +13,16 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Autumn-27/artex/agent"
 	"github.com/Autumn-27/artex/config"
+	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/artex/selfupdate"
 	"github.com/Autumn-27/artex/server"
+	"github.com/Autumn-27/artex/wazuh"
 )
 
 // version is the build version, injected at release time via
@@ -37,8 +40,8 @@ const banner = `
 // printBanner writes the startup banner + version/runtime info to stdout.
 func printBanner(addr string) {
 	fmt.Print(banner)
-	fmt.Println("  AI 자율 침투 테스트 시스템")
-	fmt.Printf("  버전 %s  ·  %s/%s  ·  %s  ·  수신 대기 %s\n\n",
+	fmt.Println("  AI autonomous penetration testing system")
+	fmt.Printf("  version %s  -  %s/%s  -  %s  -  listening on %s\n\n",
 		version, runtime.GOOS, runtime.GOARCH, runtime.Version(), addr)
 }
 
@@ -55,8 +58,14 @@ func run() int {
 		addr    = flag.String("addr", "127.0.0.1:8787", "HTTP listen address (default accepts local connections only; use :8787 to serve other hosts)")
 		dataDir = flag.String("data", filepath.Join(config.BaseDir(), "data"), "data directory for SQLite stores (default: data/ next to the executable)")
 		proxy   = flag.String("proxy", "127.0.0.1:8788", "traffic recording proxy address (empty to disable)")
+		// One-shot: register a Wazuh connection from ARTEX_WAZUH_* environment
+		// variables and exit. See scripts/wazuh-connect.sh.
+		wazuhImport = flag.Bool("wazuh-import", false, "register a Wazuh connection from ARTEX_WAZUH_* environment variables, then exit")
 	)
 	flag.Parse()
+	if *wazuhImport {
+		return importWazuh(*dataDir)
+	}
 
 	// hand the build version to the server package so GET /api/health can report it
 	// to the frontend top bar.
@@ -85,9 +94,9 @@ func run() int {
 		cfgPath = abs
 	}
 	if _, e := os.Stat(cfgPath); e == nil {
-		log.Printf(config.T("[config] 설정 파일: %s"), cfgPath)
+		log.Printf("[config] config file: %s", cfgPath)
 	} else {
-		log.Printf(config.T("[config] 설정 파일: %s (파일 없음 · 환경 변수 ARTEX_PG_DSN 만 사용)"), cfgPath)
+		log.Printf("[config] config file: %s (not found - using only environment variable ARTEX_PG_DSN)", cfgPath)
 	}
 
 	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -111,7 +120,7 @@ func run() int {
 	if abs, err := filepath.Abs(skillDir); err == nil {
 		skillDir = abs
 	}
-	log.Printf(config.T("[config] skill 디렉터리: %s"), skillDir)
+	log.Printf("[config] skill directory: %s", skillDir)
 	srv := server.New(ctx, mgr, skillDir, *dataDir, config.BaseDir())
 	srv.WarnIfExposed(*addr)
 	httpSrv := &http.Server{
@@ -158,4 +167,57 @@ func shutdownContext(signalCtx context.Context) (context.Context, context.Cancel
 		}
 	}()
 	return ctx, shutdown
+}
+
+// importWazuh registers (or updates, matched by name) one Wazuh connection from
+// the environment. Values are never logged.
+func importWazuh(dataDir string) int {
+	env := func(k string) string { return strings.TrimSpace(os.Getenv(k)) }
+	name := env("ARTEX_WAZUH_NAME")
+	if name == "" {
+		name = "wazuh"
+	}
+	cfg := wazuh.Config{
+		ManagerURL:     env("ARTEX_WAZUH_MANAGER_URL"),
+		IndexerURL:     env("ARTEX_WAZUH_INDEXER_URL"),
+		TLSFingerprint: env("ARTEX_WAZUH_TLS_FINGERPRINT"),
+		TLSSkipVerify:  env("ARTEX_WAZUH_TLS_SKIP_VERIFY") == "true",
+	}
+	creds := wazuh.Credentials{
+		ManagerUser:     env("ARTEX_WAZUH_MANAGER_USER"),
+		ManagerPassword: os.Getenv("ARTEX_WAZUH_MANAGER_PASSWORD"),
+		IndexerUser:     env("ARTEX_WAZUH_INDEXER_USER"),
+		IndexerPassword: os.Getenv("ARTEX_WAZUH_INDEXER_PASSWORD"),
+	}
+	// Open only the database. The full Manager reconciles runtime state
+	// (traffic proxy, interrupted jobs) that belongs to the running server.
+	dsn, _, err := db.DSN()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "wazuh-import: database configuration: %v\n", err)
+		return 1
+	}
+	pg, err := db.Open(dsn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "wazuh-import: open database: %v\n", err)
+		return 1
+	}
+	defer pg.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	agents, err := wazuh.Test(ctx, cfg, creds)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "wazuh-import: connection test failed: %v\n", err)
+		return 1
+	}
+	created, err := server.ImportWazuhSource(ctx, pg, dataDir, config.BaseDir(), name, cfg, creds)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "wazuh-import: %v\n", err)
+		return 1
+	}
+	verb := "updated"
+	if created {
+		verb = "created"
+	}
+	fmt.Printf("wazuh-import: connection %q %s (agents: %d, indexer: %t)\n", name, verb, agents, cfg.IndexerURL != "")
+	return 0
 }

@@ -13,6 +13,8 @@ import {
   type LucideIcon,
   MessageSquare,
   Network,
+  Plug,
+  Radar,
   Radio,
   ScrollText,
   Settings2,
@@ -85,6 +87,16 @@ export const sidebarItems: NavGroup[] = [
       { id: "assets", title: "资产", url: "/function/assets", icon: Network },
       { id: "sync", title: "资产同步", url: "/function/sync", icon: FolderSync },
       { id: "traffic", title: "流量", url: "/function/traffic", icon: Activity },
+    ],
+  },
+  {
+    id: 3,
+    key: "defense",
+    label: "防御",
+    items: [
+      { id: "protected-assets", title: "保护资产", url: "/defensive/assets", icon: Network },
+      { id: "defensive-hunting", title: "自主狩猎", url: "/defensive/hunting", icon: Radar },
+      { id: "security-sources", title: "日志连接", url: "/defensive/sources", icon: Plug },
     ],
   },
   {
