@@ -146,7 +146,31 @@
     "trafficStatusCodes": "トラフィックのステータスコード",
     "verNew": "新バージョン",
     "verOld": "旧バージョン",
-    "viewTasks": "タスクを見る"
+    "viewTasks": "タスクを見る",
+    "createFirstTask": "最初のタスクを作成",
+    "addAssets": "資産を追加",
+    "noFindingsHint": "タスクが脆弱性を確認すると、ここに表示されます。",
+    "onboarding": {
+      "title": "はじめに",
+      "subtitle": "3 ステップで最初の結果を確認します。",
+      "progress": "{done}/{total} 完了",
+      "dismiss": "閉じる",
+      "llm": {
+        "title": "LLM を接続",
+        "desc": "エージェントが使うモデルと API キーを登録します。",
+        "action": "LLM を設定"
+      },
+      "task": {
+        "title": "最初のタスクを作成",
+        "desc": "対象と目標を入力すると、エージェントが診断を開始します。",
+        "action": "タスクを作成"
+      },
+      "findings": {
+        "title": "結果を確認",
+        "desc": "確認された脆弱性と証拠は脆弱性画面に集まります。",
+        "action": "脆弱性を見る"
+      }
+    }
   },
   "header": {
     "updateBadge": "新バージョン {latest}",
@@ -156,7 +180,12 @@
   },
   "nav": {
     "group": {
-      "function": "機能",
+      "activity": "実行記録",
+      "ai": "AI 構成",
+      "defense": "防御",
+      "guardrails": "統制",
+      "offense": "診断",
+      "overview": "概要",
       "system": "システム"
     },
     "item": {

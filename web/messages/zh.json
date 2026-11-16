@@ -146,7 +146,31 @@
     "trafficStatusCodes": "流量状态码",
     "verNew": "新版",
     "verOld": "旧版",
-    "viewTasks": "查看任务"
+    "viewTasks": "查看任务",
+    "createFirstTask": "创建第一个任务",
+    "addAssets": "添加资产",
+    "noFindingsHint": "任务确认漏洞后会显示在这里。",
+    "onboarding": {
+      "title": "开始使用",
+      "subtitle": "三步看到第一份测试结果。",
+      "progress": "已完成 {done}/{total}",
+      "dismiss": "关闭",
+      "llm": {
+        "title": "连接 LLM",
+        "desc": "登记 Agent 使用的模型和 API Key。",
+        "action": "配置 LLM"
+      },
+      "task": {
+        "title": "创建第一个任务",
+        "desc": "填写测试目标和目的，Agent 即开始测试。",
+        "action": "创建任务"
+      },
+      "findings": {
+        "title": "查看结果",
+        "desc": "已确认的漏洞及证据汇总在发现页面。",
+        "action": "查看发现"
+      }
+    }
   },
   "header": {
     "updateBadge": "新版本 {latest}",
@@ -156,7 +180,12 @@
   },
   "nav": {
     "group": {
-      "function": "功能",
+      "activity": "执行记录",
+      "ai": "AI 配置",
+      "defense": "防御",
+      "guardrails": "管控",
+      "offense": "渗透",
+      "overview": "概览",
       "system": "系统"
     },
     "item": {

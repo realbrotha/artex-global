@@ -146,7 +146,31 @@
     "trafficStatusCodes": "Códigos de estado del tráfico",
     "verNew": "Nueva",
     "verOld": "Antigua",
-    "viewTasks": "Ver tareas"
+    "viewTasks": "Ver tareas",
+    "createFirstTask": "Crear la primera tarea",
+    "addAssets": "Añadir activos",
+    "noFindingsHint": "Los hallazgos aparecen aquí cuando una tarea los confirma.",
+    "onboarding": {
+      "title": "Primeros pasos",
+      "subtitle": "Tres pasos hasta tus primeros resultados.",
+      "progress": "{done}/{total} completados",
+      "dismiss": "Cerrar",
+      "llm": {
+        "title": "Conectar un LLM",
+        "desc": "Registra el modelo y la clave de API que usarán los agentes.",
+        "action": "Configurar LLM"
+      },
+      "task": {
+        "title": "Crear la primera tarea",
+        "desc": "Indica un objetivo y una meta, y los agentes empiezan a probar.",
+        "action": "Crear tarea"
+      },
+      "findings": {
+        "title": "Revisar resultados",
+        "desc": "Los hallazgos confirmados y sus evidencias se reúnen en la página de hallazgos.",
+        "action": "Ver hallazgos"
+      }
+    }
   },
   "header": {
     "updateBadge": "Nueva versión {latest}",
@@ -156,7 +180,12 @@
   },
   "nav": {
     "group": {
-      "function": "Funciones",
+      "activity": "Actividad",
+      "ai": "Configuración de IA",
+      "defense": "Defensa",
+      "guardrails": "Controles",
+      "offense": "Pentest",
+      "overview": "Resumen",
       "system": "Sistema"
     },
     "item": {

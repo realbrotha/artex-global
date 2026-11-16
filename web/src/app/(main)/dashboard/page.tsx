@@ -10,6 +10,7 @@ import {
   BugIcon,
   ClockIcon,
   NetworkIcon,
+  PlusIcon,
   ShieldCheckIcon,
   TargetIcon,
   ZapIcon,
@@ -19,6 +20,7 @@ import { Bar, BarChart, CartesianGrid, Tooltip as RechartsTooltip, XAxis, YAxis 
 
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
@@ -41,6 +43,8 @@ import type {
   UsageStats,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+import { OnboardingChecklist } from "./_components/onboarding-checklist";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -149,6 +153,7 @@ export default function DashboardPage() {
   const [skills, setSkills] = React.useState<SkillItem[]>([]);
   const [tools, setTools] = React.useState<Tool[]>([]);
   const [llmProfiles, setLLMProfiles] = React.useState<LLMProfile[]>([]);
+  const [tasksLoaded, setTasksLoaded] = React.useState(false);
 
   // The task list is the most expensive dashboard source. Poll it independently
   // so a large history cannot hold back every other dashboard panel.
@@ -167,6 +172,7 @@ export default function DashboardPage() {
           signature = nextSignature;
           setTasks(tr.tasks);
         }
+        setTasksLoaded(true);
       } catch {
         /* transient errors — next poll retries */
       } finally {
@@ -502,6 +508,13 @@ export default function DashboardPage() {
           <p className="text-xs text-muted-foreground">{t("subtitle")}</p>
         </div>
       </div>
+
+      <OnboardingChecklist
+        ready={stats !== null && tasksLoaded}
+        llmConfigured={Boolean(stats?.llm_configured)}
+        hasTasks={tasks.length > 0}
+        hasFindings={findings.length > 0}
+      />
 
       {/* ── Row 1: 5 stat cards ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -948,7 +961,10 @@ export default function DashboardPage() {
 
           <div className="divide-y">
             {recentFindings.length === 0 ? (
-              <div className="py-4 text-center text-xs text-muted-foreground">{t("noFindings")}</div>
+              <div className="py-4 text-center text-xs text-muted-foreground">
+                {t("noFindings")}
+                <div className="mt-1 text-[10px]">{t("noFindingsHint")}</div>
+              </div>
             ) : (
               recentFindings.map((f) => (
                 <div key={f.id} className="flex items-start gap-2 py-2">
@@ -1017,7 +1033,16 @@ export default function DashboardPage() {
             {sortedTasks.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
-                  {t("noTasks")}
+                  <div className="flex flex-col items-center gap-2">
+                    {t("noTasks")}
+                    <Link
+                      prefetch={false}
+                      href="/function/tasks"
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      <PlusIcon /> {t("createFirstTask")}
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -1080,7 +1105,16 @@ export default function DashboardPage() {
           </SectionTitle>
 
           {assetByType.length === 0 ? (
-            <div className="py-6 text-center text-xs text-muted-foreground">{t("noAssetData")}</div>
+            <div className="flex flex-col items-center gap-2 py-6 text-center text-xs text-muted-foreground">
+              {t("noAssetData")}
+              <Link
+                prefetch={false}
+                href="/function/assets"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <PlusIcon /> {t("addAssets")}
+              </Link>
+            </div>
           ) : (
             <div className="flex flex-col gap-2">
               {assetByType.map(([type, count]) => (

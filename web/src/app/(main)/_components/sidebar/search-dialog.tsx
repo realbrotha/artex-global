@@ -25,7 +25,7 @@ import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 // 컴포넌트에서 useTranslations("nav") 로 렌더 시점에 번역한다(사이드바와 같은 메시지 원천).
 type SearchItem = {
   id: string;
-  headingKey: string; // nav 기준 상대 키 (그룹 헤딩). 예) "group.function"
+  headingKey: string; // nav 기준 상대 키 (그룹 헤딩). 예) "group.offense"
   labelKey: string; // nav 기준 상대 키 (항목 라벨). 예) "item.dashboard"
   fallbackLabel: string; // 메시지에 키가 없을 때 쓸 원문
   url: string;
@@ -34,15 +34,8 @@ type SearchItem = {
   newTab?: boolean;
 };
 
-// 그룹 번호 → nav.group.* 키. nav-main 과 같은 매핑을 쓴다.
-const GROUP_MESSAGE_KEY: Record<number, string> = { 1: "function", 2: "system" };
-function groupHeadingKey(groupId: number): string {
-  const k = GROUP_MESSAGE_KEY[groupId];
-  return k ? `group.${k}` : `group.${groupId}`;
-}
-
 const searchItems: SearchItem[] = sidebarItems.flatMap((group) => {
-  const headingKey = groupHeadingKey(group.id);
+  const headingKey = `group.${group.key}`;
   return group.items.flatMap((item) => {
     if (item.subItems) {
       return item.subItems.map((sub) => ({

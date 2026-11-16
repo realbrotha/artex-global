@@ -146,7 +146,31 @@
     "trafficStatusCodes": "트래픽 상태 코드",
     "verNew": "신버전",
     "verOld": "구버전",
-    "viewTasks": "작업 보기"
+    "viewTasks": "작업 보기",
+    "createFirstTask": "첫 작업 만들기",
+    "addAssets": "자산 추가",
+    "noFindingsHint": "작업이 취약점을 확인하면 여기에 표시됩니다.",
+    "onboarding": {
+      "title": "시작하기",
+      "subtitle": "세 단계로 첫 점검 결과를 확인합니다.",
+      "progress": "{done}/{total} 완료",
+      "dismiss": "닫기",
+      "llm": {
+        "title": "LLM 연결",
+        "desc": "에이전트가 사용할 모델과 API 키를 등록합니다.",
+        "action": "LLM 설정"
+      },
+      "task": {
+        "title": "첫 작업 만들기",
+        "desc": "테스트 대상과 목표를 입력하면 에이전트가 점검을 시작합니다.",
+        "action": "작업 만들기"
+      },
+      "findings": {
+        "title": "결과 확인",
+        "desc": "확인된 취약점과 증거는 취약점 화면에 쌓입니다.",
+        "action": "취약점 보기"
+      }
+    }
   },
   "header": {
     "updateBadge": "새 버전 {latest}",
@@ -156,7 +180,12 @@
   },
   "nav": {
     "group": {
-      "function": "기능",
+      "activity": "실행 기록",
+      "ai": "AI 구성",
+      "defense": "방어",
+      "guardrails": "통제",
+      "offense": "진단",
+      "overview": "개요",
       "system": "시스템"
     },
     "item": {

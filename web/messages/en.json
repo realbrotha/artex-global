@@ -146,7 +146,31 @@
     "trafficStatusCodes": "Traffic status codes",
     "verNew": "New",
     "verOld": "Old",
-    "viewTasks": "View tasks"
+    "viewTasks": "View tasks",
+    "createFirstTask": "Create first task",
+    "addAssets": "Add assets",
+    "noFindingsHint": "Findings appear here once a task confirms them.",
+    "onboarding": {
+      "title": "Get started",
+      "subtitle": "Three steps to your first results.",
+      "progress": "{done}/{total} done",
+      "dismiss": "Dismiss",
+      "llm": {
+        "title": "Connect an LLM",
+        "desc": "Register the model and API key the agents will use.",
+        "action": "Set up LLM"
+      },
+      "task": {
+        "title": "Create your first task",
+        "desc": "Enter a target and a goal, and the agents start testing.",
+        "action": "Create task"
+      },
+      "findings": {
+        "title": "Review results",
+        "desc": "Confirmed findings and their evidence collect on the Findings page.",
+        "action": "View findings"
+      }
+    }
   },
   "header": {
     "updateBadge": "New version {latest}",
@@ -156,7 +180,12 @@
   },
   "nav": {
     "group": {
-      "function": "Features",
+      "activity": "Activity",
+      "ai": "AI setup",
+      "defense": "Defense",
+      "guardrails": "Guardrails",
+      "offense": "Pentest",
+      "overview": "Overview",
       "system": "System"
     },
     "item": {
