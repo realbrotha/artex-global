@@ -14,7 +14,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
@@ -44,9 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/function/tasks">
                 <BrandMark aria-hidden className="size-7!" />
-                <span className="font-semibold text-base">
-                  SIEM <span className="font-normal text-muted-foreground text-xs">with</span> {APP_CONFIG.name}
-                </span>
+                <span className="font-semibold text-base">Thaki SIEM</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
