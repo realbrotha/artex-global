@@ -11,23 +11,23 @@ const currentYear = new Date().getFullYear();
 const META_BY_LOCALE: Record<Locale, { title: string; description: string }> = {
   en: {
     title: "Thaki SIEM",
-    description: "An LLM-driven system console for autonomous penetration testing",
+    description: "A SIEM console that collects security events from Wazuh and judges them with an LLM",
   },
   ko: {
     title: "Thaki SIEM",
-    description: "LLM 기반으로 자율 침투 테스트를 수행하는 시스템 콘솔",
+    description: "Wazuh 보안 이벤트를 수집하고 LLM 으로 판정하는 SIEM 콘솔",
   },
   zh: {
     title: "Thaki SIEM",
-    description: "LLM 驱动的自主渗透测试系统控制台",
+    description: "采集 Wazuh 安全事件并由 LLM 研判的 SIEM 控制台",
   },
   es: {
     title: "Thaki SIEM",
-    description: "Una consola de sistema impulsada por LLM para pruebas de penetración autónomas",
+    description: "Una consola SIEM que recopila eventos de seguridad de Wazuh y los evalúa con un LLM",
   },
   ja: {
     title: "Thaki SIEM",
-    description: "LLM を活用して自律的にペネトレーションテストを行うシステムコンソール",
+    description: "Wazuh のセキュリティイベントを収集し LLM で判定する SIEM コンソール",
   },
 };
 
