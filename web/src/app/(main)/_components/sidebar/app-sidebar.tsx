@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { useShallow } from "zustand/react/shallow";
 
+import { BrandMark } from "@/components/brand-mark";
 import {
   Sidebar,
   SidebarContent,
@@ -42,17 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/function/tasks">
-                {/* 심볼은 어두운 회색 그라데이션이라 다크 테마에서는 밝은 색 사본을 쓴다. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/thaki-symbol.svg" alt="Thaki" width={28} height={28} className="shrink-0 dark:hidden" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/thaki-symbol-dark.svg"
-                  alt="Thaki"
-                  width={28}
-                  height={28}
-                  className="hidden shrink-0 dark:block"
-                />
+                <BrandMark aria-hidden className="size-7!" />
                 <span className="font-semibold text-base">
                   SIEM <span className="font-normal text-muted-foreground text-xs">with</span> {APP_CONFIG.name}
                 </span>
