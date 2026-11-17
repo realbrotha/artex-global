@@ -8,9 +8,6 @@ import { getLocalStorageValue } from "@/lib/local-storage.client";
 const DATE_LOCALE: Record<Locale, string> = {
   en: "en-US",
   ko: "ko-KR",
-  zh: "zh-CN",
-  es: "es-ES",
-  ja: "ja-JP",
 };
 
 export function getDateLocale(): string {

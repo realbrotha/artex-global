@@ -28,7 +28,7 @@ func TestErrCatalogFormatVerbsMatch(t *testing.T) {
 }
 
 // TestAuthErrorsTranslated pins that every authErr* message the auth endpoints
-// return has an en/zh/es translation, so a non-Korean user who fails a login or
+// return has an en translation, so a non-Korean user who fails a login or
 // the first-run setup sees the error in the chosen language.
 func TestAuthErrorsTranslated(t *testing.T) {
 	t.Cleanup(func() { config.CurrentLanguage = nil })
@@ -59,7 +59,7 @@ func TestAuthErrorsTranslated(t *testing.T) {
 	if len(msgs) == 0 {
 		t.Fatal("found no authErr constants; the scan is broken")
 	}
-	for _, lang := range []string{"en", "zh", "es"} {
+	for _, lang := range []string{"en"} {
 		config.CurrentLanguage = func() string { return lang }
 		for _, m := range msgs {
 			if trMsg(m) == m {

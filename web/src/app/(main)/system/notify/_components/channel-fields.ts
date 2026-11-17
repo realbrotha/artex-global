@@ -6,8 +6,7 @@
 //
 // 本文件是纯数据模块（非 client component），不能调用 useTranslations。
 // 所以文案不写死在这里，而是存 i18n 键（notifyPage 命名空间），由渲染它们的
-// 组件（page.tsx / channel-form.tsx）用 t() 解析——键是 ASCII，上游中文原文
-// 保留在 messages/zh.json。渠道类型展示名改走 notifyPage.kind.<kind>。
+// 组件（page.tsx / channel-form.tsx）用 t() 解析——键是 ASCII。渠道类型展示名改走 notifyPage.kind.<kind>。
 
 // 各渠道的配置字段定义。
 //

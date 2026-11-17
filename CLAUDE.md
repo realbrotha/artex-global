@@ -1,4 +1,4 @@
-# SIEM with ARTEX 프로젝트 규칙
+# Thaki SIEM 프로젝트 규칙
 
 Go 백엔드와 Next.js 프런트엔드(`web/`)로 구성된 SIEM 콘솔의 작업 규칙.
 
@@ -131,7 +131,7 @@ cd web && npx tsc --noEmit -p . && npm run check && npm run check:i18n && npx vi
 
 ## 2. 문구
 
-* **다국어**: 화면 문구는 `web/messages/{ko,en,es,ja,zh}.json` 다섯 파일에 같은 키로 추가
+* **다국어**: 화면 문구는 `web/messages/{ko,en}.json` 두 파일에 같은 키로 추가. 지원 언어는 한국어·영어 2개
 * **검사**: `npm run check:i18n` 으로 키 집합 일치 확인
 
 ## 3. 백엔드
