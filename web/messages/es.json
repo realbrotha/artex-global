@@ -150,26 +150,19 @@
     "createFirstTask": "Crear la primera tarea",
     "addAssets": "Añadir activos",
     "noFindingsHint": "Los hallazgos aparecen aquí cuando una tarea los confirma.",
-    "onboarding": {
-      "title": "Primeros pasos",
-      "subtitle": "Tres pasos hasta tus primeros resultados.",
-      "progress": "{done}/{total} completados",
-      "dismiss": "Cerrar",
-      "llm": {
-        "title": "Conectar un LLM",
-        "desc": "Registra el modelo y la clave de API que usarán los agentes.",
-        "action": "Configurar LLM"
-      },
-      "task": {
-        "title": "Crear la primera tarea",
-        "desc": "Indica un objetivo y una meta, y los agentes empiezan a probar.",
-        "action": "Crear tarea"
-      },
-      "findings": {
-        "title": "Revisar resultados",
-        "desc": "Los hallazgos confirmados y sus evidencias se reúnen en la página de hallazgos.",
-        "action": "Ver hallazgos"
-      }
+    "siem": {
+      "notConnected": "No hay ningún Wazuh conectado. Conecte uno para ver aquí equipos, comprobaciones fallidas y casos candidatos.",
+      "connect": "Conectar Wazuh",
+      "hosts": "Equipos",
+      "hostsOk": "Todos en buen estado",
+      "hostsDetail": "{down} caídos · {missing} sin agente",
+      "fails": "Comprobaciones fallidas",
+      "failsDetail": "{hosts} equipos · {accepted} aceptadas",
+      "cases": "Casos candidatos",
+      "casesNone": "Nada que revisar",
+      "unjudged": "Sin veredicto",
+      "unjudgedDetail": "Requiere veredicto del LLM",
+      "unjudgedNone": "Todos con veredicto"
     }
   },
   "header": {
@@ -180,13 +173,7 @@
   },
   "nav": {
     "group": {
-      "activity": "Actividad",
-      "ai": "Configuración de IA",
-      "defense": "Defensa",
-      "guardrails": "Controles",
-      "offense": "Pentest",
-      "overview": "Resumen",
-      "system": "Sistema"
+      "main": "Menú"
     },
     "item": {
       "agents": "Agentes",
@@ -213,7 +200,11 @@
       "defensive": "Defensa",
       "defensive-hunting": "Caza autónoma",
       "security-sources": "Conexiones de registros",
-      "protected-assets": "Activos protegidos"
+      "protected-assets": "Activos protegidos",
+      "connections": "Conexiones",
+      "activity": "Actividad",
+      "analysis": "Análisis",
+      "config": "Configuración"
     }
   },
   "notFound": {
@@ -3968,7 +3959,7 @@
     "refresh": "Actualizar"
   },
   "protectedAssets": {
-    "title": "Activos protegidos",
+    "title": "Activos",
     "refresh": "Actualizar",
     "manageConnections": "Gestionar conexiones",
     "loadFailed": "No se pudieron cargar los activos protegidos.",
@@ -3978,9 +3969,8 @@
     "emptyDescription": "Conecta un manager de Wazuh para traer los equipos con agente y sus relaciones.",
     "addConnection": "Añadir conexión de Wazuh",
     "searchPlaceholder": "Buscar nombre de host, IP o rol",
-    "tabGraph": "Mapa",
-    "tabList": "Lista",
-    "legend": "Línea continua: se ejecuta en este equipo · Línea discontinua: pertenece a · Borde discontinuo: sin agente",
+    "tabGraph": "Mapa de infraestructura",
+    "tabList": "Equipos",
     "noMatch": "Ningún equipo coincide.",
     "close": "Cerrar",
     "memberCount": "{count} equipos",
@@ -3988,7 +3978,8 @@
       "all": "Todos",
       "ok": "Correcto",
       "down": "Sin respuesta",
-      "missing": "Sin agente"
+      "missing": "Sin agente",
+      "issues": "Con fallos"
     },
     "kind": {
       "baremetal": "Equipo físico",
@@ -4014,13 +4005,17 @@
       "roles": "Roles",
       "services": "Servicios",
       "groups": "Grupos de agente",
-      "relations": "Relaciones"
+      "relations": "Relaciones",
+      "publicIp": "IP pública",
+      "addrs": "Direcciones de interfaz"
     },
     "relation": {
       "runs_on": "Se ejecuta en",
       "runs_on_reverse": "Ejecuta la VM",
       "member_of": "Pertenece a",
-      "member_of_reverse": "Tiene como miembro"
+      "member_of_reverse": "Tiene como miembro",
+      "gateway_of": "Puerta de acceso a",
+      "gateway_of_reverse": "Bastión (host de salto)"
     },
     "column": {
       "name": "Equipo",
@@ -4029,7 +4024,8 @@
       "roles": "Roles",
       "services": "Servicios",
       "ip": "IP",
-      "os": "SO"
+      "os": "SO",
+      "checks": "Comprobaciones"
     },
     "connection": {
       "title": "Conexiones de Wazuh",
@@ -4071,6 +4067,191 @@
       "statusFailed": "Falló la sincronización",
       "statusOk": "Correcto",
       "statusPending": "Esperando sincronización"
+    },
+    "checks": {
+      "title": "Resultados de comprobación",
+      "loadFailed": "No se pudieron cargar los resultados.",
+      "noIssues": "Nada requiere atención.",
+      "target": "Objetivo",
+      "failCount": "{count} fallidas",
+      "reviewCount": "{count} por revisar",
+      "none": "Sin resultado",
+      "result": {
+        "fail": "Fallida",
+        "review": "Revisar",
+        "error": "Error",
+        "pass": "Correcta",
+        "accepted": "Aceptadas"
+      },
+      "rawNote": "Resultados de Wazuh con el registro de riesgos aceptados aplicado. No se aplica la revisión por LLM.",
+      "codeCount": "{count} comprobaciones",
+      "targetCount": "{count} objetivos",
+      "noEvidence": "No hay evidencia registrada.",
+      "std": {
+        "kisa": "KISA",
+        "cis": "CIS",
+        "siem": "Comprobaciones SIEM",
+        "etc": "Otros"
+      },
+      "acceptedBy": "Aprobado por {who} · hasta {until}",
+      "noExpiry": "sin vencimiento",
+      "allHosts": "todos los equipos",
+      "filterAll": "Todos",
+      "searchPlaceholder": "Buscar código, título, evidencia",
+      "noMatch": "Ninguna comprobación coincide."
+    },
+    "acceptedRisks": {
+      "open": "Riesgos aceptados",
+      "title": "Registro de riesgos aceptados",
+      "description": "Excepciones aprobadas. Un resultado fallido o por revisar cuyo código y equipo coinciden con una entrada vigente se muestra como aceptado.",
+      "import": "Importar TSV",
+      "importHelp": "Formato registry/accepted-risks.tsv de Thaki-Siem. Reemplaza todo el registro.",
+      "imported": "Se importaron {count} entradas. Los recuentos se actualizarán en breve.",
+      "importFailed": "No se pudo importar el registro.",
+      "loadFailed": "No se pudo cargar el registro.",
+      "empty": "Aún no hay riesgos aceptados.",
+      "allHosts": "Todos los equipos",
+      "until": "Hasta {until}",
+      "expired": "Venció el {until}",
+      "noExpiry": "sin vencimiento",
+      "approvedBy": "Aprobado por {who}"
+    },
+    "cases": {
+      "tab": "Casos",
+      "hostTitle": "{count} casos candidatos",
+      "known": "Actividad conocida",
+      "events": "{count} alertas",
+      "timeline": "Cronología de alertas",
+      "timelineClipped": "Cronología de alertas (primeras y últimas {shown} de {total})",
+      "timelineFailed": "No se pudo cargar la cronología. Actualiza la lista.",
+      "failed": "Falló la extracción de casos de {name}: {error}",
+      "generated": "{name}: {alerts} alertas de los últimos {days} días · {when}",
+      "capped": "límite de alertas alcanzado, parte sin analizar",
+      "showKnown": "Mostrar {count} conocidos o evaluados como normales",
+      "pending": "Aún no se han extraído casos. Se extraen en la próxima sincronización.",
+      "empty": "Ningún caso coincide.",
+      "severity": {
+        "Critical": "Crítica",
+        "High": "Alta",
+        "Medium": "Media",
+        "Low": "Baja",
+        "Info": "Informativa"
+      },
+      "field": {
+        "actor": "Sujeto",
+        "hosts": "Equipos",
+        "period": "Periodo",
+        "basis": "Motivo de la gravedad",
+        "entity": "Entidad",
+        "attack": "ATT&CK",
+        "known": "Motivo de actividad conocida",
+        "near": "Casos cercanos en el tiempo",
+        "connection": "Conexión",
+        "summary": "Resumen de detección"
+      },
+      "judge": "Evaluar con LLM",
+      "judgeAgain": "Evaluar de nuevo",
+      "judgeFailed": "No se pudo obtener el veredicto.",
+      "judgeAll": "Evaluar {count} sin veredicto",
+      "judgeAllConfirm": "Esto envía el contenido de las alertas de {count} casos al proveedor de LLM configurado. ¿Continuar?",
+      "judgeProgress": "Evaluando {done}/{total}",
+      "judgeStop": "Detener",
+      "judgeDone": "{done} evaluados, {failed} fallidos",
+      "verdictStale": "Hay actividad nueva desde este veredicto, o tiene más de 30 días. Evalúalo de nuevo.",
+      "verdictAdjust": "Gravedad ajustada → {severity}: {reason}",
+      "verdictResponse": "Acciones recomendadas",
+      "verdictBy": "Evaluado por {model} · {when}",
+      "verdict": {
+        "breach": "Intrusión",
+        "suspicious": "Sospechoso",
+        "attempt": "Intento",
+        "normal": "Normal",
+        "false_positive": "Falso positivo"
+      }
+    },
+    "tabDiscovered": "Activos descubiertos",
+    "host": {
+      "tabOverview": "Resumen",
+      "detail": "Ver detalles",
+      "notFound": "No se encontró el equipo. Puede que se haya eliminado la conexión o el agente.",
+      "public": "pública"
+    },
+    "layout": {
+      "grouped": "Por grupo",
+      "depth": "Por nivel",
+      "tier": "Nivel {depth} · {count} equipos",
+      "tierGroups": "Grupos de servicio · {count}"
+    },
+    "analysis": {
+      "title": "Análisis de registros SIEM",
+      "window": "últimos {days} días",
+      "stop": "Detener",
+      "close": "Cerrar",
+      "stopped": "Análisis detenido.",
+      "lost": "No se pudo cargar el estado del análisis.",
+      "startFailed": "No se pudo iniciar el análisis.",
+      "menuHost": "Análisis de registros SIEM",
+      "menuGroup": "Análisis de registros SIEM · {count} equipos miembros",
+      "menuAll": "Análisis de registros SIEM · todo {name}",
+      "allLabel": "Todo · {name}",
+      "step": {
+        "collect": "1. Recopilar alertas",
+        "extract": "2. Extraer casos candidatos",
+        "judge": "3. Veredicto del LLM",
+        "summary": "4. Resumen"
+      },
+      "collecting": "Obteniendo alertas y comprobaciones de {count, plural, =0 {todos los equipos} one {# equipo} other {# equipos}}",
+      "collected": "{count} alertas ({sec} s)",
+      "extracting": "Aplicando patrones de correlación",
+      "extracted": "{rules} reglas de detección → {count} casos candidatos ({sec} s)",
+      "knownSkipped": "{count} coinciden con actividad aprobada (sin veredicto)",
+      "nothing": "No hay casos candidatos que juzgar.",
+      "judging": "Juzgando {done}/{total}",
+      "judgeNote": "Envía el contenido de las alertas de {count} casos sin veredicto al proveedor LLM configurado.",
+      "judge": "Juzgar {count} con LLM",
+      "queued": "en cola",
+      "judgedIn": "{sec} s",
+      "summaryClean": "{count} alertas no produjeron casos candidatos.",
+      "summaryKnown": "Actividad aprobada {count}",
+      "summaryModel": "Modelo del veredicto: {model}",
+      "pattern": {
+        "P1": "Éxito tras fallos",
+        "P2": "Inicio de sesión fuera del rango permitido",
+        "P3": "Cadena de intrusión",
+        "P4": "Evasión de defensas",
+        "P5": "Exfiltración de datos sensibles",
+        "P6": "Fallos desde muchos orígenes",
+        "P7": "Reconocimiento externo / ataque web",
+        "P8": "Ráfaga de errores",
+        "P9": "Regla única de alto riesgo"
+      },
+      "all": "Analizar todos los registros SIEM"
+    }
+  },
+  "connections": {
+    "title": "Conexiones",
+    "subtitle": "Sistemas externos de los que la consola lee datos.",
+    "add": "Añadir conexión",
+    "none": "Sin conexión",
+    "connect": "Conectar",
+    "manage": "Gestionar",
+    "enabled": "Activa",
+    "notConnected": "Sin conexión",
+    "syncedAt": "sincronizado {when}",
+    "updatedAt": "actualizado {when}",
+    "wazuh": {
+      "title": "Wazuh",
+      "description": "Equipos con agente, resultados de comprobaciones de configuración y alertas.",
+      "hosts": "{count} equipos",
+      "addrNote": "No se recopilaron las direcciones de interfaz: {reason}"
+    },
+    "logs": {
+      "title": "Registros (Splunk)",
+      "description": "Conecte la API de búsqueda de Splunk para que la caza autónoma consulte los registros."
+    },
+    "sync": {
+      "title": "Sincronización de activos",
+      "description": "Importa la lista de activos de ScopeSentry como activos descubiertos."
     }
   }
 }

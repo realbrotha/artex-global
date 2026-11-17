@@ -141,7 +141,9 @@ func (d *DB) SaveWazuhSource(ctx context.Context, id, expected int64, name strin
 	}
 	// A changed endpoint invalidates the previous snapshot.
 	s, e := scanWazuhSource(tx.QueryRowContext(ctx, `UPDATE wazuh_sources SET name=$2,revision=revision+1,config=$3,secret_cipher=$4,enabled=$5,
-		snapshot=CASE WHEN $6 THEN '{}'::jsonb ELSE snapshot END, synced_at=CASE WHEN $6 THEN NULL ELSE synced_at END,
+		snapshot=CASE WHEN $6 THEN '{}'::jsonb ELSE snapshot END, checks=CASE WHEN $6 THEN '{}'::jsonb ELSE checks END,
+		cases=CASE WHEN $6 THEN '[]'::jsonb ELSE cases END, cases_at=CASE WHEN $6 THEN NULL ELSE cases_at END,
+		cases_error=CASE WHEN $6 THEN '' ELSE cases_error END, synced_at=CASE WHEN $6 THEN NULL ELSE synced_at END,
 		sync_error=CASE WHEN $6 THEN '' ELSE sync_error END, updated_at=clock_timestamp()
 		WHERE id=$1 RETURNING `+wazuhSourceColumns, id, name, raw, cipher, enabled, endpointChanged))
 	if e != nil {
@@ -152,7 +154,7 @@ func (d *DB) SaveWazuhSource(ctx context.Context, id, expected int64, name strin
 
 // FinishWazuhSync records a sync result. A failure keeps the previous
 // snapshot so the asset map stays readable while the connection is down.
-func (d *DB) FinishWazuhSync(ctx context.Context, id, revision int64, graph *wazuh.Graph, syncErr string) error {
+func (d *DB) FinishWazuhSync(ctx context.Context, id, revision int64, graph *wazuh.Graph, issues map[string][]wazuh.Issue, syncErr string) error {
 	if graph == nil {
 		_, e := d.ExecContext(ctx, `UPDATE wazuh_sources SET sync_error=$3 WHERE id=$1 AND revision=$2`, id, revision, syncErr)
 		return e
@@ -161,6 +163,30 @@ func (d *DB) FinishWazuhSync(ctx context.Context, id, revision int64, graph *waz
 	if e != nil {
 		return e
 	}
-	_, e = d.ExecContext(ctx, `UPDATE wazuh_sources SET snapshot=$3,synced_at=clock_timestamp(),sync_error='' WHERE id=$1 AND revision=$2`, id, revision, raw)
+	if issues == nil {
+		issues = map[string][]wazuh.Issue{}
+	}
+	checks, e := json.Marshal(issues)
+	if e != nil {
+		return e
+	}
+	_, e = d.ExecContext(ctx, `UPDATE wazuh_sources SET snapshot=$3,checks=$4,synced_at=clock_timestamp(),sync_error='' WHERE id=$1 AND revision=$2`, id, revision, raw, checks)
 	return e
+}
+
+// WazuhHostIssues returns the stored config-check issues of one node.
+func (d *DB) WazuhHostIssues(ctx context.Context, id int64, node string) ([]wazuh.Issue, error) {
+	var raw []byte
+	e := d.QueryRowContext(ctx, `SELECT COALESCE(checks->$2, '[]'::jsonb) FROM wazuh_sources WHERE id=$1`, id, node).Scan(&raw)
+	if errors.Is(e, sql.ErrNoRows) {
+		return nil, ErrWazuhSourceNotFound
+	}
+	if e != nil {
+		return nil, e
+	}
+	out := []wazuh.Issue{}
+	if e = json.Unmarshal(raw, &out); e != nil {
+		return nil, e
+	}
+	return out, nil
 }

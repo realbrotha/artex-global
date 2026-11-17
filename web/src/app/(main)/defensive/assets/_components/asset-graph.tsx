@@ -10,16 +10,18 @@ import {
   Handle,
   MiniMap,
   type NodeProps,
+  Panel,
   Position,
   ReactFlow,
   ReactFlowProvider,
   type Edge as RFEdge,
   type Node as RFNode,
   useNodesState,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { BoxIcon, CircleHelpIcon, type LucideIcon, ServerIcon } from "lucide-react";
+import { BoxIcon, CircleHelpIcon, DoorOpenIcon, GlobeIcon, ServerIcon, SirenIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { siKubernetes, siOpenstack } from "simple-icons";
 
@@ -27,12 +29,53 @@ import { SimpleIcon } from "@/components/simple-icon";
 import { cn } from "@/lib/utils";
 import { type AssetEdge, type AssetNode, assetStatusGroup, isHostNode } from "@/lib/wazuh-api";
 
-import { layoutAssets, NODE_H, NODE_W } from "./asset-layout";
+import { layoutAssets, layoutByDepth, NODE_H, NODE_W, TIER_LABEL_W } from "./asset-layout";
+import { severityTone } from "./case-list";
 
-type AssetNodeData = { node: AssetNode; dim: boolean; active: boolean; subtitle: string; w?: number; h?: number };
-type AssetRFNode = RFNode<AssetNodeData, "asset" | "cluster">;
+type AssetNodeData = {
+  node: AssetNode;
+  dim: boolean;
+  active: boolean;
+  subtitle: string;
+  // The host is the bastion of a cluster.
+  gateway?: boolean;
+  w?: number;
+  h?: number;
+};
+type TierData = { label: string };
+type AssetRFNode = RFNode<AssetNodeData, "asset" | "cluster"> | RFNode<TierData, "tier">;
+type HostRFNode = RFNode<AssetNodeData, "asset" | "cluster">;
 
-const hostIcon: Record<string, LucideIcon> = { baremetal: ServerIcon, vm: BoxIcon, unknown: CircleHelpIcon };
+// grouped: clusters as boxes, physical hosts underneath (the original map).
+// depth: top-down tiers by how deep a host sits in the "runs on" chain.
+type LayoutMode = "grouped" | "depth";
+const MODES: LayoutMode[] = ["grouped", "depth"];
+const MODE_KEY = "artex.assetMap.layout";
+
+// How a machine is drawn, so the kinds can be told apart at a glance:
+//   physical  - square card, heavy border, solid dark server tile
+//   OpenStack instance - pill, OpenStack mark (hardware reports OpenStack Nova)
+//   other VM  - pill, plain box
+//   bastion   - pill, sky door tile (the way in to a cluster)
+//   unknown   - dashed tile: agent present, no check result to identify it yet
+type Look = "physical" | "openstack-vm" | "vm" | "bastion" | "unknown" | "group";
+
+function lookOf(node: AssetNode, gateway: boolean): Look {
+  if (!isHostNode(node)) return "group";
+  if (gateway) return "bastion";
+  if (node.kind === "baremetal") return "physical";
+  if (node.kind === "vm") return /openstack/i.test(node.virt ?? "") ? "openstack-vm" : "vm";
+  return "unknown";
+}
+
+const tileTone: Record<Look, string> = {
+  physical: "rounded-md bg-foreground text-background",
+  "openstack-vm": "rounded-full bg-rose-500/10",
+  vm: "rounded-full bg-muted text-muted-foreground",
+  bastion: "rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  unknown: "rounded-md border border-dashed text-muted-foreground",
+  group: "rounded-full bg-rose-500/10",
+};
 
 const statusDot: Record<string, string> = {
   ok: "bg-emerald-500",
@@ -40,17 +83,20 @@ const statusDot: Record<string, string> = {
   missing: "bg-amber-500",
 };
 
-function AssetNodeCard({ data }: NodeProps<AssetRFNode>) {
-  const { node, dim, active, subtitle } = data;
+function AssetNodeCard({ data }: NodeProps<HostRFNode>) {
+  const { node, dim, active, subtitle, gateway } = data;
   const group = assetStatusGroup(node);
-  const isGroup = !isHostNode(node);
-  const Icon = hostIcon[node.kind];
+  const look = lookOf(node, Boolean(gateway));
+  const square = look === "physical" || look === "unknown";
+  // Shown only when it differs from the address already on the row above.
+  const publicIp = isHostNode(node) && node.public_ip && node.public_ip !== node.ip ? node.public_ip : "";
   return (
     <div
       className={cn(
         "relative flex items-center gap-2 border bg-card px-2 text-left shadow-xs transition-opacity",
-        isGroup || node.kind === "vm" ? "rounded-full" : "rounded-md",
-        node.kind === "baremetal" && "border-foreground/40",
+        square ? "rounded-md" : "rounded-full",
+        look === "physical" && "border-2 border-foreground/60",
+        look === "bastion" && "border-sky-500/60",
         group === "missing" && "border-amber-500 border-dashed",
         active && "ring-2 ring-primary",
         dim && "opacity-25",
@@ -59,23 +105,47 @@ function AssetNodeCard({ data }: NodeProps<AssetRFNode>) {
     >
       <Handle id="t-in" type="target" position={Position.Top} className="!size-1 !border-0 !bg-transparent" />
       <Handle id="t-out" type="source" position={Position.Top} className="!size-1 !border-0 !bg-transparent" />
-      <span
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center",
-          isGroup || node.kind === "vm" ? "rounded-full" : "rounded-md",
-          node.kind === "openstack" && "bg-rose-500/10",
-          isHostNode(node) && "bg-muted",
+      <span className={cn("flex size-8 shrink-0 items-center justify-center", tileTone[look])}>
+        {look === "group" && <SimpleIcon icon={siOpenstack} className="size-5 fill-rose-600 dark:fill-rose-400" />}
+        {look === "openstack-vm" && (
+          <SimpleIcon icon={siOpenstack} className="size-4 fill-rose-600 dark:fill-rose-400" />
         )}
-      >
-        {node.kind === "openstack" ? (
-          <SimpleIcon icon={siOpenstack} className="size-5 fill-rose-600 dark:fill-rose-400" />
-        ) : (
-          <Icon className="size-4.5 text-muted-foreground" />
-        )}
+        {look === "physical" && <ServerIcon className="size-4.5" />}
+        {look === "vm" && <BoxIcon className="size-4.5" />}
+        {look === "bastion" && <DoorOpenIcon className="size-4.5" />}
+        {look === "unknown" && <CircleHelpIcon className="size-4.5" />}
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-xs">{node.name}</span>
-        <span className="block truncate text-[10px] text-muted-foreground">{subtitle}</span>
+      {/* Host names are long and hyphenated: the name wraps to two lines and
+          the counters sit on the address row, so nothing squeezes the name.
+          A host with an external address shows it on a row of its own, under
+          the private one, marked with a globe. */}
+      <span className="min-w-0 flex-1" title={[node.name, node.ip, node.public_ip].filter(Boolean).join(" · ")}>
+        <span className="line-clamp-2 break-words font-medium text-xs leading-[1.15]">{node.name}</span>
+        <span className="mt-0.5 flex items-center gap-1">
+          <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">{subtitle}</span>
+          {(node.cases ?? 0) > 0 && (
+            <span
+              className={cn(
+                "flex shrink-0 items-center gap-0.5 rounded-full border px-1 font-semibold text-[10px] leading-none tabular-nums",
+                severityTone[node.case_sev ?? "Low"],
+              )}
+            >
+              <SirenIcon className="size-2.5" />
+              {node.cases}
+            </span>
+          )}
+          {(node.checks?.fail ?? 0) > 0 && (
+            <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 py-px font-semibold text-[10px] text-red-700 leading-none tabular-nums dark:text-red-300">
+              {node.checks?.fail}
+            </span>
+          )}
+        </span>
+        {publicIp && (
+          <span className="flex items-center gap-0.5 text-[10px] text-sky-700 dark:text-sky-300">
+            <GlobeIcon className="size-2.5 shrink-0" />
+            <span className="truncate">{publicIp}</span>
+          </span>
+        )}
       </span>
       {group !== "none" && (
         <span className={cn("absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-card", statusDot[group])} />
@@ -88,17 +158,19 @@ function AssetNodeCard({ data }: NodeProps<AssetRFNode>) {
 
 // A Kubernetes cluster is drawn as a box around its nodes, so membership
 // needs no edges.
-function ClusterBox({ data }: NodeProps<AssetRFNode>) {
+function ClusterBox({ data }: NodeProps<HostRFNode>) {
   const { node, dim, active, subtitle, w, h } = data;
   return (
     <div
       className={cn(
-        "rounded-xl border border-sky-500/40 bg-sky-500/5 transition-opacity",
+        "cursor-grab rounded-xl border border-sky-500/40 bg-sky-500/5 transition-opacity active:cursor-grabbing",
         active && "ring-2 ring-primary",
         dim && "opacity-25",
       )}
       style={{ width: w, height: h }}
     >
+      {/* Where a bastion's edge lands. */}
+      <Handle id="t-in" type="target" position={Position.Top} className="!size-1 !border-0 !bg-transparent" />
       <div className="flex h-10 items-center gap-2 px-3.5">
         <SimpleIcon icon={siKubernetes} className="size-4 shrink-0 fill-sky-600 dark:fill-sky-400" />
         <span className="truncate font-medium text-xs">{node.name}</span>
@@ -108,13 +180,36 @@ function ClusterBox({ data }: NodeProps<AssetRFNode>) {
   );
 }
 
-const nodeTypes = { asset: AssetNodeCard, cluster: ClusterBox };
+// Row heading of the depth layout; not a selectable asset.
+function TierLabel({ data }: NodeProps<RFNode<TierData, "tier">>) {
+  return (
+    <div
+      className="flex items-center font-medium text-[11px] text-muted-foreground"
+      style={{ width: TIER_LABEL_W - 16, height: NODE_H }}
+    >
+      {data.label}
+    </div>
+  );
+}
+
+const nodeTypes = { asset: AssetNodeCard, cluster: ClusterBox, tier: TierLabel };
 
 interface AssetGraphProps {
   readonly nodes: AssetNode[];
   readonly edges: AssetEdge[];
   readonly selectedId: string | null;
   readonly onSelect: (id: string | null) => void;
+  // Right-click actions. nodeId null = the whole connection named by paneTargets.
+  readonly onAnalyze?: (nodeId: string | null, paneTarget?: string) => void;
+  readonly onOpenDetail?: (nodeId: string) => void;
+  // One entry per connection for the empty-space menu.
+  readonly paneTargets?: { id: string; label: string }[];
+}
+
+interface MenuState {
+  x: number;
+  y: number;
+  node: AssetNode | null;
 }
 
 export function AssetGraph(props: AssetGraphProps) {
@@ -125,10 +220,35 @@ export function AssetGraph(props: AssetGraphProps) {
   );
 }
 
-function AssetGraphInner({ nodes, edges, selectedId, onSelect }: AssetGraphProps) {
+function AssetGraphInner({
+  nodes,
+  edges,
+  selectedId,
+  onSelect,
+  onAnalyze,
+  onOpenDetail,
+  paneTargets,
+}: AssetGraphProps) {
   const t = useTranslations("protectedAssets");
 
-  const positions = React.useMemo(() => layoutAssets(nodes, edges), [nodes, edges]);
+  const flow = useReactFlow();
+  const [mode, setMode] = React.useState<LayoutMode>("grouped");
+  React.useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(MODE_KEY);
+      if (MODES.includes(saved as LayoutMode)) setMode(saved as LayoutMode);
+    } catch {
+      /* storage unavailable: keep the default */
+    }
+  }, []);
+
+  const { positions, tiers } = React.useMemo(() => {
+    if (mode === "depth") {
+      const laid = layoutByDepth(nodes, edges);
+      return { positions: laid.pos, tiers: laid.tiers };
+    }
+    return { positions: layoutAssets(nodes, edges), tiers: [] };
+  }, [nodes, edges, mode]);
 
   const related = React.useMemo(() => {
     if (!selectedId) return null;
@@ -140,32 +260,83 @@ function AssetGraphInner({ nodes, edges, selectedId, onSelect }: AssetGraphProps
     return set;
   }, [edges, selectedId]);
 
+  // Members are children of their cluster box, so dragging the box carries
+  // them along. Same membership rule as the layout: first cluster wins.
+  const boxOf = React.useMemo(() => {
+    const boxes = new Set(nodes.filter((n) => n.kind === "k8s_cluster").map((n) => n.id));
+    const hostIds = new Set(nodes.filter(isHostNode).map((n) => n.id));
+    const map = new Map<string, string>();
+    for (const e of edges) {
+      if (e.kind !== "member_of" || !hostIds.has(e.from) || !boxes.has(e.to) || map.has(e.from)) continue;
+      // Only a member the layout actually put inside the box is its child.
+      const at = positions.get(e.from);
+      const box = positions.get(e.to);
+      if (!at || !box) continue;
+      const inside =
+        at.x >= box.x &&
+        at.y >= box.y &&
+        at.x + NODE_W <= box.x + (box.w ?? 0) &&
+        at.y + NODE_H <= box.y + (box.h ?? 0);
+      if (inside) map.set(e.from, e.to);
+    }
+    return map;
+  }, [nodes, edges, positions]);
+
+  const gateways = React.useMemo(
+    () => new Set(edges.filter((e) => e.kind === "gateway_of").map((e) => e.from)),
+    [edges],
+  );
+
   const rfNodes = React.useMemo<AssetRFNode[]>(
-    () =>
-      nodes.map((node) => {
-        const subtitle = isHostNode(node)
-          ? [t(`kind.${node.kind}`), node.roles?.join(", ")].filter(Boolean).join(" · ")
-          : t("memberCount", { count: node.members ?? 0 });
-        const at = positions.get(node.id) ?? { x: 0, y: 0 };
-        const isBox = node.kind === "k8s_cluster";
-        return {
-          id: node.id,
-          type: isBox ? "cluster" : "asset",
-          position: { x: at.x, y: at.y },
-          // Boxes stay put: their members are separate nodes laid out inside.
-          draggable: !isBox,
-          zIndex: isBox ? -1 : 0,
+    () => [
+      ...tiers.map(
+        (tier): AssetRFNode => ({
+          id: `tier:${tier.depth}`,
+          type: "tier",
+          position: { x: 0, y: tier.y },
+          draggable: false,
+          selectable: false,
           data: {
-            node,
-            subtitle,
-            w: at.w,
-            h: at.h,
-            active: node.id === selectedId,
-            dim: related !== null && !related.has(node.id),
+            label:
+              tier.depth < 0
+                ? t("layout.tierGroups", { count: tier.count })
+                : t("layout.tier", { depth: tier.depth + 1, count: tier.count }),
           },
-        };
-      }),
-    [nodes, positions, related, selectedId, t],
+        }),
+      ),
+      ...// React Flow needs a parent listed before its children.
+      [...nodes]
+        .sort((a, b) => Number(b.kind === "k8s_cluster") - Number(a.kind === "k8s_cluster"))
+        .map((node) => {
+          const subtitle = isHostNode(node)
+            ? // The private address identifies a host; kind is already the node shape, and
+              // roles are in the detail panel. The public address has its own row.
+              (node.ip ?? node.public_ip ?? t(`kind.${node.kind}`))
+            : t("memberCount", { count: node.members ?? 0 });
+          const at = positions.get(node.id) ?? { x: 0, y: 0 };
+          const isBox = node.kind === "k8s_cluster";
+          const box = boxOf.get(node.id);
+          const boxAt = box ? positions.get(box) : undefined;
+          return {
+            id: node.id,
+            type: isBox ? "cluster" : "asset",
+            // A member is positioned relative to its box and cannot leave it.
+            position: boxAt ? { x: at.x - boxAt.x, y: at.y - boxAt.y } : { x: at.x, y: at.y },
+            ...(box && boxAt ? { parentId: box, extent: "parent" as const } : {}),
+            zIndex: isBox ? -1 : 0,
+            data: {
+              node,
+              subtitle,
+              w: at.w,
+              h: at.h,
+              active: node.id === selectedId,
+              gateway: gateways.has(node.id),
+              dim: related !== null && !related.has(node.id),
+            },
+          } satisfies AssetRFNode;
+        }),
+    ],
+    [nodes, positions, tiers, boxOf, gateways, related, selectedId, t],
   );
 
   const kindOf = React.useMemo(() => new Map(nodes.map((n) => [n.id, n.kind])), [nodes]);
@@ -174,24 +345,34 @@ function AssetGraphInner({ nodes, edges, selectedId, onSelect }: AssetGraphProps
     () =>
       edges
         // Cluster membership is shown by containment, not by an edge.
-        .filter((e) => kindOf.has(e.from) && kindOf.has(e.to) && kindOf.get(e.to) !== "k8s_cluster")
+        .filter(
+          (e) =>
+            kindOf.has(e.from) && kindOf.has(e.to) && (kindOf.get(e.to) !== "k8s_cluster" || e.kind === "gateway_of"),
+        )
         .map((e) => {
           const lit = related === null || e.from === selectedId || e.to === selectedId;
           return {
             id: `${e.kind}:${e.from}>${e.to}`,
             source: e.from,
             target: e.to,
-            sourceHandle: "b-out",
-            targetHandle: "t-in",
+            // Grouped: guests sit above their host. Depth: below it.
+            // A bastion always points down into the top of its cluster box.
+            sourceHandle: mode === "depth" && e.kind !== "gateway_of" ? "t-out" : "b-out",
+            targetHandle: mode === "depth" && e.kind !== "gateway_of" ? "b-in" : "t-in",
             style: {
               strokeWidth: e.kind === "runs_on" ? 1.5 : 1,
-              strokeDasharray: e.kind === "member_of" ? "5 4" : undefined,
+              strokeDasharray: e.kind === "runs_on" ? undefined : "5 4",
               opacity: lit ? 1 : 0.12,
             },
-            className: e.kind === "runs_on" ? "[&_path]:!stroke-foreground/60" : "[&_path]:!stroke-rose-500",
+            className:
+              e.kind === "runs_on"
+                ? "[&_path]:!stroke-foreground/60"
+                : e.kind === "gateway_of"
+                  ? "[&_path]:!stroke-sky-500"
+                  : "[&_path]:!stroke-rose-500",
           };
         }),
-    [edges, kindOf, related, selectedId],
+    [edges, kindOf, related, selectedId, mode],
   );
 
   // Keep positions the user dragged; everything else follows the layout.
@@ -204,6 +385,48 @@ function AssetGraphInner({ nodes, edges, selectedId, onSelect }: AssetGraphProps
     });
   }, [rfNodes, setFlowNodes]);
 
+  const [menu, setMenu] = React.useState<MenuState | null>(null);
+  const openMenu = (event: MouseEvent | React.MouseEvent, node: AssetNode | null) => {
+    if (!onAnalyze) return;
+    event.preventDefault();
+    const box = (event.target as HTMLElement).closest(".react-flow")?.getBoundingClientRect();
+    if (!box) return;
+    // Keep the menu inside the map.
+    setMenu({
+      x: Math.min(event.clientX - box.left, box.width - 220),
+      y: Math.min(event.clientY - box.top, box.height - 96),
+      node,
+    });
+  };
+  React.useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("click", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
+  const memberCount = (id: string) => edges.filter((e) => e.kind === "member_of" && e.to === id).length;
+  const menuItem =
+    "block w-full px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50 disabled:hover:bg-transparent";
+
+  const switchMode = (next: LayoutMode) => {
+    if (next === mode) return;
+    // Dragged positions belong to the layout they were dragged in.
+    moved.current.clear();
+    setMode(next);
+    try {
+      window.localStorage.setItem(MODE_KEY, next);
+    } catch {
+      /* not remembered */
+    }
+    // Refit once the new positions have been rendered.
+    window.setTimeout(() => void flow.fitView({ padding: 0.15, duration: 300 }), 60);
+  };
+
   return (
     <ReactFlow
       nodes={flowNodes}
@@ -211,8 +434,15 @@ function AssetGraphInner({ nodes, edges, selectedId, onSelect }: AssetGraphProps
       onNodesChange={onNodesChange}
       onNodeDragStop={(_, node) => moved.current.add(node.id)}
       nodeTypes={nodeTypes}
-      onNodeClick={(_, node) => onSelect(node.id === selectedId ? null : node.id)}
+      onNodeClick={(_, node) => node.type !== "tier" && onSelect(node.id === selectedId ? null : node.id)}
       onPaneClick={() => onSelect(null)}
+      onNodeContextMenu={(event, node) => {
+        const target = node.type === "tier" ? undefined : nodes.find((n) => n.id === node.id);
+        if (target) openMenu(event, target);
+        else event.preventDefault();
+      }}
+      onPaneContextMenu={(event) => openMenu(event, null)}
+      onMoveStart={() => setMenu(null)}
       nodesConnectable={false}
       fitView
       fitViewOptions={{ padding: 0.15 }}
@@ -226,14 +456,88 @@ function AssetGraphInner({ nodes, edges, selectedId, onSelect }: AssetGraphProps
         size={1}
         className="text-neutral-400/50 dark:text-neutral-700/60"
       />
+      <Panel position="top-left" className="flex overflow-hidden rounded-lg border bg-card text-xs shadow-sm">
+        {MODES.map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => switchMode(m)}
+            aria-pressed={mode === m}
+            className={cn("px-2.5 py-1.5", mode === m ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+          >
+            {t(`layout.${m}`)}
+          </button>
+        ))}
+      </Panel>
+      {menu && onAnalyze && (
+        <div
+          role="menu"
+          className="absolute z-20 w-52 overflow-hidden rounded-lg border bg-popover py-1 text-popover-foreground text-xs shadow-md"
+          style={{ left: menu.x, top: menu.y }}
+        >
+          {menu.node === null &&
+            (paneTargets ?? []).map((target) => (
+              <button
+                key={target.id}
+                type="button"
+                role="menuitem"
+                className={menuItem}
+                onClick={() => onAnalyze(null, target.id)}
+              >
+                {t("analysis.menuAll", { name: target.label })}
+              </button>
+            ))}
+          {menu.node && isHostNode(menu.node) && (
+            <>
+              <p className="truncate px-3 py-1 font-medium text-[11px] text-muted-foreground">{menu.node.name}</p>
+              <button
+                type="button"
+                role="menuitem"
+                className={menuItem}
+                // A machine without an agent sends no alerts to analyse.
+                disabled={menu.node.status === "no_agent"}
+                onClick={() => menu.node && onAnalyze(menu.node.id)}
+              >
+                {t("analysis.menuHost")}
+              </button>
+              {onOpenDetail && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={menuItem}
+                  onClick={() => menu.node && onOpenDetail(menu.node.id)}
+                >
+                  {t("host.detail")}
+                </button>
+              )}
+            </>
+          )}
+          {menu.node && !isHostNode(menu.node) && (
+            <>
+              <p className="truncate px-3 py-1 font-medium text-[11px] text-muted-foreground">{menu.node.name}</p>
+              <button
+                type="button"
+                role="menuitem"
+                className={menuItem}
+                disabled={memberCount(menu.node.id) === 0}
+                onClick={() => menu.node && onAnalyze(menu.node.id)}
+              >
+                {t("analysis.menuGroup", { count: memberCount(menu.node.id) })}
+              </button>
+            </>
+          )}
+        </div>
+      )}
       <Controls
         showInteractive={false}
         className="!rounded-lg !border !shadow-sm [&>button]:!border-border [&>button]:!bg-card [&>button:hover]:!bg-accent [&_svg]:!fill-foreground"
       />
+      {/* Bottom-left, beside the zoom controls: the detail panel opens on the right. */}
       <MiniMap
         pannable
         zoomable
-        className="!rounded-lg !border !bg-card !shadow-sm"
+        position="bottom-left"
+        className="!ml-14 !rounded-lg !border !bg-card !shadow-sm"
         maskColor="rgb(148 163 184 / 0.18)"
         nodeStrokeWidth={0}
         nodeBorderRadius={4}

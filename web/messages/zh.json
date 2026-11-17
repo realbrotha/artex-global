@@ -150,26 +150,19 @@
     "createFirstTask": "创建第一个任务",
     "addAssets": "添加资产",
     "noFindingsHint": "任务确认漏洞后会显示在这里。",
-    "onboarding": {
-      "title": "开始使用",
-      "subtitle": "三步看到第一份测试结果。",
-      "progress": "已完成 {done}/{total}",
-      "dismiss": "关闭",
-      "llm": {
-        "title": "连接 LLM",
-        "desc": "登记 Agent 使用的模型和 API Key。",
-        "action": "配置 LLM"
-      },
-      "task": {
-        "title": "创建第一个任务",
-        "desc": "填写测试目标和目的，Agent 即开始测试。",
-        "action": "创建任务"
-      },
-      "findings": {
-        "title": "查看结果",
-        "desc": "已确认的漏洞及证据汇总在发现页面。",
-        "action": "查看发现"
-      }
+    "siem": {
+      "notConnected": "尚未连接 Wazuh。连接后,此处将显示设备、不合规项和事件候选。",
+      "connect": "连接 Wazuh",
+      "hosts": "设备",
+      "hostsOk": "全部正常",
+      "hostsDetail": "中断 {down} · 未安装 agent {missing}",
+      "fails": "不合规项",
+      "failsDetail": "{hosts} 台设备 · 已接受风险 {accepted}",
+      "cases": "事件候选",
+      "casesNone": "没有需要确认的事件",
+      "unjudged": "未判定",
+      "unjudgedDetail": "需要 LLM 判定",
+      "unjudgedNone": "全部已判定"
     }
   },
   "header": {
@@ -180,13 +173,7 @@
   },
   "nav": {
     "group": {
-      "activity": "执行记录",
-      "ai": "AI 配置",
-      "defense": "防御",
-      "guardrails": "管控",
-      "offense": "渗透",
-      "overview": "概览",
-      "system": "系统"
+      "main": "菜单"
     },
     "item": {
       "agents": "Agent",
@@ -213,7 +200,11 @@
       "defensive": "防御",
       "defensive-hunting": "自主狩猎",
       "security-sources": "日志连接",
-      "protected-assets": "保护资产"
+      "protected-assets": "保护资产",
+      "connections": "连接",
+      "activity": "执行记录",
+      "analysis": "分析",
+      "config": "设置"
     }
   },
   "notFound": {
@@ -3968,7 +3959,7 @@
     "refresh": "刷新"
   },
   "protectedAssets": {
-    "title": "保护资产",
+    "title": "资产",
     "refresh": "刷新",
     "manageConnections": "管理连接",
     "loadFailed": "无法加载保护资产。",
@@ -3978,9 +3969,8 @@
     "emptyDescription": "连接 Wazuh manager 后，可获取已安装 agent 的设备及其关系。",
     "addConnection": "添加 Wazuh 连接",
     "searchPlaceholder": "搜索主机名、IP 或角色",
-    "tabGraph": "关系图",
-    "tabList": "列表",
-    "legend": "实线：运行在该设备上 · 虚线：所属 · 虚线边框：未安装 agent",
+    "tabGraph": "基础设施图",
+    "tabList": "设备列表",
     "noMatch": "没有符合条件的设备。",
     "close": "关闭",
     "memberCount": "{count} 台设备",
@@ -3988,7 +3978,8 @@
       "all": "全部",
       "ok": "正常",
       "down": "无响应",
-      "missing": "未安装 agent"
+      "missing": "未安装 agent",
+      "issues": "存在不合规"
     },
     "kind": {
       "baremetal": "物理设备",
@@ -4014,13 +4005,17 @@
       "roles": "角色",
       "services": "服务",
       "groups": "agent 分组",
-      "relations": "关系"
+      "relations": "关系",
+      "publicIp": "公网 IP",
+      "addrs": "接口地址"
     },
     "relation": {
       "runs_on": "运行位置",
       "runs_on_reverse": "运行中的 VM",
       "member_of": "所属",
-      "member_of_reverse": "成员设备"
+      "member_of_reverse": "成员设备",
+      "gateway_of": "接入目标",
+      "gateway_of_reverse": "接入跳板机 (bastion)"
     },
     "column": {
       "name": "设备",
@@ -4029,7 +4024,8 @@
       "roles": "角色",
       "services": "服务",
       "ip": "IP",
-      "os": "OS"
+      "os": "OS",
+      "checks": "检查"
     },
     "connection": {
       "title": "Wazuh 连接",
@@ -4071,6 +4067,191 @@
       "statusFailed": "同步失败",
       "statusOk": "正常",
       "statusPending": "等待同步"
+    },
+    "checks": {
+      "title": "检查结果",
+      "loadFailed": "无法加载检查结果。",
+      "noIssues": "没有需要处理的项目。",
+      "target": "对象",
+      "failCount": "不合规 {count}",
+      "reviewCount": "待判断 {count}",
+      "none": "无结果",
+      "result": {
+        "fail": "不合规",
+        "review": "待判断",
+        "error": "错误",
+        "pass": "合规",
+        "accepted": "已接受"
+      },
+      "rawNote": "Wazuh 原始判定已应用风险接受登记，未应用 LLM 判定。",
+      "codeCount": "{count} 项",
+      "targetCount": "{count} 个对象",
+      "noEvidence": "未记录依据。",
+      "std": {
+        "kisa": "KISA",
+        "cis": "CIS",
+        "siem": "SIEM 自有检查",
+        "etc": "其他"
+      },
+      "acceptedBy": "{who} 批准 · 有效期至 {until}",
+      "noExpiry": "无期限",
+      "allHosts": "全部设备",
+      "filterAll": "全部",
+      "searchPlaceholder": "搜索代码、标题、依据",
+      "noMatch": "没有符合条件的项目。"
+    },
+    "acceptedRisks": {
+      "open": "风险接受",
+      "title": "风险接受登记",
+      "description": "已批准的例外。检查代码和设备匹配且未过期时，不计入不合规和待判断，显示为已接受。",
+      "import": "导入 TSV",
+      "importHelp": "Thaki-Siem registry/accepted-risks.tsv 格式，将整体替换现有登记。",
+      "imported": "已导入 {count} 条，检查数值稍后更新。",
+      "importFailed": "无法导入登记。",
+      "loadFailed": "无法加载登记。",
+      "empty": "暂无风险接受登记。",
+      "allHosts": "全部设备",
+      "until": "有效期至 {until}",
+      "expired": "已于 {until} 过期",
+      "noExpiry": "无期限",
+      "approvedBy": "批准人：{who}"
+    },
+    "cases": {
+      "tab": "事件候选",
+      "hostTitle": "事件候选 {count} 条",
+      "known": "正常业务",
+      "events": "{count} 条",
+      "timeline": "告警时间线",
+      "timelineClipped": "告警时间线（首尾 {shown} 条 / 共 {total} 条）",
+      "timelineFailed": "无法加载时间线，请刷新列表。",
+      "failed": "{name} 事件候选提取失败：{error}",
+      "generated": "{name}：分析最近 {days} 天告警 {alerts} 条 · {when}",
+      "capped": "已达告警上限，部分未分析",
+      "showKnown": "显示正常业务和判定为正常的 {count} 条",
+      "pending": "尚未提取事件候选，将在下次同步时提取。",
+      "empty": "没有符合条件的事件候选。",
+      "severity": {
+        "Critical": "严重",
+        "High": "高",
+        "Medium": "中",
+        "Low": "低",
+        "Info": "参考"
+      },
+      "field": {
+        "actor": "对象",
+        "hosts": "设备",
+        "period": "时间范围",
+        "basis": "等级依据",
+        "entity": "实体",
+        "attack": "ATT&CK",
+        "known": "正常业务依据",
+        "near": "时间相近的事件",
+        "connection": "连接",
+        "summary": "检测摘要"
+      },
+      "judge": "LLM 判定",
+      "judgeAgain": "重新判定",
+      "judgeFailed": "判定失败。",
+      "judgeAll": "判定未判定的 {count} 条",
+      "judgeAllConfirm": "将把 {count} 条事件候选的告警内容发送给已配置的 LLM 提供方进行判定。是否继续？",
+      "judgeProgress": "判定中 {done}/{total}",
+      "judgeStop": "停止",
+      "judgeDone": "已判定 {done} 条，失败 {failed} 条",
+      "verdictStale": "判定之后出现了新活动，或判定已超过 30 天，需要重新判定。",
+      "verdictAdjust": "等级调整 → {severity}：{reason}",
+      "verdictResponse": "建议措施",
+      "verdictBy": "{model} 判定 · {when}",
+      "verdict": {
+        "breach": "入侵",
+        "suspicious": "可疑",
+        "attempt": "尝试",
+        "normal": "正常",
+        "false_positive": "误报"
+      }
+    },
+    "tabDiscovered": "发现的资产",
+    "host": {
+      "tabOverview": "概览",
+      "detail": "查看详情",
+      "notFound": "找不到该设备。连接可能已删除,或 agent 已移除。",
+      "public": "公网"
+    },
+    "layout": {
+      "grouped": "按分组",
+      "depth": "按层级",
+      "tier": "第 {depth} 层 · {count} 台",
+      "tierGroups": "服务组 · {count} 个"
+    },
+    "analysis": {
+      "title": "SIEM 日志分析",
+      "window": "最近 {days} 天",
+      "stop": "停止",
+      "close": "关闭",
+      "stopped": "分析已停止。",
+      "lost": "无法获取分析状态。",
+      "startFailed": "无法开始分析。",
+      "menuHost": "SIEM 日志分析",
+      "menuGroup": "{count} 台成员设备的 SIEM 日志分析",
+      "menuAll": "全部 SIEM 日志分析 · {name}",
+      "allLabel": "全部 · {name}",
+      "step": {
+        "collect": "1. 收集告警",
+        "extract": "2. 提取事件候选",
+        "judge": "3. LLM 判定",
+        "summary": "4. 摘要"
+      },
+      "collecting": "正在获取{count, plural, =0 {全部设备} other {# 台设备}}的告警和检查结果",
+      "collected": "告警 {count} 条({sec} 秒)",
+      "extracting": "正在应用关联模式",
+      "extracted": "应用 {rules} 条检测规则 → 事件候选 {count} 个({sec} 秒)",
+      "knownSkipped": "与正常业务登记一致 {count} 个(不判定)",
+      "nothing": "没有事件候选,无需判定。",
+      "judging": "判定中 {done}/{total}",
+      "judgeNote": "将 {count} 个未判定事件的告警内容发送给已配置的 LLM 提供商。",
+      "judge": "LLM 判定 {count} 个",
+      "queued": "等待",
+      "judgedIn": "{sec} 秒",
+      "summaryClean": "{count} 条告警未产生事件候选。",
+      "summaryKnown": "正常业务 {count}",
+      "summaryModel": "判定模型:{model}",
+      "pattern": {
+        "P1": "失败后成功",
+        "P2": "允许范围外登录",
+        "P3": "入侵链",
+        "P4": "防御规避",
+        "P5": "敏感信息外传",
+        "P6": "多来源失败",
+        "P7": "外部侦察·Web 攻击",
+        "P8": "错误激增",
+        "P9": "高风险单一规则"
+      },
+      "all": "全部 SIEM 日志分析"
+    }
+  },
+  "connections": {
+    "title": "连接",
+    "subtitle": "控制台读取数据的外部系统。",
+    "add": "添加连接",
+    "none": "未连接",
+    "connect": "连接",
+    "manage": "管理",
+    "enabled": "使用中",
+    "notConnected": "未连接",
+    "syncedAt": "{when} 同步",
+    "updatedAt": "{when} 更新",
+    "wazuh": {
+      "title": "Wazuh",
+      "description": "获取已安装 agent 的设备、配置检查结果和告警。",
+      "hosts": "{count} 台设备",
+      "addrNote": "未能获取接口地址:{reason}"
+    },
+    "logs": {
+      "title": "日志 (Splunk)",
+      "description": "连接 Splunk 搜索 API 后,自主狩猎可查询日志。"
+    },
+    "sync": {
+      "title": "资产同步",
+      "description": "将 ScopeSentry 的资产列表导入为发现的资产。"
     }
   }
 }

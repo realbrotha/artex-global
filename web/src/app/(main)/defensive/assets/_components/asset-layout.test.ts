@@ -104,3 +104,140 @@ describe("layoutAssets", () => {
     expect(pos.get("only")).toEqual({ x: 0, y: 0 });
   });
 });
+
+describe("layoutByDepth", () => {
+  it("places guests below their host and groups on top", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const { nodes, edges } = sample();
+    const { pos, tiers } = layoutByDepth(nodes, edges);
+    const y = (id: string) => pos.get(id)?.y ?? Number.NaN;
+    expect(y("os")).toBeLessThan(y("hv1"));
+    expect(y("hv1")).toBe(y("hv2"));
+    for (const e of edges.filter((e) => e.kind === "runs_on")) expect(y(e.from)).toBeGreaterThan(y(e.to));
+    // A VM with no known hypervisor is still a guest, not a physical host.
+    const orphan = nodes.find((n) => n.kind === "vm" && !edges.some((e) => e.kind === "runs_on" && e.from === n.id));
+    if (orphan) expect(y(orphan.id)).toBeGreaterThan(y("hv1"));
+    expect(tiers.map((t) => t.depth)).toEqual([...tiers.map((t) => t.depth)].sort((a, b) => a - b));
+    expect(tiers[0].depth).toBe(-1);
+  });
+
+  it("places every node without overlap and keeps members in their box", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const { nodes, edges } = sample();
+    const { pos } = layoutByDepth(nodes, edges);
+    for (const n of nodes) expect(pos.has(n.id)).toBe(true);
+    const plain = nodes.filter((n) => n.kind !== "k8s_cluster");
+    for (let i = 0; i < plain.length; i++) {
+      for (let j = i + 1; j < plain.length; j++) {
+        expect(overlaps(pos.get(plain[i].id) as Placement, pos.get(plain[j].id) as Placement)).toBe(false);
+      }
+    }
+    for (const e of edges.filter((e) => e.kind === "member_of" && e.to.startsWith("k8s"))) {
+      expect(inside(pos.get(e.from) as Placement, pos.get(e.to) as Placement)).toBe(true);
+    }
+  });
+
+  it("survives a runs_on cycle", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const nodes = [host("a", "vm"), host("b", "vm")];
+    const { pos } = layoutByDepth(nodes, [
+      { from: "a", to: "b", kind: "runs_on" },
+      { from: "b", to: "a", kind: "runs_on" },
+    ]);
+    expect(pos.size).toBe(2);
+  });
+});
+
+describe("bastion placement", () => {
+  it("puts a bastion directly above the cluster it fronts", () => {
+    const { nodes, edges } = sample();
+    nodes.push(host("bastion-a", "vm"));
+    edges.push({ from: "bastion-a", to: "k8s-a", kind: "gateway_of" });
+    const pos = layoutAssets(nodes, edges);
+    const bastion = pos.get("bastion-a") as Placement;
+    const box = pos.get("k8s-a") as Placement;
+    expect(bastion.y + NODE_H).toBeLessThan(box.y);
+    expect(bastion.x).toBeGreaterThanOrEqual(box.x);
+    expect(bastion.x + NODE_W).toBeLessThanOrEqual(box.x + (box.w ?? 0));
+    // It is not a member: it must stay outside the box and clear of everything else.
+    expect(inside(bastion, box)).toBe(false);
+    for (const n of nodes.filter((n) => n.id !== "bastion-a")) {
+      expect(overlaps(bastion, pos.get(n.id) as Placement)).toBe(false);
+    }
+  });
+});
+
+describe("edge crossings", () => {
+  // Counts pairs of "runs on" edges whose guests and hosts are in opposite
+  // left-to-right order: with guests above and hosts below, that is a crossing.
+  const crossings = (pos: Map<string, Placement>, edges: AssetEdge[]) => {
+    const runs = edges.filter((e) => e.kind === "runs_on");
+    let n = 0;
+    for (let i = 0; i < runs.length; i++) {
+      for (let j = i + 1; j < runs.length; j++) {
+        const top = (pos.get(runs[i].from) as Placement).x - (pos.get(runs[j].from) as Placement).x;
+        const bottom = (pos.get(runs[i].to) as Placement).x - (pos.get(runs[j].to) as Placement).x;
+        if (top * bottom < 0) n++;
+      }
+    }
+    return n;
+  };
+
+  it("orders physical hosts by where their guests are, not by name", () => {
+    // Host "a-right" runs the VMs of the right-hand cluster and "z-left" those of
+    // the left-hand one: by name they would sit the wrong way round and cross.
+    const nodes: AssetNode[] = [cluster("k8s-left"), cluster("k8s-right"), host("a-right"), host("z-left")];
+    const edges: AssetEdge[] = [];
+    for (let i = 0; i < 6; i++) {
+      nodes.push(host(`l${i}`, "vm"), host(`r${i}`, "vm"));
+      edges.push(
+        { from: `l${i}`, to: "k8s-left", kind: "member_of" },
+        { from: `l${i}`, to: "z-left", kind: "runs_on" },
+      );
+      // The right cluster is the smaller one, so the layout puts it second.
+      if (i < 3) {
+        edges.push(
+          { from: `r${i}`, to: "k8s-right", kind: "member_of" },
+          { from: `r${i}`, to: "a-right", kind: "runs_on" },
+        );
+      }
+    }
+    const pos = layoutAssets(nodes, edges);
+    expect((pos.get("z-left") as Placement).x).toBeLessThan((pos.get("a-right") as Placement).x);
+    expect(crossings(pos, edges)).toBe(0);
+    expect(overlaps(pos.get("z-left") as Placement, pos.get("a-right") as Placement)).toBe(false);
+    expect((pos.get("z-left") as Placement).y).toBe((pos.get("a-right") as Placement).y);
+  });
+
+  it("orders unboxed VMs by their host", () => {
+    // By name "a-vm" comes first, but it runs on the right-hand host.
+    const nodes: AssetNode[] = [
+      cluster("k8s"),
+      host("hv-left"),
+      host("hv-right"),
+      host("a-vm", "vm"),
+      host("b-vm", "vm"),
+    ];
+    const edges: AssetEdge[] = [
+      { from: "a-vm", to: "hv-right", kind: "runs_on" },
+      { from: "b-vm", to: "hv-left", kind: "runs_on" },
+    ];
+    for (let i = 0; i < 4; i++) {
+      nodes.push(host(`n${i}`, "vm"));
+      edges.push({ from: `n${i}`, to: "k8s", kind: "member_of" }, { from: `n${i}`, to: "hv-left", kind: "runs_on" });
+    }
+    const pos = layoutAssets(nodes, edges);
+    expect((pos.get("hv-left") as Placement).x).toBeLessThan((pos.get("hv-right") as Placement).x);
+    expect((pos.get("b-vm") as Placement).x).toBeLessThan((pos.get("a-vm") as Placement).x);
+    expect(crossings(pos, edges)).toBe(0);
+  });
+
+  it("keeps hosts without guests in the row, clear of the others", () => {
+    const nodes: AssetNode[] = [host("hv1"), host("spare"), host("vm1", "vm")];
+    const edges: AssetEdge[] = [{ from: "vm1", to: "hv1", kind: "runs_on" }];
+    const pos = layoutAssets(nodes, edges);
+    expect((pos.get("spare") as Placement).y).toBe((pos.get("hv1") as Placement).y);
+    expect(overlaps(pos.get("spare") as Placement, pos.get("hv1") as Placement)).toBe(false);
+    for (const n of nodes) expect((pos.get(n.id) as Placement).x).toBeGreaterThanOrEqual(0);
+  });
+});

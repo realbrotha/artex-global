@@ -1,0 +1,6 @@
+# fixture known activity
+pattern	match	reason	expires	approved_by
+P9	rule=200012	scheduled state change job	2027-01-01	reviewer
+EV-CORR-07	src=45\.33\.32\.200 host:web-02	contracted scanner	2027-01-01	reviewer
+P2	src=10\.9\.9\.8	bastion address		reviewer
+*	user=alice	expired entry must be ignored	2026-01-01	reviewer

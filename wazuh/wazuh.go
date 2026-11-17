@@ -38,7 +38,7 @@ const (
 	agentPageSize    = 500
 	maxAgents        = 20000
 	recordPageSize   = 2000
-	maxRecords       = 100000
+	maxRecords       = 200000
 	// CheckWindowDays bounds the config-check lookback. Hosts report daily.
 	CheckWindowDays = 3
 )
@@ -187,6 +187,9 @@ type Agent struct {
 		Version  string `json:"version"`
 		Platform string `json:"platform"`
 	} `json:"os"`
+	// Interface addresses from the inventory; filled by NetAddrs, not by the
+	// agent list.
+	Addrs []Addr `json:"-"`
 }
 
 func managerToken(ctx context.Context, h *http.Client, c Config, a Credentials) (string, error) {
@@ -245,15 +248,21 @@ func Agents(ctx context.Context, c Config, a Credentials) ([]Agent, error) {
 	return out, nil
 }
 
-// CheckRecord is one config-check record of kind host or target.
+// CheckRecord is one config-check record.
 type CheckRecord struct {
 	Agent string
-	Kind  string // host | target
+	Kind  string // host | target | verdict | pass
 	Run   string
 	// host
-	OS, Roles, Virt, VMUUID, K8sCA string
+	// ExtIP: externally reachable address the cloud reports for this host
+	// (OpenStack floating IP); empty when there is none.
+	OS, Roles, Virt, VMUUID, K8sCA, ExtIP string
 	// target
 	Type, Ctx, Guests string
+	// verdict: one check that is not a plain pass
+	Code, Result, Title, Sev, Std, Policy, Ev, Asset string
+	// pass: space-separated codes folded into one record
+	Good, NA string
 }
 
 func str(m map[string]any, k string) string {
@@ -266,7 +275,8 @@ func str(m map[string]any, k string) string {
 	return ""
 }
 
-// CheckRecords returns host/target records of each agent's latest run.
+// CheckRecords returns the records of each agent's latest config-check run:
+// host identity, detected services, and check results.
 func CheckRecords(ctx context.Context, c Config, a Credentials) ([]CheckRecord, error) {
 	if c.IndexerURL == "" {
 		return nil, nil
@@ -278,7 +288,8 @@ func CheckRecords(ctx context.Context, c Config, a Credentials) ([]CheckRecord, 
 		"_source": []string{"agent.name", "data.siem.check"},
 		"sort":    []any{map[string]string{"timestamp": "asc"}, map[string]string{"_id": "asc"}},
 		"query": map[string]any{"bool": map[string]any{"filter": []any{
-			map[string]any{"terms": map[string]any{"rule.id": []string{"101401", "101402"}}},
+			// 101401 host · 101402 target · 101403 verdict · 101404 check error · 101406 pass bundle
+			map[string]any{"terms": map[string]any{"rule.id": []string{"101401", "101402", "101403", "101404", "101406"}}},
 			map[string]any{"range": map[string]any{"timestamp": map[string]string{"gte": fmt.Sprintf("now-%dd", CheckWindowDays)}}},
 		}}},
 	}
@@ -320,11 +331,20 @@ func CheckRecords(ctx context.Context, c Config, a Credentials) ([]CheckRecord, 
 		for _, hit := range hits {
 			ck := hit.Source.Data.Siem.Check
 			rec := CheckRecord{Agent: hit.Source.Agent.Name, Kind: str(ck, "kind"), Run: str(ck, "run")}
-			if rec.Agent == "" || (rec.Kind != "host" && rec.Kind != "target") {
+			switch rec.Kind {
+			case "host", "target", "verdict", "pass":
+			default:
 				continue
 			}
+			if rec.Agent == "" {
+				continue
+			}
+			rec.Code, rec.Result, rec.Title, rec.Sev = str(ck, "code"), str(ck, "result"), str(ck, "title"), str(ck, "sev")
+			rec.Std, rec.Policy, rec.Ev, rec.Asset = str(ck, "std"), str(ck, "policy"), str(ck, "ev"), str(ck, "asset")
+			rec.Good, rec.NA = str(ck, "good"), str(ck, "na")
 			rec.OS, rec.Roles, rec.Virt = str(ck, "os"), str(ck, "roles"), str(ck, "virt")
 			rec.VMUUID, rec.K8sCA = strings.ToLower(str(ck, "vm_uuid")), str(ck, "k8s_ca")
+			rec.ExtIP = str(ck, "ext_ip")
 			rec.Type, rec.Ctx, rec.Guests = str(ck, "type"), str(ck, "ctx"), str(ck, "guests")
 			if rec.Run > latest[rec.Agent] {
 				latest[rec.Agent] = rec.Run

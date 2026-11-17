@@ -167,7 +167,7 @@ function NavItem({ item, isItemActive, isSubItemActive, isSubmenuOpen }: NavItem
 
 // InterceptPendingBadge polls /api/intercept/pending every 5 s and shows a red
 // count badge when there are unresolved approval requests.
-function InterceptPendingBadge() {
+function InterceptPendingBadge({ className }: { className?: string }) {
   const [count, setCount] = React.useState(0);
   React.useEffect(() => {
     let live = true;
@@ -188,7 +188,12 @@ function InterceptPendingBadge() {
   }, []);
   if (count === 0) return null;
   return (
-    <SidebarMenuBadge className="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white shadow-sm ring-1 ring-amber-400/40">
+    <SidebarMenuBadge
+      className={cn(
+        "flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white shadow-sm ring-1 ring-amber-400/40",
+        className,
+      )}
+    >
       {count > 99 ? "99+" : count}
     </SidebarMenuBadge>
   );
@@ -289,7 +294,8 @@ function NavCollapsibleItem({ item, isActive, defaultOpen, isSubItemActive }: Na
             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
-        <NavItemBadge badge={item.badge} />
+        {/* 승인 기록이 접힌 하위 메뉴에 있어도 대기 건수가 보이도록 상위 항목에 단다. */}
+        {item.id === "config" ? <InterceptPendingBadge className="right-8" /> : <NavItemBadge badge={item.badge} />}
 
         <CollapsibleContent>
           <SidebarMenuSub>

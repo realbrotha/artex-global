@@ -150,26 +150,19 @@
     "createFirstTask": "첫 작업 만들기",
     "addAssets": "자산 추가",
     "noFindingsHint": "작업이 취약점을 확인하면 여기에 표시됩니다.",
-    "onboarding": {
-      "title": "시작하기",
-      "subtitle": "세 단계로 첫 점검 결과를 확인합니다.",
-      "progress": "{done}/{total} 완료",
-      "dismiss": "닫기",
-      "llm": {
-        "title": "LLM 연결",
-        "desc": "에이전트가 사용할 모델과 API 키를 등록합니다.",
-        "action": "LLM 설정"
-      },
-      "task": {
-        "title": "첫 작업 만들기",
-        "desc": "테스트 대상과 목표를 입력하면 에이전트가 점검을 시작합니다.",
-        "action": "작업 만들기"
-      },
-      "findings": {
-        "title": "결과 확인",
-        "desc": "확인된 취약점과 증거는 취약점 화면에 쌓입니다.",
-        "action": "취약점 보기"
-      }
+    "siem": {
+      "notConnected": "연결된 Wazuh가 없습니다. 연결하면 장비, 취약 항목, 사건 후보가 여기에 표시됩니다.",
+      "connect": "Wazuh 연결",
+      "hosts": "장비",
+      "hostsOk": "모두 정상",
+      "hostsDetail": "중단 {down} · agent 미설치 {missing}",
+      "fails": "취약 항목",
+      "failsDetail": "장비 {hosts}대 · 위험 수용 {accepted}",
+      "cases": "사건 후보",
+      "casesNone": "확인할 사건 없음",
+      "unjudged": "미판정",
+      "unjudgedDetail": "LLM 판정 필요",
+      "unjudgedNone": "모두 판정됨"
     }
   },
   "header": {
@@ -180,13 +173,7 @@
   },
   "nav": {
     "group": {
-      "activity": "실행 기록",
-      "ai": "AI 구성",
-      "defense": "방어",
-      "guardrails": "통제",
-      "offense": "진단",
-      "overview": "개요",
-      "system": "시스템"
+      "main": "메뉴"
     },
     "item": {
       "agents": "에이전트",
@@ -213,7 +200,11 @@
       "defensive": "방어",
       "defensive-hunting": "자율 헌팅",
       "security-sources": "로그 연결",
-      "protected-assets": "보호 자산"
+      "protected-assets": "보호 자산",
+      "connections": "연결",
+      "activity": "활동 기록",
+      "analysis": "분석",
+      "config": "설정"
     }
   },
   "notFound": {
@@ -3968,7 +3959,7 @@
     "refresh": "새로고침"
   },
   "protectedAssets": {
-    "title": "보호 자산",
+    "title": "자산",
     "refresh": "새로고침",
     "manageConnections": "연결 관리",
     "loadFailed": "보호 자산을 불러오지 못했습니다.",
@@ -3978,9 +3969,8 @@
     "emptyDescription": "Wazuh manager를 연결하면 agent가 설치된 장비와 그 관계를 가져옵니다.",
     "addConnection": "Wazuh 연결 추가",
     "searchPlaceholder": "호스트명, IP, 역할 검색",
-    "tabGraph": "관계도",
-    "tabList": "목록",
-    "legend": "실선: 이 장비 위에서 실행 · 점선: 소속 · 점선 테두리: agent 미설치",
+    "tabGraph": "인프라 맵",
+    "tabList": "장비 목록",
     "noMatch": "조건에 맞는 장비가 없습니다.",
     "close": "닫기",
     "memberCount": "장비 {count}대",
@@ -3988,7 +3978,8 @@
       "all": "전체",
       "ok": "정상",
       "down": "응답 없음",
-      "missing": "agent 미설치"
+      "missing": "agent 미설치",
+      "issues": "취약 있음"
     },
     "kind": {
       "baremetal": "물리 장비",
@@ -4014,13 +4005,17 @@
       "roles": "역할",
       "services": "서비스",
       "groups": "agent 그룹",
-      "relations": "관계"
+      "relations": "관계",
+      "publicIp": "공인 IP",
+      "addrs": "인터페이스 주소"
     },
     "relation": {
       "runs_on": "실행 위치",
       "runs_on_reverse": "실행 중인 VM",
       "member_of": "소속",
-      "member_of_reverse": "구성 장비"
+      "member_of_reverse": "구성 장비",
+      "gateway_of": "접속 경유 대상",
+      "gateway_of_reverse": "접속 경유 장비 (bastion)"
     },
     "column": {
       "name": "장비",
@@ -4029,7 +4024,8 @@
       "roles": "역할",
       "services": "서비스",
       "ip": "IP",
-      "os": "OS"
+      "os": "OS",
+      "checks": "점검"
     },
     "connection": {
       "title": "Wazuh 연결",
@@ -4071,6 +4067,191 @@
       "statusFailed": "동기화 실패",
       "statusOk": "정상",
       "statusPending": "동기화 대기"
+    },
+    "checks": {
+      "title": "점검 결과",
+      "loadFailed": "점검 결과를 불러오지 못했습니다.",
+      "noIssues": "조치가 필요한 항목이 없습니다.",
+      "target": "대상",
+      "failCount": "취약 {count}",
+      "reviewCount": "판단필요 {count}",
+      "none": "결과 없음",
+      "result": {
+        "fail": "취약",
+        "review": "판단필요",
+        "error": "오류",
+        "pass": "양호",
+        "accepted": "수용됨"
+      },
+      "rawNote": "Wazuh 원본 판정에 위험 수용 등록부를 반영한 결과입니다. LLM 판정은 반영되지 않았습니다.",
+      "codeCount": "{count}개 항목",
+      "targetCount": "대상 {count}곳",
+      "noEvidence": "근거가 기록되지 않았습니다.",
+      "std": {
+        "kisa": "KISA",
+        "cis": "CIS",
+        "siem": "SIEM 자체 점검",
+        "etc": "기타"
+      },
+      "acceptedBy": "{who} 승인 · {until}까지",
+      "noExpiry": "만료 없음",
+      "allHosts": "전체 장비",
+      "filterAll": "전체",
+      "searchPlaceholder": "코드, 제목, 근거 검색",
+      "noMatch": "조건에 맞는 항목이 없습니다."
+    },
+    "acceptedRisks": {
+      "open": "위험 수용",
+      "title": "위험 수용 등록부",
+      "description": "승인된 예외입니다. 점검 코드와 장비가 일치하고 만료 전이면 취약·판단필요에서 빼고 수용됨으로 표시합니다.",
+      "import": "TSV 가져오기",
+      "importHelp": "Thaki-Siem registry/accepted-risks.tsv 형식. 기존 등록부를 통째로 바꿉니다.",
+      "imported": "{count}건을 가져왔습니다. 잠시 후 점검 수치에 반영됩니다.",
+      "importFailed": "등록부를 가져오지 못했습니다.",
+      "loadFailed": "등록부를 불러오지 못했습니다.",
+      "empty": "등록된 위험 수용이 없습니다.",
+      "allHosts": "전체 장비",
+      "until": "{until}까지",
+      "expired": "{until} 만료",
+      "noExpiry": "만료 없음",
+      "approvedBy": "승인: {who}"
+    },
+    "cases": {
+      "tab": "사건 후보",
+      "hostTitle": "사건 후보 {count}건",
+      "known": "정상 업무",
+      "events": "{count}건",
+      "timeline": "경보 타임라인",
+      "timelineClipped": "경보 타임라인 (처음·마지막 {shown}건 / 전체 {total}건)",
+      "timelineFailed": "타임라인을 불러오지 못했습니다. 목록을 새로고침해 주세요.",
+      "failed": "{name} 사건 후보 추출 실패: {error}",
+      "generated": "{name}: 최근 {days}일 경보 {alerts}건 분석 · {when}",
+      "capped": "경보 상한 도달, 일부 미분석",
+      "showKnown": "정상 업무·정상 판정 {count}건 표시",
+      "pending": "사건 후보를 아직 추출하지 않았습니다. 다음 동기화에서 추출합니다.",
+      "empty": "조건에 맞는 사건 후보가 없습니다.",
+      "severity": {
+        "Critical": "심각",
+        "High": "높음",
+        "Medium": "중간",
+        "Low": "낮음",
+        "Info": "참고"
+      },
+      "field": {
+        "actor": "대상",
+        "hosts": "장비",
+        "period": "기간",
+        "basis": "등급 근거",
+        "entity": "엔티티",
+        "attack": "ATT&CK",
+        "known": "정상 업무 근거",
+        "near": "시간상 가까운 사건",
+        "connection": "연결",
+        "summary": "탐지 요약"
+      },
+      "judge": "LLM 판정",
+      "judgeAgain": "다시 판정",
+      "judgeFailed": "판정에 실패했습니다.",
+      "judgeAll": "미판정 {count}건 판정",
+      "judgeAllConfirm": "사건 후보 {count}건의 경보 내용을 설정된 LLM 제공자에게 보내 판정합니다. 계속할까요?",
+      "judgeProgress": "판정 중 {done}/{total}",
+      "judgeStop": "중지",
+      "judgeDone": "판정 완료 {done}건, 실패 {failed}건",
+      "verdictStale": "판정 이후 새 활동이 있거나 판정이 30일을 넘었습니다. 다시 판정해야 합니다.",
+      "verdictAdjust": "등급 조정 → {severity}: {reason}",
+      "verdictResponse": "권장 조치",
+      "verdictBy": "{model} 판정 · {when}",
+      "verdict": {
+        "breach": "침해",
+        "suspicious": "의심",
+        "attempt": "시도",
+        "normal": "정상",
+        "false_positive": "오탐"
+      }
+    },
+    "tabDiscovered": "발견 자산",
+    "host": {
+      "tabOverview": "개요",
+      "detail": "상세 보기",
+      "notFound": "이 장비를 찾을 수 없습니다. 연결이 삭제됐거나 agent가 제거됐을 수 있습니다.",
+      "public": "공인"
+    },
+    "layout": {
+      "grouped": "그룹별",
+      "depth": "계층별",
+      "tier": "{depth}단계 · {count}대",
+      "tierGroups": "서비스 그룹 · {count}개"
+    },
+    "analysis": {
+      "title": "SIEM Log 분석",
+      "window": "최근 {days}일",
+      "stop": "중지",
+      "close": "닫기",
+      "stopped": "분석을 중지했습니다.",
+      "lost": "분석 상태를 불러오지 못했습니다.",
+      "startFailed": "분석을 시작하지 못했습니다.",
+      "menuHost": "SIEM Log 분석",
+      "menuGroup": "소속 장비 {count}대 SIEM Log 분석",
+      "menuAll": "전체 SIEM Log 분석 · {name}",
+      "allLabel": "전체 · {name}",
+      "step": {
+        "collect": "1. 경보 수집",
+        "extract": "2. 사건 후보 추출",
+        "judge": "3. LLM 판정",
+        "summary": "4. 요약"
+      },
+      "collecting": "{count, plural, =0 {전체 장비의} other {장비 #대의}} 경보와 점검 결과를 가져오는 중",
+      "collected": "경보 {count}건 ({sec}초)",
+      "extracting": "상관 패턴을 적용하는 중",
+      "extracted": "탐지 규칙 {rules}개 적용 → 사건 후보 {count}건 ({sec}초)",
+      "knownSkipped": "정상 업무 등록부와 일치 {count}건 (판정 제외)",
+      "nothing": "사건 후보가 없어 판정할 것이 없습니다.",
+      "judging": "판정 중 {done}/{total}",
+      "judgeNote": "미판정 {count}건의 경보 내용을 설정된 LLM 제공자에게 보냅니다.",
+      "judge": "{count}건 LLM 판정",
+      "queued": "대기",
+      "judgedIn": "{sec}초",
+      "summaryClean": "경보 {count}건에서 사건 후보가 나오지 않았습니다.",
+      "summaryKnown": "정상 업무 {count}",
+      "summaryModel": "판정 모델: {model}",
+      "pattern": {
+        "P1": "실패 후 성공",
+        "P2": "허용 대역 밖 로그인",
+        "P3": "침해 연쇄",
+        "P4": "방어 무력화",
+        "P5": "민감정보 반출",
+        "P6": "다수 출발지 실패",
+        "P7": "외부 정찰·웹 공격",
+        "P8": "오류 급증",
+        "P9": "고위험 단일 규칙"
+      },
+      "all": "전체 SIEM Log 분석"
+    }
+  },
+  "connections": {
+    "title": "연결",
+    "subtitle": "콘솔이 데이터를 읽어 오는 외부 시스템입니다.",
+    "add": "연결 추가",
+    "none": "연결 없음",
+    "connect": "연결",
+    "manage": "관리",
+    "enabled": "사용 중",
+    "notConnected": "연결 없음",
+    "syncedAt": "{when} 동기화",
+    "updatedAt": "{when} 수정",
+    "wazuh": {
+      "title": "Wazuh",
+      "description": "agent가 설치된 장비, 설정 점검 결과, 경보를 가져옵니다.",
+      "hosts": "장비 {count}대",
+      "addrNote": "인터페이스 주소를 가져오지 못했습니다: {reason}"
+    },
+    "logs": {
+      "title": "로그 (Splunk)",
+      "description": "Splunk 검색 API를 연결하면 자율 헌팅이 로그를 조회합니다."
+    },
+    "sync": {
+      "title": "자산 동기화",
+      "description": "ScopeSentry의 자산 목록을 발견 자산으로 가져옵니다."
     }
   }
 }

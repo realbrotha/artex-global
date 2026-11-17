@@ -9,7 +9,8 @@
 #        manager API : Secret siem-api-reader  (username/password)
 #        indexer     : Secret siem-llm-reader  (password, 계정명 = Secret 이름)
 #   3. `artex -wazuh-import` 로 연결 테스트 후 암호화 저장한다
-#   4. port-forward 를 유지한다 (Ctrl-C 로 종료). ARTEX 서버는 5분마다 동기화한다
+#   4. port-forward 를 유지한다 (Ctrl-C 로 종료). 끊기면 자동으로 다시 붙인다.
+#      ARTEX 서버는 5분마다 동기화한다
 #
 # 비밀번호는 환경 변수로만 전달하고 화면·로그·파일에 남기지 않는다.
 #
@@ -21,6 +22,7 @@
 #   API_SECRET     manager API 계정 Secret (기본: siem-api-reader)
 #   IX_SECRET      indexer 계정 Secret (기본: siem-llm-reader)
 #   NO_INDEXER=1   indexer 없이 agent 목록만 연결
+#   RETRY_SEC      port-forward 가 끊긴 뒤 다시 붙이기까지 대기 초 (기본: 3)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -30,6 +32,7 @@ API_PORT="${API_PORT:-55000}"
 IX_PORT="${IX_PORT:-9200}"
 API_SECRET="${API_SECRET:-siem-api-reader}"
 IX_SECRET="${IX_SECRET:-siem-llm-reader}"
+RETRY_SEC="${RETRY_SEC:-3}"
 K=(kubectl ${KUBE_CONTEXT:+--context "$KUBE_CONTEXT"} -n "$NS")
 
 die() { printf '[wazuh-connect] %s\n' "$*" >&2; exit 1; }
@@ -51,8 +54,25 @@ wait_port() {
   die "포트 $1 port-forward 가 열리지 않았습니다"
 }
 
-"${K[@]}" port-forward pod/wazuh-manager-master-0 "$API_PORT:55000" >/dev/null 2>&1 &
-PIDS+=($!)
+# kubectl port-forward 는 유휴 시간 초과·Pod 재시작으로 혼자 끊긴다. 끊기면 다시 붙인다.
+#   forward <이름> <대상> <로컬 포트> <원격 포트>
+forward() {
+  (
+    child=""
+    trap '[ -n "$child" ] && kill "$child" 2>/dev/null; exit 0' INT TERM
+    while :; do
+      "${K[@]}" port-forward "$2" "$3:$4" >/dev/null 2>&1 &
+      child=$!
+      wait "$child" || true
+      printf '[wazuh-connect] %s %s port-forward(:%s) 끊김 — %s초 뒤 다시 연결\n' \
+        "$(date '+%H:%M:%S')" "$1" "$3" "$RETRY_SEC" >&2
+      sleep "$RETRY_SEC"
+    done
+  ) &
+  PIDS+=($!)
+}
+
+forward "manager API" pod/wazuh-manager-master-0 "$API_PORT" 55000
 wait_port "$API_PORT"
 
 export ARTEX_WAZUH_NAME="$NAME"
@@ -65,8 +85,7 @@ export ARTEX_WAZUH_MANAGER_USER ARTEX_WAZUH_MANAGER_PASSWORD
 
 if [ "${NO_INDEXER:-}" != "1" ]; then
   "${K[@]}" get secret "$IX_SECRET" >/dev/null 2>&1 || die "Secret $IX_SECRET 없음 (indexer 없이 연결하려면 NO_INDEXER=1)"
-  "${K[@]}" port-forward svc/indexer "$IX_PORT:9200" >/dev/null 2>&1 &
-  PIDS+=($!)
+  forward indexer svc/indexer "$IX_PORT" 9200
   wait_port "$IX_PORT"
   export ARTEX_WAZUH_INDEXER_URL="https://localhost:$IX_PORT"
   export ARTEX_WAZUH_INDEXER_USER="$IX_SECRET"
@@ -79,5 +98,5 @@ go run ./cmd/artex -wazuh-import
 unset ARTEX_WAZUH_MANAGER_PASSWORD ARTEX_WAZUH_INDEXER_PASSWORD
 printf '[wazuh-connect] port-forward 유지 중 — manager API :%s' "$API_PORT"
 [ "${NO_INDEXER:-}" = "1" ] || printf ' · indexer :%s' "$IX_PORT"
-printf ' (Ctrl-C 로 종료)\n'
+printf ' · 끊기면 자동 재연결 (Ctrl-C 로 종료)\n'
 wait

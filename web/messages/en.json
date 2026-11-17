@@ -150,26 +150,19 @@
     "createFirstTask": "Create first task",
     "addAssets": "Add assets",
     "noFindingsHint": "Findings appear here once a task confirms them.",
-    "onboarding": {
-      "title": "Get started",
-      "subtitle": "Three steps to your first results.",
-      "progress": "{done}/{total} done",
-      "dismiss": "Dismiss",
-      "llm": {
-        "title": "Connect an LLM",
-        "desc": "Register the model and API key the agents will use.",
-        "action": "Set up LLM"
-      },
-      "task": {
-        "title": "Create your first task",
-        "desc": "Enter a target and a goal, and the agents start testing.",
-        "action": "Create task"
-      },
-      "findings": {
-        "title": "Review results",
-        "desc": "Confirmed findings and their evidence collect on the Findings page.",
-        "action": "View findings"
-      }
+    "siem": {
+      "notConnected": "No Wazuh connected. Connect one to see hosts, failed checks and case candidates here.",
+      "connect": "Connect Wazuh",
+      "hosts": "Hosts",
+      "hostsOk": "All healthy",
+      "hostsDetail": "{down} down · {missing} without agent",
+      "fails": "Failed checks",
+      "failsDetail": "{hosts} hosts · {accepted} accepted",
+      "cases": "Case candidates",
+      "casesNone": "Nothing to review",
+      "unjudged": "Unjudged",
+      "unjudgedDetail": "Needs an LLM verdict",
+      "unjudgedNone": "All judged"
     }
   },
   "header": {
@@ -180,13 +173,7 @@
   },
   "nav": {
     "group": {
-      "activity": "Activity",
-      "ai": "AI setup",
-      "defense": "Defense",
-      "guardrails": "Guardrails",
-      "offense": "Pentest",
-      "overview": "Overview",
-      "system": "System"
+      "main": "Menu"
     },
     "item": {
       "agents": "Agents",
@@ -213,7 +200,11 @@
       "defensive": "Defensive",
       "defensive-hunting": "Autonomous hunting",
       "security-sources": "Log connections",
-      "protected-assets": "Protected assets"
+      "protected-assets": "Protected assets",
+      "connections": "Connections",
+      "activity": "Activity",
+      "analysis": "Analysis",
+      "config": "Settings"
     }
   },
   "notFound": {
@@ -3968,7 +3959,7 @@
     "refresh": "Refresh"
   },
   "protectedAssets": {
-    "title": "Protected assets",
+    "title": "Assets",
     "refresh": "Refresh",
     "manageConnections": "Manage connections",
     "loadFailed": "Couldn't load protected assets.",
@@ -3978,9 +3969,8 @@
     "emptyDescription": "Connect a Wazuh manager to bring in hosts that run an agent and how they relate.",
     "addConnection": "Add Wazuh connection",
     "searchPlaceholder": "Search hostname, IP, or role",
-    "tabGraph": "Map",
-    "tabList": "List",
-    "legend": "Solid line: runs on this host · Dashed line: member of · Dashed border: no agent",
+    "tabGraph": "Infrastructure map",
+    "tabList": "Hosts",
     "noMatch": "No hosts match.",
     "close": "Close",
     "memberCount": "{count} hosts",
@@ -3988,7 +3978,8 @@
       "all": "All",
       "ok": "Healthy",
       "down": "Not responding",
-      "missing": "No agent"
+      "missing": "No agent",
+      "issues": "Has failures"
     },
     "kind": {
       "baremetal": "Bare metal",
@@ -4014,13 +4005,17 @@
       "roles": "Roles",
       "services": "Services",
       "groups": "Agent groups",
-      "relations": "Relations"
+      "relations": "Relations",
+      "publicIp": "Public IP",
+      "addrs": "Interface addresses"
     },
     "relation": {
       "runs_on": "Runs on",
       "runs_on_reverse": "Runs VM",
       "member_of": "Member of",
-      "member_of_reverse": "Has member"
+      "member_of_reverse": "Has member",
+      "gateway_of": "Gateway to",
+      "gateway_of_reverse": "Bastion (jump host)"
     },
     "column": {
       "name": "Host",
@@ -4029,7 +4024,8 @@
       "roles": "Roles",
       "services": "Services",
       "ip": "IP",
-      "os": "OS"
+      "os": "OS",
+      "checks": "Checks"
     },
     "connection": {
       "title": "Wazuh connections",
@@ -4071,6 +4067,191 @@
       "statusFailed": "Sync failed",
       "statusOk": "Healthy",
       "statusPending": "Waiting for sync"
+    },
+    "checks": {
+      "title": "Check results",
+      "loadFailed": "Couldn't load check results.",
+      "noIssues": "Nothing needs attention.",
+      "target": "Target",
+      "failCount": "{count} failed",
+      "reviewCount": "{count} to review",
+      "none": "No result",
+      "result": {
+        "fail": "Failed",
+        "review": "Review",
+        "error": "Error",
+        "pass": "Passed",
+        "accepted": "Accepted"
+      },
+      "rawNote": "Raw Wazuh results with the accepted-risk registry applied. LLM review isn't applied.",
+      "codeCount": "{count} checks",
+      "targetCount": "{count} targets",
+      "noEvidence": "No evidence recorded.",
+      "std": {
+        "kisa": "KISA",
+        "cis": "CIS",
+        "siem": "SIEM checks",
+        "etc": "Other"
+      },
+      "acceptedBy": "Approved by {who} · until {until}",
+      "noExpiry": "no expiry",
+      "allHosts": "all hosts",
+      "filterAll": "All",
+      "searchPlaceholder": "Search code, title, evidence",
+      "noMatch": "No matching checks."
+    },
+    "acceptedRisks": {
+      "open": "Accepted risks",
+      "title": "Accepted-risk registry",
+      "description": "Approved exceptions. A failed or review result whose check code and host match an unexpired entry is shown as accepted instead.",
+      "import": "Import TSV",
+      "importHelp": "Thaki-Siem registry/accepted-risks.tsv format. Replaces the whole registry.",
+      "imported": "Imported {count} entries. Check counts update shortly.",
+      "importFailed": "Couldn't import the registry.",
+      "loadFailed": "Couldn't load the registry.",
+      "empty": "No accepted risks yet.",
+      "allHosts": "All hosts",
+      "until": "Until {until}",
+      "expired": "Expired {until}",
+      "noExpiry": "no expiry",
+      "approvedBy": "Approved by {who}"
+    },
+    "cases": {
+      "tab": "Cases",
+      "hostTitle": "{count} case candidates",
+      "known": "Known activity",
+      "events": "{count} alerts",
+      "timeline": "Alert timeline",
+      "timelineClipped": "Alert timeline (first and last {shown} of {total})",
+      "timelineFailed": "Couldn't load the timeline. Refresh the list.",
+      "failed": "{name} case extraction failed: {error}",
+      "generated": "{name}: {alerts} alerts from the last {days} days · {when}",
+      "capped": "alert limit reached, some not analysed",
+      "showKnown": "Show {count} known or judged normal",
+      "pending": "Cases haven't been extracted yet. The next sync extracts them.",
+      "empty": "No cases match.",
+      "severity": {
+        "Critical": "Critical",
+        "High": "High",
+        "Medium": "Medium",
+        "Low": "Low",
+        "Info": "Info"
+      },
+      "field": {
+        "actor": "Subject",
+        "hosts": "Hosts",
+        "period": "Period",
+        "basis": "Severity basis",
+        "entity": "Entity",
+        "attack": "ATT&CK",
+        "known": "Known activity reason",
+        "near": "Cases close in time",
+        "connection": "Connection",
+        "summary": "Detection summary"
+      },
+      "judge": "Judge with LLM",
+      "judgeAgain": "Judge again",
+      "judgeFailed": "Couldn't get a verdict.",
+      "judgeAll": "Judge {count} unjudged",
+      "judgeAllConfirm": "This sends the alert contents of {count} cases to the configured LLM provider. Continue?",
+      "judgeProgress": "Judging {done}/{total}",
+      "judgeStop": "Stop",
+      "judgeDone": "{done} judged, {failed} failed",
+      "verdictStale": "There's new activity since this verdict, or it's older than 30 days. Judge it again.",
+      "verdictAdjust": "Severity adjusted → {severity}: {reason}",
+      "verdictResponse": "Recommended actions",
+      "verdictBy": "Judged by {model} · {when}",
+      "verdict": {
+        "breach": "Breach",
+        "suspicious": "Suspicious",
+        "attempt": "Attempt",
+        "normal": "Normal",
+        "false_positive": "False positive"
+      }
+    },
+    "tabDiscovered": "Discovered assets",
+    "host": {
+      "tabOverview": "Overview",
+      "detail": "View details",
+      "notFound": "Host not found. Its connection may have been deleted or its agent removed.",
+      "public": "public"
+    },
+    "layout": {
+      "grouped": "By group",
+      "depth": "By depth",
+      "tier": "Level {depth} · {count} hosts",
+      "tierGroups": "Service groups · {count}"
+    },
+    "analysis": {
+      "title": "SIEM log analysis",
+      "window": "last {days} days",
+      "stop": "Stop",
+      "close": "Close",
+      "stopped": "Analysis stopped.",
+      "lost": "Could not load the analysis state.",
+      "startFailed": "Could not start the analysis.",
+      "menuHost": "SIEM log analysis",
+      "menuGroup": "SIEM log analysis · {count} member hosts",
+      "menuAll": "SIEM log analysis · all of {name}",
+      "allLabel": "All · {name}",
+      "step": {
+        "collect": "1. Collect alerts",
+        "extract": "2. Extract case candidates",
+        "judge": "3. LLM verdict",
+        "summary": "4. Summary"
+      },
+      "collecting": "Fetching alerts and check results of {count, plural, =0 {all hosts} one {# host} other {# hosts}}",
+      "collected": "{count} alerts ({sec}s)",
+      "extracting": "Applying correlation patterns",
+      "extracted": "{rules} detection rules → {count} case candidates ({sec}s)",
+      "knownSkipped": "{count} match approved activity (not judged)",
+      "nothing": "No case candidates, nothing to judge.",
+      "judging": "Judging {done}/{total}",
+      "judgeNote": "Sends the alert content of {count} unjudged cases to the configured LLM provider.",
+      "judge": "Judge {count} with LLM",
+      "queued": "queued",
+      "judgedIn": "{sec}s",
+      "summaryClean": "{count} alerts produced no case candidates.",
+      "summaryKnown": "Approved activity {count}",
+      "summaryModel": "Verdict model: {model}",
+      "pattern": {
+        "P1": "Success after failures",
+        "P2": "Login outside allowed range",
+        "P3": "Intrusion chain",
+        "P4": "Defence evasion",
+        "P5": "Sensitive data exfiltration",
+        "P6": "Failures from many sources",
+        "P7": "External recon / web attack",
+        "P8": "Error burst",
+        "P9": "High-risk single rule"
+      },
+      "all": "Analyse all SIEM logs"
+    }
+  },
+  "connections": {
+    "title": "Connections",
+    "subtitle": "External systems the console reads data from.",
+    "add": "Add connection",
+    "none": "Not connected",
+    "connect": "Connect",
+    "manage": "Manage",
+    "enabled": "Active",
+    "notConnected": "Not connected",
+    "syncedAt": "synced {when}",
+    "updatedAt": "updated {when}",
+    "wazuh": {
+      "title": "Wazuh",
+      "description": "Hosts with an agent, config-check results and alerts.",
+      "hosts": "{count} hosts",
+      "addrNote": "Interface addresses were not collected: {reason}"
+    },
+    "logs": {
+      "title": "Logs (Splunk)",
+      "description": "Connect the Splunk search API so autonomous hunting can query logs."
+    },
+    "sync": {
+      "title": "Asset sync",
+      "description": "Imports the ScopeSentry asset list as discovered assets."
     }
   }
 }

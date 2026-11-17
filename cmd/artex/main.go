@@ -61,10 +61,18 @@ func run() int {
 		// One-shot: register a Wazuh connection from ARTEX_WAZUH_* environment
 		// variables and exit. See scripts/wazuh-connect.sh.
 		wazuhImport = flag.Bool("wazuh-import", false, "register a Wazuh connection from ARTEX_WAZUH_* environment variables, then exit")
+		siemImport  = flag.String("siem-import", "", "import detection inputs (event catalog, criteria, known activity, admin sources, accepted risks) from a Thaki-Siem checkout, then exit")
+		risksImport = flag.String("accepted-risks-import", "", "replace the accepted-risk registry with this TSV file (Thaki-Siem registry/accepted-risks.tsv format), then exit")
 	)
 	flag.Parse()
 	if *wazuhImport {
 		return importWazuh(*dataDir)
+	}
+	if *risksImport != "" {
+		return importAcceptedRisks(*risksImport)
+	}
+	if *siemImport != "" {
+		return importSiem(*siemImport)
 	}
 
 	// hand the build version to the server package so GET /api/health can report it
@@ -219,5 +227,104 @@ func importWazuh(dataDir string) int {
 		verb = "created"
 	}
 	fmt.Printf("wazuh-import: connection %q %s (agents: %d, indexer: %t)\n", name, verb, agents, cfg.IndexerURL != "")
+	return 0
+}
+
+// importAcceptedRisks replaces the accepted-risk registry from a TSV file. A
+// running server applies it at its next sync (within 5 minutes).
+func importAcceptedRisks(path string) int {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "accepted-risks-import: %v\n", err)
+		return 1
+	}
+	risks, err := wazuh.ParseAcceptedRisks(string(raw))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "accepted-risks-import: %v\n", err)
+		return 1
+	}
+	dsn, _, err := db.DSN()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "accepted-risks-import: database configuration: %v\n", err)
+		return 1
+	}
+	pg, err := db.Open(dsn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "accepted-risks-import: open database: %v\n", err)
+		return 1
+	}
+	defer pg.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err = pg.ReplaceAcceptedRisks(ctx, risks); err != nil {
+		fmt.Fprintf(os.Stderr, "accepted-risks-import: %v\n", err)
+		return 1
+	}
+	fmt.Printf("accepted-risks-import: %d rows imported\n", len(risks))
+	return 0
+}
+
+// importSiem loads the detection inputs case extraction needs from a
+// Thaki-Siem checkout. Every file is parsed first; nothing is stored unless
+// all of them are valid.
+func importSiem(dir string) int {
+	fail := func(format string, args ...any) int {
+		fmt.Fprintf(os.Stderr, "siem-import: "+format+"\n", args...)
+		return 1
+	}
+	read := func(rel string) (string, error) {
+		raw, err := os.ReadFile(filepath.Join(dir, rel))
+		return string(raw), err
+	}
+	catalog, err := read("assess/event-catalog.tsv")
+	if err != nil {
+		return fail("%v", err)
+	}
+	criteria, err := read("assess/event-criteria.tsv")
+	if err != nil {
+		return fail("%v", err)
+	}
+	known, _ := read("registry/known-activity.tsv")           // optional
+	admin, _ := read("deploy/lists/siem-admin-src")           // optional
+	risksTSV, risksErr := read("registry/accepted-risks.tsv") // optional
+
+	cat, err := wazuh.ParseEventCatalog(catalog)
+	if err != nil {
+		return fail("%v", err)
+	}
+	if _, err = wazuh.ParseEventCriteria(criteria); err != nil {
+		return fail("%v", err)
+	}
+	knownRows, err := wazuh.ParseKnownActivity(known)
+	if err != nil {
+		return fail("%v", err)
+	}
+	var risks []wazuh.AcceptedRisk
+	if risksErr == nil {
+		if risks, err = wazuh.ParseAcceptedRisks(risksTSV); err != nil {
+			return fail("accepted-risks: %v", err)
+		}
+	}
+	dsn, _, err := db.DSN()
+	if err != nil {
+		return fail("database configuration: %v", err)
+	}
+	pg, err := db.Open(dsn)
+	if err != nil {
+		return fail("open database: %v", err)
+	}
+	defer pg.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err = pg.SetSiemSettings(ctx, map[string]string{"event-catalog": catalog, "event-criteria": criteria, "known-activity": known, "admin-src": admin}); err != nil {
+		return fail("%v", err)
+	}
+	if risksErr == nil {
+		if err = pg.ReplaceAcceptedRisks(ctx, risks); err != nil {
+			return fail("%v", err)
+		}
+	}
+	fmt.Printf("siem-import: catalog rules %d (analysed %d), known activity %d, admin prefixes %d, accepted risks %d\n",
+		len(cat), len(cat.AnalysedRules()), len(knownRows), len(wazuh.ParseAdminPrefixes(admin)), len(risks))
 	return 0
 }

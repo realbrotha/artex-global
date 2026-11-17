@@ -1,0 +1,17 @@
+# fixture detection criteria
+code	title	category	pattern	ref	rules	status	note
+EV-CORR-01	Fail burst then success	EV-CORR	P1	-	-	active	-
+EV-CORR-02	Unusual login	EV-CORR	P2	-	-	active	-
+EV-CORR-03	Intrusion chain	EV-CORR	P3	-	-	active	-
+EV-CORR-04	Defence evasion then access	EV-CORR	P4	-	-	active	-
+EV-CORR-05	Secret read then exfiltration	EV-CORR	P5	-	-	active	-
+EV-CORR-06	Distributed password guessing	EV-CORR	P6	-	-	active	-
+EV-CORR-07	External reconnaissance	EV-CORR	P7	-	-	active	-
+EV-CORR-08	Error burst	EV-CORR	P8	-	-	active	-
+EV-CORR-99	Retired correlation	EV-CORR	P9	-	-	retired	-
+EV-EXEC-01	Suspicious execution	EV-EXEC	-	-	200002,200009	active	-
+EV-EXEC-02	Defence evasion	EV-EXEC	-	-	200003	active	-
+EV-EXEC-03	Trace removal	EV-EXEC	-	-	200004	active	-
+EV-DATA-01	Credential access	EV-DATA	-	-	200005,100815	active	-
+EV-PRIV-01	Account or role change	EV-PRIV	-	-	200001,200010	active	-
+EV-ACCESS-02	Unusual login rule	EV-ACCESS	-	-	100900,100904,5715	active	-

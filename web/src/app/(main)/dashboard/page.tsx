@@ -44,7 +44,7 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-import { OnboardingChecklist } from "./_components/onboarding-checklist";
+import { SiemSummary } from "./_components/siem-summary";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -153,7 +153,6 @@ export default function DashboardPage() {
   const [skills, setSkills] = React.useState<SkillItem[]>([]);
   const [tools, setTools] = React.useState<Tool[]>([]);
   const [llmProfiles, setLLMProfiles] = React.useState<LLMProfile[]>([]);
-  const [tasksLoaded, setTasksLoaded] = React.useState(false);
 
   // The task list is the most expensive dashboard source. Poll it independently
   // so a large history cannot hold back every other dashboard panel.
@@ -172,7 +171,6 @@ export default function DashboardPage() {
           signature = nextSignature;
           setTasks(tr.tasks);
         }
-        setTasksLoaded(true);
       } catch {
         /* transient errors — next poll retries */
       } finally {
@@ -509,12 +507,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <OnboardingChecklist
-        ready={stats !== null && tasksLoaded}
-        llmConfigured={Boolean(stats?.llm_configured)}
-        hasTasks={tasks.length > 0}
-        hasFindings={findings.length > 0}
-      />
+      <SiemSummary />
 
       {/* ── Row 1: 5 stat cards ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -1109,7 +1102,7 @@ export default function DashboardPage() {
               {t("noAssetData")}
               <Link
                 prefetch={false}
-                href="/function/assets"
+                href="/defensive/assets?tab=discovered"
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 <PlusIcon /> {t("addAssets")}

@@ -1,8 +1,10 @@
 package wazuh
 
 import (
+	"net/netip"
 	"sort"
 	"strings"
+	"time"
 )
 
 // Node kinds.
@@ -23,14 +25,21 @@ const StatusNoAgent = "no_agent"
 const (
 	EdgeRunsOn   = "runs_on"   // VM -> hypervisor
 	EdgeMemberOf = "member_of" // host -> cluster / platform
+	// bastion -> cluster: the jump host on a cluster's private network. It
+	// is how the nodes are reached, not what they run on.
+	EdgeGatewayOf = "gateway_of"
 )
 
 type Node struct {
-	ID       string   `json:"id"`
-	Kind     string   `json:"kind"`
-	Name     string   `json:"name"`
-	Status   string   `json:"status,omitempty"`
-	IP       string   `json:"ip,omitempty"`
+	ID     string `json:"id"`
+	Kind   string `json:"kind"`
+	Name   string `json:"name"`
+	Status string `json:"status,omitempty"`
+	IP     string `json:"ip,omitempty"`
+	// First public IPv4 on a host interface, and every host-level address.
+	// Both are empty when the inventory could not be read.
+	PublicIP string   `json:"public_ip,omitempty"`
+	Addrs    []Addr   `json:"addrs,omitempty"`
 	OS       string   `json:"os,omitempty"`
 	Groups   []string `json:"groups,omitempty"`
 	Roles    []string `json:"roles,omitempty"`
@@ -39,6 +48,129 @@ type Node struct {
 	LastSeen string   `json:"last_seen,omitempty"`
 	Checked  string   `json:"checked,omitempty"` // latest config-check run
 	Members  int      `json:"members,omitempty"` // group nodes only
+	Checks   *Checks  `json:"checks,omitempty"`  // nil = no config-check result
+	// Case candidates involving this host (known activity excluded) and the
+	// most severe of them. Filled when the asset map is served.
+	Cases   int    `json:"cases,omitempty"`
+	CaseSev string `json:"case_sev,omitempty"`
+}
+
+// Checks counts one host's latest config-check results.
+type Checks struct {
+	Fail   int `json:"fail"`
+	Review int `json:"review"`
+	Error  int `json:"error"`
+	Pass   int `json:"pass"`
+	NA     int `json:"na"`
+	// Failed or review results covered by the accepted-risk registry. They
+	// are not counted in Fail or Review.
+	Accepted int `json:"accepted"`
+}
+
+// Issue is one check that needs attention (failed, needs review, or errored).
+type Issue struct {
+	Code   string `json:"code"`
+	Result string `json:"result"` // fail | review | error
+	Sev    string `json:"sev,omitempty"`
+	Std    string `json:"std,omitempty"`
+	Title  string `json:"title,omitempty"`
+	Ev     string `json:"ev,omitempty"`
+	Asset  string `json:"asset,omitempty"` // service/container the check ran against
+	// Registry code ("CIS 6.3.1" for CIS checks); empty when equal to Code.
+	Key      string      `json:"key,omitempty"`
+	Accepted *Acceptance `json:"accepted,omitempty"`
+}
+
+// config-check result labels (tools/config-check core.py).
+const (
+	resultGood   = "양호"
+	resultBad    = "취약"
+	resultReview = "판단필요"
+	resultNA     = "N/A"
+	resultError  = "오류"
+)
+
+const maxEvidenceRunes = 600
+
+func clipRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
+}
+
+var issueOrder = map[string]int{"fail": 0, "error": 1, "review": 2}
+
+// BuildChecks folds verdict/pass records into per-host counts and the list
+// of issues, keyed by node id. Failed and review results that the registry
+// accepts (on the given day) are counted as Accepted instead.
+func BuildChecks(records []CheckRecord, risks []AcceptedRisk, today time.Time) (map[string]*Checks, map[string][]Issue) {
+	accepted := newAcceptanceIndex(risks, today)
+	counts := map[string]*Checks{}
+	issues := map[string][]Issue{}
+	for _, r := range records {
+		if r.Kind != "verdict" && r.Kind != "pass" {
+			continue
+		}
+		id := "host:" + shortName(r.Agent)
+		c := counts[id]
+		if c == nil {
+			c = &Checks{}
+			counts[id] = c
+		}
+		if r.Kind == "pass" {
+			c.Pass += len(strings.Fields(r.Good))
+			c.NA += len(strings.Fields(r.NA))
+			continue
+		}
+		result := ""
+		switch r.Result {
+		case resultGood:
+			c.Pass++
+		case resultNA:
+			c.NA++
+		case resultBad:
+			c.Fail++
+			result = "fail"
+		case resultReview:
+			c.Review++
+			result = "review"
+		case resultError:
+			c.Error++
+			result = "error"
+		}
+		if result == "" {
+			continue
+		}
+		issue := Issue{Code: r.Code, Result: result, Sev: r.Sev, Std: r.Std, Title: r.Title,
+			Ev: clipRunes(r.Ev, maxEvidenceRunes), Asset: r.Asset}
+		if key := RegistryCode(r.Std, r.Policy, r.Code); key != r.Code {
+			issue.Key = key
+		}
+		if result != "error" {
+			if a := accepted.lookup(RegistryCode(r.Std, r.Policy, r.Code), r.Agent); a != nil {
+				issue.Accepted = a
+				c.Accepted++
+				if result == "fail" {
+					c.Fail--
+				} else {
+					c.Review--
+				}
+			}
+		}
+		issues[id] = append(issues[id], issue)
+	}
+	for id := range issues {
+		list := issues[id]
+		sort.SliceStable(list, func(i, j int) bool {
+			if a, b := issueOrder[list[i].Result], issueOrder[list[j].Result]; a != b {
+				return a < b
+			}
+			return list[i].Code < list[j].Code
+		})
+	}
+	return counts, issues
 }
 
 type Edge struct {
@@ -50,6 +182,8 @@ type Edge struct {
 type Graph struct {
 	Nodes []Node `json:"nodes"`
 	Edges []Edge `json:"edges"`
+	// Why interface addresses are missing, when they are.
+	AddrNote string `json:"addr_note,omitempty"`
 }
 
 // virtual vendors/products as reported by DMI inside a guest.
@@ -98,7 +232,7 @@ type guest struct{ uuid, name, hypervisor string }
 //   - guests no agent reports as -> VM nodes with status no_agent
 //   - shared Kubernetes CA fingerprint -> one cluster node + member_of edges
 //   - openstack-* role -> one OpenStack node + member_of edges
-func BuildGraph(agents []Agent, records []CheckRecord) Graph {
+func BuildGraph(agents []Agent, records []CheckRecord, risks []AcceptedRisk, today time.Time) Graph {
 	hosts := map[string]*Node{}
 	order := []string{}
 	ensure := func(name string) *Node {
@@ -118,6 +252,13 @@ func BuildGraph(agents []Agent, records []CheckRecord) Graph {
 			n.IP = ""
 		}
 		n.OS = strings.TrimSpace(a.OS.Name + " " + a.OS.Version)
+		n.Addrs = a.Addrs
+		for _, addr := range a.Addrs {
+			if addr.Public && !strings.Contains(addr.IP, ":") {
+				n.PublicIP = addr.IP
+				break
+			}
+		}
 	}
 
 	uuidOf := map[string]string{} // vm uuid -> host id
@@ -143,6 +284,11 @@ func BuildGraph(agents []Agent, records []CheckRecord) Graph {
 			if r.K8sCA != "" {
 				caOf[n.ID] = r.K8sCA
 			}
+			// The cloud's own answer beats an interface scan: a floating IP
+			// is translated at the router and never appears on the host.
+			if addr, err := netip.ParseAddr(r.ExtIP); err == nil && addr.Is4() {
+				n.PublicIP = addr.String()
+			}
 		case "target":
 			if r.Type != "" && r.Type != "container" {
 				services[n.ID] = append(services[n.ID], r.Type)
@@ -161,6 +307,12 @@ func BuildGraph(agents []Agent, records []CheckRecord) Graph {
 	}
 	for id, s := range services {
 		hosts[id].Services = uniqSorted(s)
+	}
+	counts, _ := BuildChecks(records, risks, today)
+	for id, c := range counts {
+		if n, ok := hosts[id]; ok {
+			n.Checks = c
+		}
 	}
 
 	g := Graph{Nodes: []Node{}, Edges: []Edge{}}
@@ -200,6 +352,33 @@ func BuildGraph(agents []Agent, records []CheckRecord) Graph {
 			}
 		}
 	}
+	// A bastion is tied to the one cluster whose nodes share its /24. What
+	// marks a plain VM as the way in is an externally reachable address while
+	// the cluster's own nodes have none. Until hosts report that address
+	// (config-check ext_ip), the host name is the fallback signal.
+	subnets := map[string]map[string]bool{}
+	for id, ca := range caOf {
+		if n, ok := hosts[id]; ok && ca != "" {
+			if net := subnet24(n.IP); net != "" {
+				if subnets[net] == nil {
+					subnets[net] = map[string]bool{}
+				}
+				subnets[net][ca] = true
+			}
+		}
+	}
+	for _, id := range order {
+		n := hosts[id]
+		if caOf[id] != "" || !(n.PublicIP != "" || strings.Contains(strings.ToLower(n.Name), "bastion")) {
+			continue
+		}
+		if on := subnets[subnet24(n.IP)]; len(on) == 1 {
+			for ca := range on {
+				g.Edges = append(g.Edges, Edge{From: id, To: "k8s:" + ca, Kind: EdgeGatewayOf})
+			}
+		}
+	}
+
 	cas := make([]string, 0, len(clusters))
 	for ca := range clusters {
 		cas = append(cas, ca)
@@ -225,4 +404,20 @@ func BuildGraph(agents []Agent, records []CheckRecord) Graph {
 		return g.Edges[i].To < g.Edges[j].To
 	})
 	return g
+}
+
+// HostNodeID is the graph node id of a host or agent name.
+func HostNodeID(name string) string { return "host:" + shortName(name) }
+
+// subnet24 returns the /24 an IPv4 address is in, or "" for anything else.
+func subnet24(ip string) string {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil || !addr.Is4() {
+		return ""
+	}
+	prefix, err := addr.Prefix(24)
+	if err != nil {
+		return ""
+	}
+	return prefix.String()
 }

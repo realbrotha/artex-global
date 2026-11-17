@@ -1,0 +1,21 @@
+rule_id	src	level	category	use	attack	keys	title	note	layer
+5716	wazuh	5	EV-AUTH	agg	T1110	-	sshd: authentication failed.		activity
+5715	wazuh	3	EV-ACCESS	agg	T1078	-	sshd: authentication success.		activity
+100900	siem-auth	10	EV-ACCESS	case	T1078	-	Login from outside the allowed range		activity
+100904	siem-auth	10	EV-ACCESS	case	T1078.003	-	Direct root login		activity
+5402	wazuh	3	EV-ACCESS	agg	T1548.003	-	Successful sudo to ROOT executed.		activity
+200001	siem-host	10	EV-PRIV	case	T1136.001	-	New user added to the system.		activity
+200002	siem-host	12	EV-EXEC	case	T1059	-	Suspicious interpreter started.		activity
+200003	siem-host	12	EV-EXEC	case	T1562.001	-	Audit daemon stopped		activity
+200004	siem-host	10	EV-EXEC	case	T1070.003	-	Shell history removed.		activity
+200005	siem-host	12	EV-DATA	case	T1552.001	-	Credential file read.		activity
+100815	siem-host	10	EV-DATA	case	T1560.001	-	Archive created from a sensitive path.		activity
+200006	siem-web	3	EV-RECON	agg	T1595	-	Web request to an unusual path.		activity
+200007	siem-web	7	EV-RECON	case	T1190	-	SQL injection attempt.		activity
+200008	siem-host	5	EV-ERR	agg		-	Service reported an error.		activity
+200009	siem-host	14	EV-EXEC	case	T1105	-	Download tool fetched a remote payload.		activity
+200010	siem-k8s-api	10	EV-PRIV	case	T1098,T1136	-	Cluster role binding created.		activity
+200011	siem-host	12	EV-EXEC	agg	T1059	-	Aggregated only.		activity
+200012	siem-host	11	EV-EXEC	case	T1204	-	Unlinked detection rule fired.		activity
+200013	siem-host	8	EV-EXEC	case	T1204	-	Low level case rule.		activity
+200099	siem-host	3	-	-		-	Not analysed.		activity

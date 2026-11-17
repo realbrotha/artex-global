@@ -150,26 +150,19 @@
     "createFirstTask": "最初のタスクを作成",
     "addAssets": "資産を追加",
     "noFindingsHint": "タスクが脆弱性を確認すると、ここに表示されます。",
-    "onboarding": {
-      "title": "はじめに",
-      "subtitle": "3 ステップで最初の結果を確認します。",
-      "progress": "{done}/{total} 完了",
-      "dismiss": "閉じる",
-      "llm": {
-        "title": "LLM を接続",
-        "desc": "エージェントが使うモデルと API キーを登録します。",
-        "action": "LLM を設定"
-      },
-      "task": {
-        "title": "最初のタスクを作成",
-        "desc": "対象と目標を入力すると、エージェントが診断を開始します。",
-        "action": "タスクを作成"
-      },
-      "findings": {
-        "title": "結果を確認",
-        "desc": "確認された脆弱性と証拠は脆弱性画面に集まります。",
-        "action": "脆弱性を見る"
-      }
+    "siem": {
+      "notConnected": "接続された Wazuh がありません。接続すると機器、脆弱項目、事件候補がここに表示されます。",
+      "connect": "Wazuh を接続",
+      "hosts": "機器",
+      "hostsOk": "すべて正常",
+      "hostsDetail": "停止 {down} · agent 未導入 {missing}",
+      "fails": "脆弱項目",
+      "failsDetail": "機器 {hosts} 台 · リスク受容 {accepted}",
+      "cases": "事件候補",
+      "casesNone": "確認する事件なし",
+      "unjudged": "未判定",
+      "unjudgedDetail": "LLM 判定が必要",
+      "unjudgedNone": "すべて判定済み"
     }
   },
   "header": {
@@ -180,13 +173,7 @@
   },
   "nav": {
     "group": {
-      "activity": "実行記録",
-      "ai": "AI 構成",
-      "defense": "防御",
-      "guardrails": "統制",
-      "offense": "診断",
-      "overview": "概要",
-      "system": "システム"
+      "main": "メニュー"
     },
     "item": {
       "agents": "エージェント",
@@ -213,7 +200,11 @@
       "defensive": "防御",
       "defensive-hunting": "自律ハンティング",
       "security-sources": "ログ接続",
-      "protected-assets": "保護資産"
+      "protected-assets": "保護資産",
+      "connections": "接続",
+      "activity": "実行記録",
+      "analysis": "分析",
+      "config": "設定"
     }
   },
   "notFound": {
@@ -3968,7 +3959,7 @@
     "refresh": "更新"
   },
   "protectedAssets": {
-    "title": "保護資産",
+    "title": "資産",
     "refresh": "更新",
     "manageConnections": "接続を管理",
     "loadFailed": "保護資産を読み込めませんでした。",
@@ -3978,9 +3969,8 @@
     "emptyDescription": "Wazuh manager を接続すると、agent が入っている機器とその関係を取り込みます。",
     "addConnection": "Wazuh 接続を追加",
     "searchPlaceholder": "ホスト名・IP・ロールを検索",
-    "tabGraph": "関係図",
-    "tabList": "一覧",
-    "legend": "実線: この機器上で実行 · 点線: 所属 · 点線の枠: agent 未導入",
+    "tabGraph": "インフラマップ",
+    "tabList": "機器一覧",
     "noMatch": "条件に合う機器がありません。",
     "close": "閉じる",
     "memberCount": "機器 {count} 台",
@@ -3988,7 +3978,8 @@
       "all": "すべて",
       "ok": "正常",
       "down": "応答なし",
-      "missing": "agent 未導入"
+      "missing": "agent 未導入",
+      "issues": "脆弱あり"
     },
     "kind": {
       "baremetal": "物理機器",
@@ -4014,13 +4005,17 @@
       "roles": "ロール",
       "services": "サービス",
       "groups": "agent グループ",
-      "relations": "関係"
+      "relations": "関係",
+      "publicIp": "グローバル IP",
+      "addrs": "インターフェースアドレス"
     },
     "relation": {
       "runs_on": "実行場所",
       "runs_on_reverse": "実行中の VM",
       "member_of": "所属",
-      "member_of_reverse": "構成機器"
+      "member_of_reverse": "構成機器",
+      "gateway_of": "接続経由先",
+      "gateway_of_reverse": "接続経由機器 (bastion)"
     },
     "column": {
       "name": "機器",
@@ -4029,7 +4024,8 @@
       "roles": "ロール",
       "services": "サービス",
       "ip": "IP",
-      "os": "OS"
+      "os": "OS",
+      "checks": "点検"
     },
     "connection": {
       "title": "Wazuh 接続",
@@ -4071,6 +4067,191 @@
       "statusFailed": "同期失敗",
       "statusOk": "正常",
       "statusPending": "同期待ち"
+    },
+    "checks": {
+      "title": "点検結果",
+      "loadFailed": "点検結果を読み込めませんでした。",
+      "noIssues": "対応が必要な項目はありません。",
+      "target": "対象",
+      "failCount": "脆弱 {count}",
+      "reviewCount": "要判断 {count}",
+      "none": "結果なし",
+      "result": {
+        "fail": "脆弱",
+        "review": "要判断",
+        "error": "エラー",
+        "pass": "良好",
+        "accepted": "受容済み"
+      },
+      "rawNote": "Wazuh の元の判定にリスク受容登録を反映した結果です。LLM 判定は反映されていません。",
+      "codeCount": "{count} 項目",
+      "targetCount": "対象 {count} 件",
+      "noEvidence": "根拠が記録されていません。",
+      "std": {
+        "kisa": "KISA",
+        "cis": "CIS",
+        "siem": "SIEM 独自点検",
+        "etc": "その他"
+      },
+      "acceptedBy": "{who} 承認 · {until} まで",
+      "noExpiry": "期限なし",
+      "allHosts": "全機器",
+      "filterAll": "すべて",
+      "searchPlaceholder": "コード、タイトル、根拠を検索",
+      "noMatch": "条件に合う項目がありません。"
+    },
+    "acceptedRisks": {
+      "open": "リスク受容",
+      "title": "リスク受容登録",
+      "description": "承認済みの例外です。点検コードと機器が一致し期限内であれば、脆弱・要判断から外して受容済みとして表示します。",
+      "import": "TSV を取り込む",
+      "importHelp": "Thaki-Siem registry/accepted-risks.tsv 形式。既存の登録をすべて置き換えます。",
+      "imported": "{count} 件を取り込みました。まもなく点検数値に反映されます。",
+      "importFailed": "登録を取り込めませんでした。",
+      "loadFailed": "登録を読み込めませんでした。",
+      "empty": "登録されたリスク受容はありません。",
+      "allHosts": "全機器",
+      "until": "{until} まで",
+      "expired": "{until} に期限切れ",
+      "noExpiry": "期限なし",
+      "approvedBy": "承認: {who}"
+    },
+    "cases": {
+      "tab": "事件候補",
+      "hostTitle": "事件候補 {count} 件",
+      "known": "正常業務",
+      "events": "{count} 件",
+      "timeline": "アラートのタイムライン",
+      "timelineClipped": "アラートのタイムライン (最初と最後の {shown} 件 / 全 {total} 件)",
+      "timelineFailed": "タイムラインを読み込めませんでした。一覧を更新してください。",
+      "failed": "{name} の事件候補抽出に失敗しました: {error}",
+      "generated": "{name}: 直近 {days} 日のアラート {alerts} 件を分析 · {when}",
+      "capped": "アラート上限に到達、一部未分析",
+      "showKnown": "正常業務・正常判定の {count} 件を表示",
+      "pending": "事件候補はまだ抽出されていません。次回の同期で抽出します。",
+      "empty": "条件に合う事件候補はありません。",
+      "severity": {
+        "Critical": "深刻",
+        "High": "高",
+        "Medium": "中",
+        "Low": "低",
+        "Info": "参考"
+      },
+      "field": {
+        "actor": "対象",
+        "hosts": "機器",
+        "period": "期間",
+        "basis": "等級の根拠",
+        "entity": "エンティティ",
+        "attack": "ATT&CK",
+        "known": "正常業務の根拠",
+        "near": "時間的に近い事件",
+        "connection": "接続",
+        "summary": "検知の要約"
+      },
+      "judge": "LLM で判定",
+      "judgeAgain": "再判定",
+      "judgeFailed": "判定に失敗しました。",
+      "judgeAll": "未判定 {count} 件を判定",
+      "judgeAllConfirm": "事件候補 {count} 件のアラート内容を、設定済みの LLM プロバイダーに送信して判定します。続行しますか？",
+      "judgeProgress": "判定中 {done}/{total}",
+      "judgeStop": "停止",
+      "judgeDone": "判定完了 {done} 件、失敗 {failed} 件",
+      "verdictStale": "判定後に新しい活動があるか、判定から 30 日を超えています。再判定してください。",
+      "verdictAdjust": "等級調整 → {severity}: {reason}",
+      "verdictResponse": "推奨される対応",
+      "verdictBy": "{model} が判定 · {when}",
+      "verdict": {
+        "breach": "侵害",
+        "suspicious": "疑い",
+        "attempt": "試行",
+        "normal": "正常",
+        "false_positive": "誤検知"
+      }
+    },
+    "tabDiscovered": "発見資産",
+    "host": {
+      "tabOverview": "概要",
+      "detail": "詳細を見る",
+      "notFound": "この機器が見つかりません。接続が削除されたか、agent が削除された可能性があります。",
+      "public": "グローバル"
+    },
+    "layout": {
+      "grouped": "グループ別",
+      "depth": "階層別",
+      "tier": "{depth} 階層 · {count} 台",
+      "tierGroups": "サービスグループ · {count}"
+    },
+    "analysis": {
+      "title": "SIEM ログ分析",
+      "window": "直近 {days} 日",
+      "stop": "停止",
+      "close": "閉じる",
+      "stopped": "分析を停止しました。",
+      "lost": "分析の状態を取得できませんでした。",
+      "startFailed": "分析を開始できませんでした。",
+      "menuHost": "SIEM ログ分析",
+      "menuGroup": "所属機器 {count} 台の SIEM ログ分析",
+      "menuAll": "全体の SIEM ログ分析 · {name}",
+      "allLabel": "全体 · {name}",
+      "step": {
+        "collect": "1. アラート収集",
+        "extract": "2. 事件候補の抽出",
+        "judge": "3. LLM 判定",
+        "summary": "4. 要約"
+      },
+      "collecting": "{count, plural, =0 {全機器} other {機器 # 台}}のアラートと点検結果を取得中",
+      "collected": "アラート {count} 件 ({sec} 秒)",
+      "extracting": "相関パターンを適用中",
+      "extracted": "検知ルール {rules} 個を適用 → 事件候補 {count} 件 ({sec} 秒)",
+      "knownSkipped": "正常業務の登録と一致 {count} 件 (判定対象外)",
+      "nothing": "事件候補がないため判定するものはありません。",
+      "judging": "判定中 {done}/{total}",
+      "judgeNote": "未判定 {count} 件のアラート内容を設定済みの LLM プロバイダーに送信します。",
+      "judge": "{count} 件を LLM 判定",
+      "queued": "待機",
+      "judgedIn": "{sec} 秒",
+      "summaryClean": "アラート {count} 件から事件候補は出ませんでした。",
+      "summaryKnown": "正常業務 {count}",
+      "summaryModel": "判定モデル: {model}",
+      "pattern": {
+        "P1": "失敗後の成功",
+        "P2": "許可範囲外からのログイン",
+        "P3": "侵害の連鎖",
+        "P4": "防御の無効化",
+        "P5": "機密情報の持ち出し",
+        "P6": "多数の送信元からの失敗",
+        "P7": "外部偵察・Web 攻撃",
+        "P8": "エラー急増",
+        "P9": "高リスク単一ルール"
+      },
+      "all": "全体の SIEM ログ分析"
+    }
+  },
+  "connections": {
+    "title": "接続",
+    "subtitle": "コンソールがデータを読み取る外部システムです。",
+    "add": "接続を追加",
+    "none": "接続なし",
+    "connect": "接続",
+    "manage": "管理",
+    "enabled": "使用中",
+    "notConnected": "接続なし",
+    "syncedAt": "{when} 同期",
+    "updatedAt": "{when} 更新",
+    "wazuh": {
+      "title": "Wazuh",
+      "description": "agent を導入した機器、設定点検の結果、アラートを取得します。",
+      "hosts": "機器 {count} 台",
+      "addrNote": "インターフェースアドレスを取得できませんでした: {reason}"
+    },
+    "logs": {
+      "title": "ログ (Splunk)",
+      "description": "Splunk 検索 API を接続すると、自律ハンティングがログを照会します。"
+    },
+    "sync": {
+      "title": "資産同期",
+      "description": "ScopeSentry の資産一覧を発見資産として取り込みます。"
     }
   }
 }

@@ -1440,3 +1440,51 @@ CREATE TABLE IF NOT EXISTS wazuh_sources (
     sync_error TEXT NOT NULL DEFAULT '',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
+-- Per-host config-check issues ({node id: [issue]}), kept apart from snapshot
+-- so the asset map poll stays small.
+ALTER TABLE wazuh_sources ADD COLUMN IF NOT EXISTS checks JSONB NOT NULL DEFAULT '{}';
+
+-- Accepted-risk registry (Thaki-Siem registry/accepted-risks.tsv format).
+-- Rows are replaced as a whole on import; config-check results matching
+-- (code, host or *) before until are shown as accepted, not failed.
+CREATE TABLE IF NOT EXISTS accepted_risks (
+    id BIGSERIAL PRIMARY KEY,
+    code TEXT NOT NULL,
+    host TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    approved_by TEXT NOT NULL,
+    until TEXT NOT NULL DEFAULT '',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Case candidates extracted from Wazuh alerts (port of Thaki-Siem
+-- assess/events.py). Kept apart from snapshot: extraction reads up to 7 days
+-- of alerts, so it runs less often than the asset sync.
+ALTER TABLE wazuh_sources ADD COLUMN IF NOT EXISTS cases JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE wazuh_sources ADD COLUMN IF NOT EXISTS cases_meta JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE wazuh_sources ADD COLUMN IF NOT EXISTS cases_at TIMESTAMPTZ;
+ALTER TABLE wazuh_sources ADD COLUMN IF NOT EXISTS cases_error TEXT NOT NULL DEFAULT '';
+
+-- Detection inputs imported from a Thaki-Siem checkout (event catalog,
+-- detection criteria, known-activity registry, allowed management sources).
+-- They are organisation-specific, so they live here and not in the source tree.
+CREATE TABLE IF NOT EXISTS siem_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- LLM verdicts on case candidates. Case ids are positions in the latest
+-- extraction, so a verdict is keyed by the stable case key
+-- (criterion|actor) and remembers the activity it judged: newer activity
+-- makes it stale.
+CREATE TABLE IF NOT EXISTS case_verdicts (
+    source_id BIGINT NOT NULL REFERENCES wazuh_sources(id) ON DELETE CASCADE,
+    case_key TEXT NOT NULL,
+    verdict JSONB NOT NULL CHECK (jsonb_typeof(verdict)='object'),
+    case_last TIMESTAMPTZ NOT NULL,
+    case_n INTEGER NOT NULL,
+    model TEXT NOT NULL DEFAULT '',
+    judged_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    PRIMARY KEY (source_id, case_key)
+);

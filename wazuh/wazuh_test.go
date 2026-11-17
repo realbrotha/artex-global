@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func fakeWazuh(t *testing.T) *httptest.Server {
@@ -56,7 +57,14 @@ func fakeWazuh(t *testing.T) *httptest.Server {
 			hit("os-compute-01", `{"kind":"target","run":"20261116T010000","type":"hv.qemu","ctx":"container","guests":"1111|instance-01|k8s-cp-01;2222|instance-02|orphan-vm"}`),
 			hit("k8s-cp-01", `{"kind":"host","run":"20261116T020000","roles":"k8s-cp etcd","virt":"OpenStack Foundation OpenStack Nova","vm_uuid":"1111","k8s_ca":"abcdef123456"}`),
 			hit("k8s-cp-01", `{"kind":"target","run":"20261116T020000","type":"container","ctx":"pod"}`),
-			hit("k8s-cp-01", `{"kind":"verdict","run":"20261116T020000"}`),
+			hit("k8s-cp-01", `{"kind":"verdict","run":"20261116T020000","code":"U-01","result":"취약","sev":"상","std":"kisa","title":"root 원격 접속 제한","ev":"PermitRootLogin yes"}`),
+			hit("k8s-cp-01", `{"kind":"verdict","run":"20261116T020000","code":"KUBE-03","result":"판단필요","title":"감사 정책"}`),
+			hit("k8s-cp-01", `{"kind":"verdict","run":"20261116T020000","code":"A-09","result":"오류","ev":"timeout"}`),
+			hit("k8s-cp-01", `{"kind":"verdict","run":"20261116T020000","code":"U-02","result":"양호"}`),
+			hit("k8s-cp-01", `{"kind":"pass","run":"20261116T020000","good":"U-03 U-04 U-05","na":"U-06"}`),
+			// a previous run's failure must not be counted
+			hit("k8s-cp-01", `{"kind":"verdict","run":"20261115T020000","code":"U-99","result":"취약"}`),
+			hit("k8s-cp-01", `{"kind":"summary","run":"20261116T020000"}`),
 		}
 		_, _ = w.Write([]byte(`{"hits":{"hits":[` + strings.Join(hits, ",") + `]}}`))
 	})
@@ -89,10 +97,10 @@ func TestCollectAndBuildGraph(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(records) != 4 {
-		t.Fatalf("records = %d, want 4 (stale run and verdict dropped)", len(records))
+	if len(records) != 9 {
+		t.Fatalf("records = %d, want 9 (stale runs and summary dropped)", len(records))
 	}
-	g := BuildGraph(agents, records)
+	g := BuildGraph(agents, records, nil, time.Now())
 	nodes := map[string]Node{}
 	for _, node := range g.Nodes {
 		nodes[node.ID] = node
@@ -112,6 +120,18 @@ func TestCollectAndBuildGraph(t *testing.T) {
 	cp := check("host:k8s-cp-01", KindVM, "active")
 	if len(cp.Services) != 0 {
 		t.Fatalf("container targets must not be listed as services: %v", cp.Services)
+	}
+	if cp.Checks == nil || *cp.Checks != (Checks{Fail: 1, Review: 1, Error: 1, Pass: 4, NA: 1}) {
+		t.Fatalf("checks = %+v", cp.Checks)
+	}
+	if hv.Checks != nil {
+		t.Fatalf("host without check results must have nil checks: %+v", hv.Checks)
+	}
+	_, issues := BuildChecks(records, nil, time.Now())
+	got := issues["host:k8s-cp-01"]
+	if len(issues) != 1 || len(got) != 3 || got[0].Code != "U-01" || got[0].Result != "fail" || got[0].Ev != "PermitRootLogin yes" ||
+		got[1].Result != "error" || got[2].Result != "review" {
+		t.Fatalf("issues = %+v", issues)
 	}
 	if bao := check("host:bao-01", KindUnknown, "disconnected"); bao.IP != "" {
 		t.Fatalf("ip %q, want empty for 'any'", bao.IP)
@@ -194,8 +214,15 @@ func TestValidate(t *testing.T) {
 }
 
 func TestAgentsOnlyGraph(t *testing.T) {
-	g := BuildGraph([]Agent{{ID: "001", Name: "Web-01.example.internal", Status: "active"}}, nil)
+	g := BuildGraph([]Agent{{ID: "001", Name: "Web-01.example.internal", Status: "active"}}, nil, nil, time.Now())
 	if len(g.Nodes) != 1 || g.Nodes[0].ID != "host:web-01" || g.Nodes[0].Kind != KindUnknown || len(g.Edges) != 0 {
 		t.Fatalf("graph = %+v", g)
+	}
+}
+
+func TestEvidenceIsClipped(t *testing.T) {
+	_, issues := BuildChecks([]CheckRecord{{Agent: "h", Kind: "verdict", Result: "취약", Code: "X", Ev: strings.Repeat("가", 2000)}}, nil, time.Now())
+	if n := len([]rune(issues["host:h"][0].Ev)); n != maxEvidenceRunes+1 {
+		t.Fatalf("evidence runes = %d", n)
 	}
 }
