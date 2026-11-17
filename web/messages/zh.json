@@ -124,8 +124,6 @@
     "recentRequests": "最近请求",
     "recording": "录制中",
     "requestCount": "{count} 次请求",
-    "srcNew": "计量账本",
-    "srcOld": "活动统计",
     "statDone": "完成",
     "statExplore": "探索",
     "statPaused": "暂停",
@@ -137,15 +135,11 @@
     "title": "总览",
     "tokenConsumption": "LLM Token 消耗",
     "tokenUsage": "Token 用量",
-    "tooltipNew": "新版：来自 llm_usage 计量账本，逐次调用精确、含中断消耗；仅覆盖启用后的数据",
-    "tooltipOld": "旧版：来自 activity 统计（含历史任务），中断消耗不计、无法精确到模型",
     "totalInOut": "合计 (输入+输出)",
     "totalNodes": "共 {count} 节点",
     "trafficCapture": "流量捕获",
     "trafficExchanges": "流量交互",
     "trafficStatusCodes": "流量状态码",
-    "verNew": "新版",
-    "verOld": "旧版",
     "viewTasks": "查看任务",
     "createFirstTask": "创建第一个任务",
     "addAssets": "添加资产",
@@ -163,6 +157,14 @@
       "unjudged": "未判定",
       "unjudgedDetail": "需要 LLM 判定",
       "unjudgedNone": "全部已判定"
+    },
+    "byPurpose": "按用途",
+    "purposeCalls": "{count}次",
+    "purpose": {
+      "task": "诊断任务",
+      "siem": "SIEM 判定",
+      "intercept": "拦截判定",
+      "other": "对话·其他"
     }
   },
   "header": {
@@ -209,7 +211,9 @@
       "infra": "基础设施",
       "detections": "事件检测",
       "posture": "配置检查",
-      "siem-history": "分析记录"
+      "siem-history": "分析记录",
+      "schedule": "分析计划",
+      "siem-feedback": "判定反馈"
     }
   },
   "notFound": {
@@ -4178,7 +4182,21 @@
         "count": "按事件数",
         "name": "按名称"
       },
-      "generatedShort": "最近 {days} 天告警 {alerts, number} 条 · {when} 分析"
+      "generatedShort": "最近 {days} 天告警 {alerts, number} 条 · {when} 分析",
+      "method": {
+        "debate": "辩论判定",
+        "fallback": "保守确定",
+        "single": "单次判定",
+        "human": "人工更正"
+      },
+      "correct": {
+        "open": "Correct verdict",
+        "hint": "A person's verdict outranks the automatic one and stays until new activity. The reason is shown as a precedent when other cases of this criterion are judged.",
+        "reason": "Reason (5+ characters), e.g. nightly backup account at 02:00",
+        "save": "Save correction",
+        "cancel": "Cancel",
+        "failed": "Could not save the correction."
+      }
     },
     "host": {
       "tabOverview": "概览",
@@ -4218,8 +4236,6 @@
       "knownSkipped": "与正常业务登记一致 {count} 个(不判定)",
       "nothing": "没有事件候选,无需判定。",
       "judging": "判定中 {done}/{total}",
-      "judgeNote": "将 {count} 个未判定事件的告警内容发送给已配置的 LLM 提供商。",
-      "judge": "LLM 判定 {count} 个",
       "queued": "等待",
       "judgedIn": "{sec} 秒",
       "summaryClean": "{count} 条告警未产生事件候选。",
@@ -4247,7 +4263,8 @@
         "hosts": "相关主机",
         "thisRun": "本次执行",
         "reused": "已有判定",
-        "unjudged": "未判定"
+        "unjudged": "未判定",
+        "method": "判定方式"
       },
       "target": "{count, plural, =0 {全部主机} other {主机 #台}}",
       "alertSpan": "主机 {hosts}台 · {from} ~ {to}",
@@ -4266,10 +4283,13 @@
       "judgeNotRun": "未执行 LLM 判定",
       "caseCount": "{count}件",
       "stepNote": {
-        "waiting": "需点击按钮后进行",
+        "waiting": "等待自动判定",
         "skipped": "未执行",
         "partial": "剩余未判定 {count}件"
-      }
+      },
+      "methodDebated": "辩论 {count}件",
+      "methodFallback": "保守确定 {count}件",
+      "methodDeferred": "下次执行 {count}件"
     },
     "view": {
       "map": "地图",
@@ -4312,7 +4332,6 @@
       },
       "notJudged": "未判定",
       "more": "再显示 {count}项",
-      "judgeSelected": "判定所选分组的 {count}件",
       "groupCount": "{groups}个分组 · 事件 {cases}件",
       "closeDetail": "关闭详情",
       "selectAll": "选择所有可见分组",
@@ -4325,7 +4344,9 @@
         "title": "按集群统计事件",
         "count": "{count}件"
       },
-      "empty": "没有可显示的事件。"
+      "empty": "没有可显示的事件。",
+      "autoJudgeAt": "未判定 {count}件 · {when} 计划执行时自动判定",
+      "autoJudgeOff": "未判定 {count}件 · 自动判定已关闭 (设置)"
     },
     "posture": {
       "title": "配置检查",
@@ -4462,6 +4483,14 @@
         "object": "对象",
         "fullLog": "原始日志",
         "noLog": "该告警没有原始日志。"
+      },
+      "role": {
+        "analyst": "初次判定",
+        "threat": "威胁视角",
+        "benign": "正常视角",
+        "arbiter": "仲裁",
+        "reason": "辩论原因",
+        "roleSystem": "该角色的系统提示词"
       }
     }
   },
@@ -4490,5 +4519,118 @@
       "title": "资产同步",
       "description": "将 ScopeSentry 的资产列表导入为发现的资产。"
     }
+  },
+  "siemSchedule": {
+    "title": "分析计划",
+    "subtitle": "按计划自动执行 SIEM 日志分析,并在无人干预下判定事件候选。",
+    "runNow": "立即执行",
+    "save": "保存",
+    "saved": "已保存。",
+    "saveFailed": "Could not save.",
+    "loadFailed": "Could not load the schedule.",
+    "runFailed": "Could not start.",
+    "started": "Started on {count} connections.",
+    "status": "状态",
+    "on": "开启",
+    "off": "关闭",
+    "lastRun": "上次执行",
+    "nextRun": "下次执行",
+    "history": "查看分析记录",
+    "enabled": "自动执行",
+    "enabledHint": "When off, only analyses started from a screen run.",
+    "mode": "执行方式",
+    "modes": {
+      "interval": "Every interval",
+      "daily": "At set times"
+    },
+    "interval": "间隔",
+    "minutes": "{count} min",
+    "hours": "{count} h",
+    "times": "执行时间",
+    "timesHint": "Server time. A missed time runs once at the next check.",
+    "addTime": "添加",
+    "removeTime": "Remove {time}",
+    "weekdays": "星期",
+    "weekdaysHint": "None selected means every day.",
+    "day": {
+      "0": "日",
+      "1": "一",
+      "2": "二",
+      "3": "三",
+      "4": "四",
+      "5": "五",
+      "6": "六"
+    },
+    "autoJudge": "自动判定",
+    "autoJudgeHint": "New cases and cases with new activity are judged by the LLM. Also applies to analyses started from a screen.",
+    "debate": "辩论判定",
+    "debateHint": "When the first verdict is unsure, or a Critical or High case is called normal or a false positive, a threat review and a benign review are argued and an arbiter decides.",
+    "limit": "每次判定上限",
+    "limitHint": "The most severe cases go first; the rest wait for the next run.",
+    "limitCost": "Up to about {tokens}k tokens (more with debates)",
+    "flowTitle": "What a run does",
+    "flow": {
+      "1": "Collect alerts: reads the last 7 days of alerts from each Wazuh connection.",
+      "2": "Extract cases: groups alerts into cases by the detection criteria and refreshes Event detection.",
+      "3": "Precedent: a case with no new activity judged within 30 days keeps its verdict.",
+      "4": "First verdict: the LLM judges and rates its certainty. Unsure answers, and severe cases called normal, go to a debate.",
+      "5": "Debate: a threat view and a benign view argue, and an arbiter decides. If nothing valid comes back, the case is confirmed as suspicious."
+    }
+  },
+  "siemFeedback": {
+    "title": "Judging feedback",
+    "subtitle": "How the automatic judging has called each detection criterion, what people corrected, and what to change. Judgments from the last {days} days.",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load the judging feedback.",
+    "empty": "No Wazuh connection.",
+    "method": {
+      "single": "Single pass",
+      "debate": "Debated",
+      "fallback": "Conservative",
+      "human": "Corrected by people"
+    },
+    "methodHint": {
+      "single": "settled by the first verdict",
+      "debate": "argued from both sides, then arbitrated",
+      "fallback": "no conclusion: confirmed as suspicious",
+      "human": "set by a person"
+    },
+    "signals": "{count} signals",
+    "noSignals": "No signal crosses its threshold right now.",
+    "signal": {
+      "corrected": {
+        "label": "Repeated corrections",
+        "detail": "People corrected the verdict {count} times ({of} cases)",
+        "action": "The model often gets this criterion wrong. The reasons are shown to it as precedents from the next judgment on. If the same correction keeps coming, change the criterion or the known-activity registry."
+      },
+      "false_positive_heavy": {
+        "label": "Too many false positives",
+        "detail": "{count} of {of} cases are false positives",
+        "action": "Narrow the rule or raise its threshold, through a Thaki-Siem PR."
+      },
+      "unstable": {
+        "label": "Unstable judging",
+        "detail": "{count} of {of} judgments needed a debate or a fallback",
+        "action": "The alerts alone do not settle this criterion. Collect the logs it needs or add a decision-table line."
+      },
+      "normal_repeat": {
+        "label": "Repeatedly normal",
+        "detail": "The same subject was judged normal {count} times",
+        "action": "A candidate for the known-activity registry; registered activity is no longer judged."
+      }
+    },
+    "criteria": "{count} detection criteria",
+    "col": {
+      "criterion": "Criterion",
+      "cases": "Cases",
+      "verdicts": "Current verdicts",
+      "judged": "Judged",
+      "debated": "Debated",
+      "fallback": "Fallback",
+      "corrected": "Corrected"
+    },
+    "corrections": "{count} corrections",
+    "noCorrections": "No verdict has been corrected yet.",
+    "howToCorrect": "Open a case in Event detection and use 'Correct verdict'."
   }
 }

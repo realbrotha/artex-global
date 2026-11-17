@@ -16,6 +16,9 @@ import (
 
 const historyWriteTimeout = 10 * time.Second
 
+// Human precedents shown to the model per judgment.
+const precedentsShown = 5
+
 // recordingCompleter passes every request to inner and keeps what was sent
 // and what came back, so a judgment can be read later exactly as the model
 // saw it.
@@ -23,8 +26,16 @@ func recordingCompleter(inner wazuh.Completer, system *string, attempts *[]db.Ju
 	return func(ctx context.Context, sys, user string, maxTokens int) (string, error) {
 		started := time.Now()
 		text, err := inner(ctx, sys, user, maxTokens)
-		*system = sys
-		a := db.JudgeAttempt{Prompt: user, Response: text, Ms: time.Since(started).Milliseconds()}
+		role := wazuh.RoleFrom(ctx)
+		// The analyst's rules are the system prompt of the record; other
+		// roles carry theirs with the attempt.
+		if role == "" || role == wazuh.RoleAnalyst {
+			*system = sys
+		}
+		a := db.JudgeAttempt{Role: role, Prompt: user, Response: text, Ms: time.Since(started).Milliseconds()}
+		if role != "" && role != wazuh.RoleAnalyst {
+			a.System = sys
+		}
 		if err != nil {
 			a.Error = err.Error()
 		}
@@ -33,14 +44,23 @@ func recordingCompleter(inner wazuh.Completer, system *string, attempts *[]db.Ju
 	}
 }
 
-// judgeAndRecord judges one case, stores the verdict, and records the
-// judgment (prompts, answers, outcome) whether or not it succeeded. runID is
-// "" outside a manual analysis. A failure comes back as an HTTP status and a
-// message that is safe to show.
-func (s *Server) judgeAndRecord(ctx context.Context, provider llm.Provider, model string, sourceID int64, runID string, c wazuh.Case, near []wazuh.Case) (*db.CaseVerdict, int, error) {
+// judgeAndRecord judges one case to a conclusion (single pass, debate when
+// unsure, conservative fallback), stores the verdict, and records the
+// judgment (every prompt and answer, the method and why) whether or not it
+// succeeded. runID is "" outside an analysis run. A failure, which only a
+// failed model call produces, comes back as an HTTP status and a message
+// that is safe to show.
+func (s *Server) judgeAndRecord(ctx context.Context, provider llm.Provider, model string, sourceID int64, runID string, c wazuh.Case, near []wazuh.Case, debate bool) (*db.CaseVerdict, int, error) {
 	started := time.Now()
 	record := db.Judgement{SourceID: sourceID, RunID: runID, Case: c, Model: model}
-	verdict, e := wazuh.JudgeCase(ctx, recordingCompleter(caseCompleter(provider), &record.System, &record.Attempts), c, near)
+	// People's corrections on the same criterion guide the model.
+	precedents, pe := s.m.pg.Precedents(ctx, sourceID, c.Criterion, precedentsShown)
+	if pe != nil {
+		log.Printf("[siem-analysis] precedents: %v", pe)
+	}
+	result, e := wazuh.JudgeCaseAuto(ctx, recordingCompleter(caseCompleter(provider), &record.System, &record.Attempts), c, near, precedents, debate)
+	verdict := result.Verdict
+	record.Reason = result.Reason
 	var stored *db.CaseVerdict
 	status := 0
 	if e != nil {

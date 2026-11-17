@@ -99,6 +99,10 @@ func (d *DB) GetAnalysisRun(ctx context.Context, id string) (*AnalysisRun, error
 // and what came back. A later attempt's prompt lists the rules the previous
 // answer broke.
 type JudgeAttempt struct {
+	// Judging role: analyst, threat, benign or arbiter ("" before roles).
+	Role string `json:"role,omitempty"`
+	// System prompt of a role other than the analyst's.
+	System   string `json:"system,omitempty"`
 	Prompt   string `json:"prompt"`
 	Response string `json:"response"`
 	Error    string `json:"error,omitempty"`
@@ -117,11 +121,13 @@ type Judgement struct {
 	System   string         `json:"system_prompt,omitempty"`
 	Attempts []JudgeAttempt `json:"attempts,omitempty"`
 	// Number of attempts, set on list rows where Attempts is left out.
-	Tries    int            `json:"tries"`
-	Verdict  *wazuh.Verdict `json:"verdict,omitempty"`
-	Error    string         `json:"error,omitempty"`
-	Ms       int64          `json:"ms"`
-	JudgedAt time.Time      `json:"judged_at"`
+	Tries   int            `json:"tries"`
+	Verdict *wazuh.Verdict `json:"verdict,omitempty"`
+	// Why the case went to a debate or a fallback; "" for a single pass.
+	Reason   string    `json:"reason,omitempty"`
+	Error    string    `json:"error,omitempty"`
+	Ms       int64     `json:"ms"`
+	JudgedAt time.Time `json:"judged_at"`
 }
 
 // SaveJudgement records one judgment, successful or not.
@@ -146,9 +152,9 @@ func (d *DB) SaveJudgement(ctx context.Context, j Judgement) error {
 		}
 		verdict = raw
 	}
-	if _, err = d.ExecContext(ctx, `INSERT INTO siem_judgements(source_id,run_id,case_key,case_data,model,system_prompt,attempts,verdict,error,ms)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-		j.SourceID, j.RunID, CaseKey(j.Case), caseData, j.Model, j.System, attempts, verdict, j.Error, j.Ms); err != nil {
+	if _, err = d.ExecContext(ctx, `INSERT INTO siem_judgements(source_id,run_id,case_key,case_data,model,system_prompt,attempts,verdict,error,ms,reason)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+		j.SourceID, j.RunID, CaseKey(j.Case), caseData, j.Model, j.System, attempts, verdict, j.Error, j.Ms, j.Reason); err != nil {
 		return err
 	}
 	_, err = d.ExecContext(ctx, `DELETE FROM siem_judgements WHERE id IN (SELECT id FROM siem_judgements ORDER BY id DESC OFFSET $1)`, judgementsKept)
@@ -158,7 +164,7 @@ func (d *DB) SaveJudgement(ctx context.Context, j Judgement) error {
 func scanJudgement(row interface{ Scan(...any) error }, full bool) (*Judgement, error) {
 	j := &Judgement{}
 	var caseData, attempts, verdict []byte
-	dest := []any{&j.ID, &j.SourceID, &j.RunID, &j.CaseKey, &caseData, &j.Model, &verdict, &j.Error, &j.Ms, &j.JudgedAt, &j.Tries}
+	dest := []any{&j.ID, &j.SourceID, &j.RunID, &j.CaseKey, &caseData, &j.Model, &verdict, &j.Error, &j.Ms, &j.JudgedAt, &j.Tries, &j.Reason}
 	if full {
 		dest = append(dest, &j.System, &attempts)
 	}
@@ -182,7 +188,7 @@ func scanJudgement(row interface{ Scan(...any) error }, full bool) (*Judgement, 
 	return j, nil
 }
 
-const judgementColumns = `id,source_id,run_id,case_key,case_data,model,verdict,error,ms,judged_at,jsonb_array_length(attempts)`
+const judgementColumns = `id,source_id,run_id,case_key,case_data,model,verdict,error,ms,judged_at,jsonb_array_length(attempts),reason`
 
 // ListJudgements returns judgments newest first, without prompts. runID
 // narrows to one run; "" lists every judgment.

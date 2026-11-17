@@ -275,6 +275,7 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 		}
 		go s.scheduleHuntTrends(ctx)
 		go s.scheduleWazuhSync(ctx)
+		go s.scheduleSiemAnalysis(ctx)
 		agent.PromptOverride = func(key string) (string, bool) {
 			a, err := m.pg.GetAgentByKey(key)
 			if err != nil || a == nil {

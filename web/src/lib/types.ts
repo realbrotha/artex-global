@@ -833,6 +833,17 @@ export interface ProfileDayUsage {
 export interface UsageStats {
   by_profile: ProfileUsage[];
   daily: ProfileDayUsage[];
+  // Ledger spend per kind of work (all profiles, archived tasks excluded).
+  by_purpose?: PurposeUsage[];
+}
+
+// task: pentest tasks · siem: SIEM case judgments · intercept: intercept
+// fallback judge · other: chat and calls made before they were labelled.
+export interface PurposeUsage {
+  purpose: "task" | "siem" | "intercept" | "other";
+  calls: number;
+  input_tokens: number;
+  output_tokens: number;
 }
 
 // Per-model token usage for one task (GET /api/llm/records/by-model), from the

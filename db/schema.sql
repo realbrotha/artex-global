@@ -1542,3 +1542,22 @@ CREATE TABLE IF NOT EXISTS siem_analysis_alerts (
 );
 CREATE INDEX IF NOT EXISTS siem_analysis_alerts_rule ON siem_analysis_alerts(run_id, rule_id);
 CREATE INDEX IF NOT EXISTS siem_analysis_alerts_host ON siem_analysis_alerts(run_id, host);
+
+-- Why a judgment went to a debate or a conservative fallback.
+ALTER TABLE siem_judgements ADD COLUMN IF NOT EXISTS reason TEXT NOT NULL DEFAULT '';
+
+-- Verdicts a person changed. The latest correction per case becomes a
+-- precedent the model is shown for other cases of the same criterion.
+CREATE TABLE IF NOT EXISTS siem_corrections (
+    id BIGSERIAL PRIMARY KEY,
+    source_id BIGINT NOT NULL REFERENCES wazuh_sources(id) ON DELETE CASCADE,
+    case_key TEXT NOT NULL,
+    criterion TEXT NOT NULL,
+    actor TEXT NOT NULL DEFAULT '',
+    summary TEXT NOT NULL DEFAULT '',
+    from_verdict TEXT NOT NULL DEFAULT '',
+    to_verdict TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX IF NOT EXISTS siem_corrections_criterion ON siem_corrections(source_id, criterion, id DESC);

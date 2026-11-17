@@ -313,7 +313,7 @@ export default function HostDetailPage() {
                   {t("cases.empty")}
                 </p>
               ) : (
-                <CaseList cases={showCleared ? (data?.cases ?? []) : liveCases} onJudged={() => void load()} />
+                <CaseList cases={showCleared ? (data?.cases ?? []) : liveCases} onCorrected={() => void load()} />
               )}
             </TabsContent>
           </Tabs>

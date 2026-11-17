@@ -124,8 +124,6 @@
     "recentRequests": "Recent requests",
     "recording": "Recording",
     "requestCount": "{count} requests",
-    "srcNew": "Metering ledger",
-    "srcOld": "Activity stats",
     "statDone": "Done",
     "statExplore": "Exploring",
     "statPaused": "Paused",
@@ -137,15 +135,11 @@
     "title": "Overview",
     "tokenConsumption": "LLM token consumption",
     "tokenUsage": "Token usage",
-    "tooltipNew": "New version: pulled from the llm_usage metering ledger, accurate per call and including interrupted consumption. Only data from after the feature was enabled is counted.",
-    "tooltipOld": "Old version: pulled from activity stats, covering past tasks too, but it misses interrupted consumption and isn't accurate down to the model level.",
     "totalInOut": "Total (input + output)",
     "totalNodes": "{count} nodes total",
     "trafficCapture": "Traffic capture",
     "trafficExchanges": "Traffic exchanges",
     "trafficStatusCodes": "Traffic status codes",
-    "verNew": "New",
-    "verOld": "Old",
     "viewTasks": "View tasks",
     "createFirstTask": "Create first task",
     "addAssets": "Add assets",
@@ -163,6 +157,14 @@
       "unjudged": "Unjudged",
       "unjudgedDetail": "Needs an LLM verdict",
       "unjudgedNone": "All judged"
+    },
+    "byPurpose": "By purpose",
+    "purposeCalls": "{count} calls",
+    "purpose": {
+      "task": "Pentest tasks",
+      "siem": "SIEM judgments",
+      "intercept": "Intercept judge",
+      "other": "Chat and other"
     }
   },
   "header": {
@@ -209,7 +211,9 @@
       "infra": "Infrastructure",
       "detections": "Event detection",
       "posture": "Config checks",
-      "siem-history": "Analysis history"
+      "siem-history": "Analysis history",
+      "schedule": "Analysis schedule",
+      "siem-feedback": "Judging feedback"
     }
   },
   "notFound": {
@@ -4178,7 +4182,21 @@
         "count": "Most cases",
         "name": "Name"
       },
-      "generatedShort": "{alerts, number} alerts, last {days} days · analysed {when}"
+      "generatedShort": "{alerts, number} alerts, last {days} days · analysed {when}",
+      "method": {
+        "debate": "Debated",
+        "fallback": "Conservative",
+        "single": "Single pass",
+        "human": "Corrected"
+      },
+      "correct": {
+        "open": "Correct verdict",
+        "hint": "A person's verdict outranks the automatic one and stays until new activity. The reason is shown as a precedent when other cases of this criterion are judged.",
+        "reason": "Reason (5+ characters), e.g. nightly backup account at 02:00",
+        "save": "Save correction",
+        "cancel": "Cancel",
+        "failed": "Could not save the correction."
+      }
     },
     "host": {
       "tabOverview": "Overview",
@@ -4218,8 +4236,6 @@
       "knownSkipped": "{count} match approved activity (not judged)",
       "nothing": "No case candidates, nothing to judge.",
       "judging": "Judging {done}/{total}",
-      "judgeNote": "Sends the alert content of {count} unjudged cases to the configured LLM provider.",
-      "judge": "Judge {count} with LLM",
       "queued": "queued",
       "judgedIn": "{sec}s",
       "summaryClean": "{count} alerts produced no case candidates.",
@@ -4247,7 +4263,8 @@
         "hosts": "Hosts",
         "thisRun": "This run",
         "reused": "Earlier",
-        "unjudged": "Unjudged"
+        "unjudged": "Unjudged",
+        "method": "Method"
       },
       "target": "{count, plural, =0 {all hosts} one {# host} other {# hosts}}",
       "alertSpan": "{hosts} hosts · {from} – {to}",
@@ -4266,10 +4283,13 @@
       "judgeNotRun": "LLM judging was not run",
       "caseCount": "{count}",
       "stepNote": {
-        "waiting": "waits for your go-ahead",
+        "waiting": "waiting for automatic judging",
         "skipped": "not run",
         "partial": "{count} left unjudged"
-      }
+      },
+      "methodDebated": "{count} debated",
+      "methodFallback": "{count} conservative",
+      "methodDeferred": "{count} left for the next run"
     },
     "view": {
       "map": "Map",
@@ -4312,7 +4332,6 @@
       },
       "notJudged": "Unjudged",
       "more": "Show {count} more",
-      "judgeSelected": "Judge {count} in selected groups",
       "groupCount": "{groups} groups · {cases} cases",
       "closeDetail": "Close detail",
       "selectAll": "Select all visible groups",
@@ -4325,7 +4344,9 @@
         "title": "Cases by cluster",
         "count": "{count}"
       },
-      "empty": "No cases to show."
+      "empty": "No cases to show.",
+      "autoJudgeAt": "{count} unjudged · judged automatically at {when}",
+      "autoJudgeOff": "{count} unjudged · automatic judging is off (settings)"
     },
     "posture": {
       "title": "Config checks",
@@ -4462,6 +4483,14 @@
         "object": "Object",
         "fullLog": "Raw log",
         "noLog": "This alert has no raw log."
+      },
+      "role": {
+        "analyst": "First verdict",
+        "threat": "Threat view",
+        "benign": "Benign view",
+        "arbiter": "Arbiter",
+        "reason": "Why it was debated",
+        "roleSystem": "This role's system prompt"
       }
     }
   },
@@ -4490,5 +4519,118 @@
       "title": "Asset sync",
       "description": "Imports the ScopeSentry asset list as discovered assets."
     }
+  },
+  "siemSchedule": {
+    "title": "Analysis schedule",
+    "subtitle": "Runs the SIEM log analysis on its own and judges the case candidates without a person.",
+    "runNow": "Run now",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Could not save.",
+    "loadFailed": "Could not load the schedule.",
+    "runFailed": "Could not start.",
+    "started": "Started on {count} connections.",
+    "status": "Status",
+    "on": "On",
+    "off": "Off",
+    "lastRun": "Last run",
+    "nextRun": "Next run",
+    "history": "Open analysis history",
+    "enabled": "Run automatically",
+    "enabledHint": "When off, only analyses started from a screen run.",
+    "mode": "Mode",
+    "modes": {
+      "interval": "Every interval",
+      "daily": "At set times"
+    },
+    "interval": "Interval",
+    "minutes": "{count} min",
+    "hours": "{count} h",
+    "times": "Times",
+    "timesHint": "Server time. A missed time runs once at the next check.",
+    "addTime": "Add",
+    "removeTime": "Remove {time}",
+    "weekdays": "Days",
+    "weekdaysHint": "None selected means every day.",
+    "day": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    },
+    "autoJudge": "Judge automatically",
+    "autoJudgeHint": "New cases and cases with new activity are judged by the LLM. Also applies to analyses started from a screen.",
+    "debate": "Debate when unsure",
+    "debateHint": "When the first verdict is unsure, or a Critical or High case is called normal or a false positive, a threat review and a benign review are argued and an arbiter decides.",
+    "limit": "Judgments per run",
+    "limitHint": "The most severe cases go first; the rest wait for the next run.",
+    "limitCost": "Up to about {tokens}k tokens (more with debates)",
+    "flowTitle": "What a run does",
+    "flow": {
+      "1": "Collect alerts: reads the last 7 days of alerts from each Wazuh connection.",
+      "2": "Extract cases: groups alerts into cases by the detection criteria and refreshes Event detection.",
+      "3": "Precedent: a case with no new activity judged within 30 days keeps its verdict.",
+      "4": "First verdict: the LLM judges and rates its certainty. Unsure answers, and severe cases called normal, go to a debate.",
+      "5": "Debate: a threat view and a benign view argue, and an arbiter decides. If nothing valid comes back, the case is confirmed as suspicious."
+    }
+  },
+  "siemFeedback": {
+    "title": "Judging feedback",
+    "subtitle": "How the automatic judging has called each detection criterion, what people corrected, and what to change. Judgments from the last {days} days.",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load the judging feedback.",
+    "empty": "No Wazuh connection.",
+    "method": {
+      "single": "Single pass",
+      "debate": "Debated",
+      "fallback": "Conservative",
+      "human": "Corrected by people"
+    },
+    "methodHint": {
+      "single": "settled by the first verdict",
+      "debate": "argued from both sides, then arbitrated",
+      "fallback": "no conclusion: confirmed as suspicious",
+      "human": "set by a person"
+    },
+    "signals": "{count} signals",
+    "noSignals": "No signal crosses its threshold right now.",
+    "signal": {
+      "corrected": {
+        "label": "Repeated corrections",
+        "detail": "People corrected the verdict {count} times ({of} cases)",
+        "action": "The model often gets this criterion wrong. The reasons are shown to it as precedents from the next judgment on. If the same correction keeps coming, change the criterion or the known-activity registry."
+      },
+      "false_positive_heavy": {
+        "label": "Too many false positives",
+        "detail": "{count} of {of} cases are false positives",
+        "action": "Narrow the rule or raise its threshold, through a Thaki-Siem PR."
+      },
+      "unstable": {
+        "label": "Unstable judging",
+        "detail": "{count} of {of} judgments needed a debate or a fallback",
+        "action": "The alerts alone do not settle this criterion. Collect the logs it needs or add a decision-table line."
+      },
+      "normal_repeat": {
+        "label": "Repeatedly normal",
+        "detail": "The same subject was judged normal {count} times",
+        "action": "A candidate for the known-activity registry; registered activity is no longer judged."
+      }
+    },
+    "criteria": "{count} detection criteria",
+    "col": {
+      "criterion": "Criterion",
+      "cases": "Cases",
+      "verdicts": "Current verdicts",
+      "judged": "Judged",
+      "debated": "Debated",
+      "fallback": "Fallback",
+      "corrected": "Corrected"
+    },
+    "corrections": "{count} corrections",
+    "noCorrections": "No verdict has been corrected yet.",
+    "howToCorrect": "Open a case in Event detection and use 'Correct verdict'."
   }
 }

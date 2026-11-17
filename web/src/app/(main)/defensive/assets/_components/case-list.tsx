@@ -2,12 +2,10 @@
 
 import * as React from "react";
 
-import { ChevronRightIcon, SparklesIcon } from "lucide-react";
+import { ChevronRightIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { type CaseVerdict, type SiemCase, type SiemCaseEvent, wazuhApi } from "@/lib/wazuh-api";
 
@@ -48,21 +46,109 @@ interface CaseDetailProps {
   // The verdict to show: the stored one, or one just returned by a judge.
   readonly verdict?: CaseVerdict;
   readonly compact?: boolean;
-  readonly onVerdict?: (verdict: CaseVerdict) => void;
+  // Called after a person corrects the verdict, so the owner can reload.
+  readonly onCorrected?: () => void;
 }
 
-// Everything behind one case: verdict and evidence, the judge button, its
+const VERDICTS: CaseVerdict["verdict"][] = ["breach", "suspicious", "attempt", "normal", "false_positive"];
+
+// A person's verdict: replaces the model's, stays until new activity, and is
+// shown to the model as a precedent for other cases of the same criterion.
+function CorrectVerdict({
+  c,
+  current,
+  onCorrected,
+}: {
+  readonly c: ListedCase;
+  readonly current?: CaseVerdict["verdict"];
+  readonly onCorrected?: () => void;
+}) {
+  const t = useTranslations("protectedAssets.cases.correct");
+  const tc = useTranslations("protectedAssets.cases");
+  const [open, setOpen] = React.useState(false);
+  const [verdict, setVerdict] = React.useState<CaseVerdict["verdict"]>(current ?? "suspicious");
+  const [reason, setReason] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="justify-self-start text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+      >
+        {t("open")}
+      </button>
+    );
+  }
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await wazuhApi.correctCase(c.sourceId, c.id, verdict, reason.trim());
+      setOpen(false);
+      setReason("");
+      onCorrected?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("failed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="grid grid-cols-1 gap-1.5 rounded-md border border-dashed p-2">
+      <p className="text-[11px] text-muted-foreground">{t("hint")}</p>
+      <div className="flex flex-wrap gap-1">
+        {VERDICTS.map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setVerdict(v)}
+            aria-pressed={verdict === v}
+            className={cn(
+              "rounded border px-1.5 py-0.5 text-[10px]",
+              verdict === v ? verdictTone[v] : "opacity-60 hover:opacity-100",
+            )}
+          >
+            {tc(`verdict.${v}`)}
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder={t("reason")}
+        rows={2}
+        className="w-full rounded-md border bg-background px-2 py-1 text-xs"
+      />
+      {error && <p className="break-words text-destructive">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={saving || reason.trim().length < 5}
+          onClick={() => void save()}
+          className="rounded-md bg-primary px-2.5 py-1 text-[11px] text-primary-foreground disabled:opacity-50"
+        >
+          {t("save")}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="px-2 text-[11px] text-muted-foreground">
+          {t("cancel")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Everything behind one case: verdict and evidence, its
 // fields and the alert timeline, fetched when the case is first shown.
-export function CaseDetail({ c, verdict, compact = false, onVerdict }: CaseDetailProps) {
+export function CaseDetail({ c, verdict, compact = false, onCorrected }: CaseDetailProps) {
   const t = useTranslations("protectedAssets.cases");
   const [timeline, setTimeline] = React.useState<SiemCaseEvent[] | "error" | undefined>(undefined);
-  const [judging, setJudging] = React.useState(false);
-  const [judgeError, setJudgeError] = React.useState("");
 
   React.useEffect(() => {
     let alive = true;
     setTimeline(undefined);
-    setJudgeError("");
     wazuhApi
       .caseDetail(c.sourceId, c.id)
       .then((full) => alive && setTimeline(full.timeline ?? []))
@@ -71,18 +157,6 @@ export function CaseDetail({ c, verdict, compact = false, onVerdict }: CaseDetai
       alive = false;
     };
   }, [c.sourceId, c.id]);
-
-  const judge = async () => {
-    setJudging(true);
-    setJudgeError("");
-    try {
-      onVerdict?.(await wazuhApi.judgeCase(c.sourceId, c.id));
-    } catch (e) {
-      setJudgeError(e instanceof Error ? e.message : t("judgeFailed"));
-    } finally {
-      setJudging(false);
-    }
-  };
 
   return (
     <div className="grid grid-cols-1 gap-2 text-xs">
@@ -114,18 +188,11 @@ export function CaseDetail({ c, verdict, compact = false, onVerdict }: CaseDetai
               model: verdict.model || "LLM",
               when: new Date(verdict.judged_at).toLocaleString(),
             })}
+            {verdict.method && verdict.method !== "single" && ` · ${t(`method.${verdict.method}`)}`}
           </p>
         </div>
       )}
-      {!c.known && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="xs" variant="outline" onClick={() => void judge()} disabled={judging}>
-            {judging ? <Spinner /> : <SparklesIcon />}
-            {verdict ? t("judgeAgain") : t("judge")}
-          </Button>
-          {judgeError && <span className="break-words text-destructive">{judgeError}</span>}
-        </div>
-      )}
+      {!c.known && <CorrectVerdict c={c} current={verdict?.verdict} onCorrected={onCorrected} />}
       <dl className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
         {(
           [
@@ -183,26 +250,24 @@ export function CaseDetail({ c, verdict, compact = false, onVerdict }: CaseDetai
 
 interface CaseListProps {
   readonly cases: ListedCase[];
+  // Called after a person corrects a verdict, so the owner can reload.
+  readonly onCorrected?: () => void;
   // Narrow layout for the host detail panel.
   readonly compact?: boolean;
-  // Called after a verdict is stored so the owner can reload.
-  readonly onJudged?: () => void;
 }
 
 // Case candidates, most urgent first as the server orders them. A row
 // expands to its detail.
-export function CaseList({ cases, compact = false, onJudged }: CaseListProps) {
+export function CaseList({ cases, compact = false, onCorrected }: CaseListProps) {
   const t = useTranslations("protectedAssets.cases");
   const [open, setOpen] = React.useState<string | null>(null);
-  // Verdicts stored during this view, shown until the owner's reload arrives.
-  const [fresh, setFresh] = React.useState<Record<string, CaseVerdict>>({});
 
   return (
     <ul className="grid grid-cols-1 gap-1.5">
       {cases.map((c) => {
         const key = `${c.sourceId}/${c.id}`;
         const expanded = open === key;
-        const verdict = fresh[key] ?? c.verdict;
+        const verdict = c.verdict;
         return (
           <li key={key} className={cn("rounded-lg border text-xs", isCleared({ ...c, verdict }) && "opacity-70")}>
             <button
@@ -256,15 +321,7 @@ export function CaseList({ cases, compact = false, onJudged }: CaseListProps) {
             </button>
             {expanded && (
               <div className="border-t px-2.5 py-2">
-                <CaseDetail
-                  c={c}
-                  verdict={verdict}
-                  compact={compact}
-                  onVerdict={(v) => {
-                    setFresh((prev) => ({ ...prev, [key]: v }));
-                    onJudged?.();
-                  }}
-                />
+                <CaseDetail c={c} verdict={verdict} compact={compact} />
               </div>
             )}
           </li>

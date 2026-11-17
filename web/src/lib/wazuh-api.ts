@@ -119,6 +119,12 @@ export interface CaseVerdict {
   model: string;
   judged_at: string;
   stale: boolean;
+  // high, medium or low, as the model rated its own certainty.
+  confidence?: "high" | "medium" | "low";
+  // single: one pass · debate: two opposing reviews and an arbiter ·
+  // fallback: nothing valid came back, confirmed conservatively as suspicious.
+  // human: a person's correction, which the automatic judging keeps.
+  method?: "single" | "debate" | "fallback" | "human";
 }
 
 export interface CaseSource {
@@ -211,6 +217,11 @@ export const wazuhApi = {
   cases: () => http<{ sources: CaseSource[] }>("/defensive/cases"),
   caseDetail: (id: string, caseId: string) =>
     http<SiemCase>(`${base}/${encodeURIComponent(id)}/cases/${encodeURIComponent(caseId)}`),
+  correctCase: (id: string, caseId: string, verdict: CaseVerdict["verdict"], reason: string) =>
+    http<CaseVerdict>(`${base}/${encodeURIComponent(id)}/cases/${encodeURIComponent(caseId)}/correct`, {
+      method: "POST",
+      body: JSON.stringify({ verdict, reason }),
+    }),
   judgeCase: (id: string, caseId: string) =>
     http<CaseVerdict>(`${base}/${encodeURIComponent(id)}/cases/${encodeURIComponent(caseId)}/judge`, {
       method: "POST",
@@ -291,7 +302,87 @@ export interface Analysis {
   judge_done: number;
   judge_total: number;
   model?: string;
+  trigger?: "manual" | "schedule";
+  // Why judging did not run or stopped short.
+  judge_note?: string;
+  debated?: number;
+  fallback?: number;
+  // Cases left for the next run by the per-run limit.
+  deferred?: number;
 }
+
+// Feedback on the automatic judging: per criterion, what people corrected,
+// and the signals worth acting on.
+export interface CriterionFeedback {
+  criterion: string;
+  title: string;
+  cases: number;
+  verdicts: Partial<Record<CaseVerdict["verdict"], number>>;
+  judgements: number;
+  debated: number;
+  fallback: number;
+  corrected: number;
+}
+
+export interface FeedbackSignal {
+  kind: "false_positive_heavy" | "normal_repeat" | "unstable" | "corrected";
+  criterion: string;
+  title: string;
+  case_key?: string;
+  count: number;
+  of: number;
+}
+
+export interface Correction {
+  id: number;
+  case_key: string;
+  criterion: string;
+  actor: string;
+  summary: string;
+  from: string;
+  to: CaseVerdict["verdict"];
+  reason: string;
+  created_at: string;
+}
+
+export interface FeedbackSource {
+  id: string;
+  name: string;
+  criteria: CriterionFeedback[];
+  signals: FeedbackSignal[];
+  corrections: Correction[];
+  // Current verdicts by how they were reached.
+  methods: Record<string, number>;
+}
+
+export const feedbackApi = {
+  get: () => http<{ sources: FeedbackSource[]; window_days: number }>("/defensive/feedback"),
+};
+
+// When the analysis runs by itself, and how it judges.
+export interface SiemSchedule {
+  enabled: boolean;
+  mode: "interval" | "daily";
+  interval_minutes: number;
+  times: string[];
+  // 0 = Sunday .. 6 = Saturday; empty = every day.
+  weekdays: number[];
+  auto_judge: boolean;
+  judge_limit: number;
+  debate: boolean;
+}
+
+export interface ScheduleState {
+  schedule: SiemSchedule;
+  last_run?: string | null;
+  next_run?: string;
+}
+
+export const scheduleApi = {
+  get: () => http<ScheduleState>("/defensive/schedule"),
+  save: (s: SiemSchedule) => http<ScheduleState>("/defensive/schedule", { method: "PUT", body: JSON.stringify(s) }),
+  runNow: () => http<{ started: number }>("/defensive/schedule/run", { method: "POST" }),
+};
 
 const analysisBase = (id: string) => `${base}/${encodeURIComponent(id)}/analyses`;
 
@@ -325,6 +416,10 @@ export interface AnalysisRun {
 // One request to the model inside a judgment: what was sent and what came
 // back. A later attempt's prompt lists the rules the previous answer broke.
 export interface JudgeAttempt {
+  // analyst, threat, benign or arbiter; absent on records made before roles.
+  role?: "analyst" | "threat" | "benign" | "arbiter";
+  // System prompt of a role other than the analyst's.
+  system?: string;
   prompt: string;
   response: string;
   error?: string;
@@ -343,6 +438,8 @@ export interface Judgement {
   attempts?: JudgeAttempt[];
   tries: number;
   verdict?: Omit<CaseVerdict, "model" | "judged_at" | "stale">;
+  // Why the case went to a debate or a fallback.
+  reason?: string;
   error?: string;
   ms: number;
   judged_at: string;

@@ -165,7 +165,15 @@ export function JudgementDetail({ id, hideCase = false }: JudgementDetailProps) 
           </p>
         )}
         <p className="text-[11px] text-muted-foreground">
-          {[data.model, new Date(data.judged_at).toLocaleString(), sec(data.ms)].filter(Boolean).join(" · ")}
+          {[
+            data.model,
+            new Date(data.judged_at).toLocaleString(),
+            sec(data.ms),
+            v?.method && tc(`method.${v.method}`),
+            v?.confidence && `confidence ${v.confidence}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </p>
       </section>
 
@@ -174,27 +182,41 @@ export function JudgementDetail({ id, hideCase = false }: JudgementDetailProps) 
         {data.system_prompt && (
           <Block title={t("detail.system")} note={size(data.system_prompt)} text={data.system_prompt} />
         )}
-        {attempts.map((attempt, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: attempts are stored in order and never reordered
-          <React.Fragment key={index}>
-            {index > 0 && <p className="text-[11px] text-amber-600 dark:text-amber-400">{t("detail.retry")}</p>}
-            <Block
-              title={t("detail.request", { n: index + 1 })}
-              note={size(attempt.prompt)}
-              text={readable(attempt.prompt)}
-              open={index === 0}
-            />
-            <Block
-              title={t("detail.answer", { n: index + 1 })}
-              note={sec(attempt.ms)}
-              text={
-                attempt.error ? attempt.error : attempt.response ? readable(attempt.response) : t("detail.noAnswer")
-              }
-              open
-              tone={attempt.error ? "text-destructive" : undefined}
-            />
-          </React.Fragment>
-        ))}
+        {data.reason && (
+          <p className="rounded-md bg-violet-500/10 p-2 text-violet-700 dark:text-violet-300">
+            {t("role.reason")}: {data.reason}
+          </p>
+        )}
+        {attempts.map((attempt, index) => {
+          const role = attempt.role ?? "analyst";
+          const prevRole = index > 0 ? (attempts[index - 1].role ?? "analyst") : null;
+          const retry = index > 0 && prevRole === role;
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: attempts are stored in order and never reordered
+            <React.Fragment key={index}>
+              {prevRole !== role && <p className="mt-1 font-medium text-[11px]">{t(`role.${role}`)}</p>}
+              {retry && <p className="text-[11px] text-amber-600 dark:text-amber-400">{t("detail.retry")}</p>}
+              {attempt.system && prevRole !== role && (
+                <Block title={t("role.roleSystem")} note={size(attempt.system)} text={attempt.system} />
+              )}
+              <Block
+                title={t("detail.request", { n: index + 1 })}
+                note={size(attempt.prompt)}
+                text={readable(attempt.prompt)}
+                open={index === 0}
+              />
+              <Block
+                title={t("detail.answer", { n: index + 1 })}
+                note={sec(attempt.ms)}
+                text={
+                  attempt.error ? attempt.error : attempt.response ? readable(attempt.response) : t("detail.noAnswer")
+                }
+                open
+                tone={attempt.error ? "text-destructive" : undefined}
+              />
+            </React.Fragment>
+          );
+        })}
       </section>
     </div>
   );

@@ -332,3 +332,43 @@ func ParseExpID(s string) int64 {
 	}
 	return n
 }
+
+// PurposeUsage is global token spend for one kind of work.
+//
+//	task      - calls made inside a pentest task
+//	siem      - SIEM case judgments (worker "siem-judge")
+//	intercept - the intercept fallback judge (worker "judge")
+//	other     - everything else: chat, and calls made before they were labelled
+type PurposeUsage struct {
+	Purpose      string `json:"purpose"`
+	Calls        int    `json:"calls"`
+	InputTokens  int    `json:"input_tokens"`
+	OutputTokens int    `json:"output_tokens"`
+}
+
+// UsageByPurpose groups the ledger by the kind of work that made each call.
+// Archived tasks are not included: their totals are kept per profile only.
+func (d *DB) UsageByPurpose() ([]PurposeUsage, error) {
+	rows, err := d.Query(`
+SELECT CASE WHEN worker='siem-judge' THEN 'siem'
+            WHEN worker='judge' THEN 'intercept'
+            WHEN COALESCE(task_id,'')<>'' THEN 'task'
+            ELSE 'other' END AS purpose,
+       COUNT(*), COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0)
+FROM llm_usage
+GROUP BY purpose
+ORDER BY SUM(input_tokens) + SUM(output_tokens) DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PurposeUsage{}
+	for rows.Next() {
+		var p PurposeUsage
+		if err := rows.Scan(&p.Purpose, &p.Calls, &p.InputTokens, &p.OutputTokens); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}

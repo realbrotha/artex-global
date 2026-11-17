@@ -4,7 +4,7 @@ import * as React from "react";
 
 import Link from "next/link";
 
-import { RefreshCwIcon, ScanSearchIcon, SearchIcon, SparklesIcon, XIcon } from "lucide-react";
+import { RefreshCwIcon, ScanSearchIcon, SearchIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,9 +23,9 @@ import {
   type AssetSource,
   analysisApi,
   type CaseSource,
-  type CaseVerdict,
   hostDetailUrl,
   isHostNode,
+  scheduleApi,
   wazuhApi,
 } from "@/lib/wazuh-api";
 
@@ -95,8 +95,6 @@ export default function DetectionsPage() {
   const [filter, setFilter] = React.useState<CaseFilter>({});
   const [checked, setChecked] = React.useState<Set<string>>(new Set());
   const [selected, setSelected] = React.useState<string | null>(null);
-  // Verdicts stored from the detail panel, shown until the reload arrives.
-  const [fresh, setFresh] = React.useState<Record<string, CaseVerdict>>({});
   const [analysis, setAnalysis] = React.useState<{ sourceId: string; job: Analysis } | null>(null);
 
   const load = React.useCallback(async () => {
@@ -134,10 +132,10 @@ export default function DetectionsPage() {
       (sources ?? []).flatMap((s) =>
         s.cases.map((c) => {
           const listed = { ...c, sourceId: s.id, sourceName: s.name };
-          return { ...listed, verdict: fresh[caseKey(listed)] ?? c.verdict };
+          return listed;
         }),
       ),
-    [sources, fresh],
+    [sources],
   );
   // Live = someone may need to act: not known activity and not judged
   // normal or false positive.
@@ -172,37 +170,15 @@ export default function DetectionsPage() {
   );
   const selectedCase = selected ? allCases.find((c) => caseKey(c) === selected) : undefined;
 
-  // Judging targets: the checked groups, or everything listed.
-  const judgeTargets = React.useMemo(() => {
-    const picked = groups.filter((g) => checked.has(g.key));
-    const pool = picked.length > 0 ? picked.flatMap((g) => g.cases) : listedCases;
-    return [...new Map(pool.filter(needsVerdict).map((c) => [caseKey(c), c])).values()];
-  }, [groups, checked, listedCases]);
-  const anyChecked = groups.some((g) => checked.has(g.key));
-
-  const [bulk, setBulk] = React.useState<{ done: number; total: number; failed: number } | null>(null);
-  const stopBulk = React.useRef(false);
-  // Judges one case at a time: each call sends that case to the model
-  // provider, and a provider failure should stop the run early.
-  const judgeMany = async () => {
-    if (!window.confirm(t("cases.judgeAllConfirm", { count: judgeTargets.length }))) return;
-    stopBulk.current = false;
-    let failed = 0;
-    const queue = [...judgeTargets];
-    setBulk({ done: 0, total: queue.length, failed: 0 });
-    for (let i = 0; i < queue.length && !stopBulk.current; i++) {
-      try {
-        await wazuhApi.judgeCase(queue[i].sourceId, queue[i].id);
-      } catch {
-        failed += 1;
-        if (failed >= 3 && failed === i + 1) break; // nothing succeeds: stop
-      }
-      setBulk({ done: i + 1, total: queue.length, failed });
-    }
-    await load();
-    setChecked(new Set());
-    setBulk((prev) => (prev ? { ...prev, total: prev.done } : prev));
-  };
+  // Unjudged cases wait for the next scheduled run, which judges them by itself.
+  const unjudgedListed = React.useMemo(() => listedCases.filter(needsVerdict).length, [listedCases]);
+  const [nextRun, setNextRun] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    scheduleApi
+      .get()
+      .then((s) => setNextRun(s.schedule.enabled && s.schedule.auto_judge ? (s.next_run ?? null) : null))
+      .catch(() => setNextRun(null));
+  }, []);
 
   // Whole-connection log analysis; an empty host list means every host.
   const analyseAll = async (sourceId: string) => {
@@ -387,27 +363,23 @@ export default function DetectionsPage() {
                     {t("cases.showKnown", { count: allCases.length - liveCases.length })}
                   </label>
                 )}
-                {judgeTargets.length > 0 && !(bulk && bulk.done < bulk.total) && (
-                  <Button size="xs" variant="outline" onClick={() => void judgeMany()}>
-                    <SparklesIcon />
-                    {anyChecked
-                      ? t("detections.judgeSelected", { count: judgeTargets.length })
-                      : t("cases.judgeAll", { count: judgeTargets.length })}
-                  </Button>
-                )}
-                {bulk && bulk.done < bulk.total && (
-                  <>
-                    {t("cases.judgeProgress", { done: bulk.done, total: bulk.total })}
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => {
-                        stopBulk.current = true;
-                      }}
-                    >
-                      {t("cases.judgeStop")}
-                    </Button>
-                  </>
+                {unjudgedListed > 0 && (
+                  <Link
+                    href="/system/schedule"
+                    className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+                  >
+                    {nextRun
+                      ? t("detections.autoJudgeAt", {
+                          count: unjudgedListed,
+                          when: new Date(nextRun).toLocaleString(undefined, {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }),
+                        })
+                      : t("detections.autoJudgeOff", { count: unjudgedListed })}
+                  </Link>
                 )}
               </span>
             </div>
@@ -431,9 +403,6 @@ export default function DetectionsPage() {
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
               <span>{t("detections.groupCount", { groups: groups.length, cases: listedCases.length })}</span>
-              {bulk && bulk.done >= bulk.total && (
-                <span>{t("cases.judgeDone", { done: bulk.done - bulk.failed, failed: bulk.failed })}</span>
-              )}
               {caseSources
                 .filter((s) => s.cases_at && !s.error)
                 .map((s) => (
@@ -509,15 +478,7 @@ export default function DetectionsPage() {
                 </p>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto p-3">
-                <CaseDetail
-                  c={selectedCase}
-                  verdict={selectedCase.verdict}
-                  compact
-                  onVerdict={(v) => {
-                    setFresh((prev) => ({ ...prev, [caseKey(selectedCase)]: v }));
-                    void load();
-                  }}
-                />
+                <CaseDetail c={selectedCase} verdict={selectedCase.verdict} compact onCorrected={() => void load()} />
               </div>
             </aside>
           )}

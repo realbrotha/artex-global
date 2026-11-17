@@ -19,6 +19,8 @@ const (
 	VerdictFalsePositive = "false_positive" // 오탐: the rule misfired and the activity itself is normal
 )
 
+var confidenceValues = map[string]bool{"high": true, "medium": true, "low": true}
+
 var verdictValues = map[string]bool{VerdictBreach: true, VerdictSuspicious: true, VerdictAttempt: true, VerdictNormal: true, VerdictFalsePositive: true}
 
 // Verdict is the judged outcome of one case candidate.
@@ -31,6 +33,11 @@ type Verdict struct {
 	Severity string   `json:"severity"`
 	Adjust   string   `json:"adjust,omitempty"`
 	Response []string `json:"response,omitempty"`
+	// Confidence is the model's own certainty: high, medium or low. Low sends
+	// the case to a debate.
+	Confidence string `json:"confidence,omitempty"`
+	// Method says how the verdict was reached; set by the code, not the model.
+	Method string `json:"method,omitempty"`
 }
 
 // ErrVerdictFormat: the model's answer did not satisfy the output rules.
@@ -87,8 +94,18 @@ const verdictSystemPrompt = `당신은 SIEM 사건 후보 1건을 판정하는 �
 ## 조치 (response)
 - suspicious, breach, attempt 일 때 실행 가능한 조치 1~4개(예: 공용 관리자 인증서 폐기 후 개인 인증서 발급, 허용 대역 밖 출발지 차단, 노출된 비밀정보 교체). normal, false_positive 는 빈 배열.
 
+## 사람 판례 (precedents)
+- 입력의 precedents 는 같은 탐지 기준의 사건을 사람이 직접 정정한 판정이다. LLM 판정보다 우선하는 근거다.
+- 이 사건과 사실(계정 종류, 출발지, 시각대, 행위)이 같으면 판례의 판정을 따르고 confidence 를 high 로 둔다.
+- 사실이 다르면 따르지 않고, 무엇이 달라 따르지 않았는지 explain 둘째 문장에 적는다.
+
+## 확신도 (confidence)
+- high: timeline 만으로 판정 근거가 충분함
+- medium: 근거가 있으나 다른 해석도 가능함
+- low: 근거가 부족하거나 서로 어긋나 판정이 갈릴 수 있음. 판정은 그래도 하나로 확정한다.
+
 ## 출력 형식
-{"verdict":"...","title":"...","explain":"...","evidence":["..."],"severity":"...","adjust":"","response":["..."]}`
+{"verdict":"...","title":"...","explain":"...","evidence":["..."],"severity":"...","adjust":"","response":["..."],"confidence":"high"}`
 
 var patternMeaning = map[string]string{
 	"P1": "실패 반복 후 로그인 성공", "P2": "허용 대역 밖·최초 출발지·root 직접 로그인", "P3": "로그인 → 권한 변경 → 침해 행위 연쇄",
@@ -110,6 +127,22 @@ func kstWithWeekday(c Case, first bool) string {
 // VerdictPrompt builds the user message for one case. near holds the cases
 // listed in c.Near (close in time), for context only.
 func VerdictPrompt(c Case, near []Case) string {
+	return VerdictPromptWith(c, near, nil)
+}
+
+// Precedent is a verdict a person set on a case of the same criterion: the
+// model is told to follow it when the facts match.
+type Precedent struct {
+	Actor   string `json:"actor"`
+	Summary string `json:"summary"`
+	From    string `json:"llm_verdict"`
+	Verdict string `json:"human_verdict"`
+	Reason  string `json:"reason"`
+}
+
+// VerdictPromptWith is VerdictPrompt with the human precedents for the
+// case's criterion.
+func VerdictPromptWith(c Case, near []Case, precedents []Precedent) string {
 	type nearView struct {
 		Criterion string `json:"criterion"`
 		Title     string `json:"title"`
@@ -146,9 +179,15 @@ func VerdictPrompt(c Case, near []Case) string {
 			Attack         []string   `json:"attack"`
 			Near           []nearView `json:"near_cases"`
 		} `json:"case"`
+		Precedents   []Precedent `json:"precedents"`
 		TimelineNote string      `json:"timeline_note"`
 		Timeline     []eventView `json:"timeline"`
 	}{}
+	in.Precedents = []Precedent{}
+	for _, p := range precedents {
+		p.Summary, p.Reason = clip(p.Summary, 200), clip(p.Reason, 300)
+		in.Precedents = append(in.Precedents, p)
+	}
 	in.Case.Criterion, in.Case.CriterionTitle, in.Case.Pattern, in.Case.PatternMeaning = c.Criterion, c.Title, c.Pattern, patternMeaning[c.Pattern]
 	in.Case.Severity, in.Case.SevBasis, in.Case.Actor, in.Case.Hosts = c.Severity, c.SevBasis, c.Actor, c.Hosts
 	in.Case.Entity, in.Case.Summary = clip(c.Entity, 600), c.Summary
@@ -231,6 +270,9 @@ func ValidateVerdict(v Verdict, c Case) []string {
 	if len(v.Response) > 4 {
 		problems = append(problems, "response 는 4개 이하")
 	}
+	if v.Confidence != "" && !confidenceValues[v.Confidence] {
+		problems = append(problems, "confidence 는 high, medium, low 중 하나")
+	}
 	return problems
 }
 
@@ -245,6 +287,8 @@ func ParseVerdict(text string) (Verdict, error) {
 		return v, fmt.Errorf("%w: JSON 을 해석하지 못했습니다", ErrVerdictFormat)
 	}
 	v.Title, v.Explain, v.Adjust = strings.TrimSpace(v.Title), strings.TrimSpace(v.Explain), strings.TrimSpace(v.Adjust)
+	v.Confidence = strings.ToLower(strings.TrimSpace(v.Confidence))
+	v.Method = "" // never taken from the model
 	lines := []string{}
 	for _, l := range v.Evidence {
 		if l = strings.TrimSpace(l); l != "" {
@@ -268,7 +312,11 @@ const (
 // the output rules is sent back with the violations listed; when every
 // attempt fails the result is an error, never a stored malformed verdict.
 func JudgeCase(ctx context.Context, complete Completer, c Case, near []Case) (Verdict, error) {
-	user := VerdictPrompt(c, near)
+	return judgeCase(ctx, complete, c, near, nil)
+}
+
+func judgeCase(ctx context.Context, complete Completer, c Case, near []Case, precedents []Precedent) (Verdict, error) {
+	user := VerdictPromptWith(c, near, precedents)
 	var problems []string
 	for attempt := 0; attempt < verdictAttempts; attempt++ {
 		prompt := user

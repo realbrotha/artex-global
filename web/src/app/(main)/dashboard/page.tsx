@@ -28,7 +28,6 @@ import { api } from "@/lib/api";
 import type {
   Activity,
   Agent,
-  ConvTokenSummary,
   Finding,
   InterceptPending,
   LLMProfile,
@@ -37,7 +36,6 @@ import type {
   SkillItem,
   Stats,
   Task,
-  TokenTotal,
   Tool,
   TrafficExchange,
   UsageStats,
@@ -143,8 +141,6 @@ export default function DashboardPage() {
   const [settings, setSettings] = React.useState<Settings | null>(null);
   const [pending, setPending] = React.useState<InterceptPending[]>([]);
   const [activity, setActivity] = React.useState<Activity[]>([]);
-  const [tokens, setTokens] = React.useState<TokenTotal | null>(null);
-  const [convTokens, setConvTokens] = React.useState<ConvTokenSummary[]>([]);
   const [usageStats, setUsageStats] = React.useState<UsageStats | null>(null);
   const [assetCounts, setAssetCounts] = React.useState<Record<string, number>>({});
   const [traffic, setTraffic] = React.useState<TrafficExchange[]>([]);
@@ -193,14 +189,12 @@ export default function DashboardPage() {
       if (loading) return;
       loading = true;
       try {
-        const [findings, stats, settings, pending, activity, tokens, conversationTokens] = await Promise.all([
+        const [findings, stats, settings, pending, activity] = await Promise.all([
           api.findings(),
           api.stats(),
           api.settings(),
           api.interceptPending(),
           api.activity(undefined, { limit: 30 }),
-          api.tokenStats(),
-          api.conversationTokens(),
         ]);
         if (!alive) return;
         setFindings(findings);
@@ -208,8 +202,6 @@ export default function DashboardPage() {
         setSettings(settings);
         setPending(pending);
         setActivity(activity.items);
-        setTokens(tokens.total ?? null);
-        setConvTokens(conversationTokens);
       } catch {
         // Preserve stale data and retry on the next interval.
       } finally {
@@ -334,8 +326,6 @@ export default function DashboardPage() {
   // tasks whose llm_profile_id is null/undefined used the active default profile
   const defaultProfileId = activeProfile ? Number(activeProfile.id) : null;
 
-  // 数据源开关：旧版 = activity（task.tokens + 会话），新版 = llm_usage 计量账本。
-  const [tokenVersion, setTokenVersion] = React.useState<"old" | "new">("old");
   // selected profile tab: "all" = 全部; number = specific profile id
   const [tokenTab, setTokenTab] = React.useState<number | null | "all">("all");
   // day range for the daily bar chart
@@ -350,44 +340,8 @@ export default function DashboardPage() {
 
   type Bucket = { input: number; output: number; cacheRead: number; cacheWrite: number; taskCount: number };
 
-  // 旧版：按 profile 归桶（来自 activity 的 task.tokens + 会话用量）。
-  const tokenByProfileOld = React.useMemo<Map<number | null, Bucket>>(() => {
-    const m = new Map<number | null, Bucket>();
-    const fold = (key: number | null, inp: number, out: number, cr: number, cw: number, addTask: boolean) => {
-      const prev = m.get(key) ?? { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, taskCount: 0 };
-      m.set(key, {
-        input: prev.input + inp,
-        output: prev.output + out,
-        cacheRead: prev.cacheRead + cr,
-        cacheWrite: prev.cacheWrite + cw,
-        taskCount: prev.taskCount + (addTask ? 1 : 0),
-      });
-    };
-    for (const t of tasks) {
-      fold(
-        t.llm_profile_id ?? defaultProfileId,
-        t.tokens?.input_tokens ?? 0,
-        t.tokens?.output_tokens ?? 0,
-        t.tokens?.cache_read_tokens ?? 0,
-        t.tokens?.cache_write_tokens ?? 0,
-        true,
-      );
-    }
-    for (const c of convTokens) {
-      fold(
-        c.llm_profile_id ?? defaultProfileId,
-        c.input_tokens,
-        c.output_tokens,
-        c.cache_read_tokens,
-        c.cache_write_tokens,
-        false,
-      );
-    }
-    return m;
-  }, [tasks, convTokens, defaultProfileId]);
-
-  // 新版：按 profile 归桶（来自 llm_usage 全局聚合，逐次调用精确）。
-  const tokenByProfileNew = React.useMemo<Map<number | null, Bucket>>(() => {
+  // llm_usage 원장(호출마다 기록)에서 profile 별로 합산한다.
+  const tokenByProfile = React.useMemo<Map<number | null, Bucket>>(() => {
     const m = new Map<number | null, Bucket>();
     for (const p of usageStats?.by_profile ?? []) {
       // 未匹配到现有 profile（改名/删除/空名）→ 落到默认桶，仍计入「全部」。
@@ -403,8 +357,6 @@ export default function DashboardPage() {
     }
     return m;
   }, [usageStats, profileIdByName, defaultProfileId]);
-
-  const tokenByProfile = tokenVersion === "new" ? tokenByProfileNew : tokenByProfileOld;
 
   const displayedTokens = React.useMemo(() => {
     if (tokenTab === "all") {
@@ -428,35 +380,8 @@ export default function DashboardPage() {
       : { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, taskCount: 0 };
   }, [tokenTab, tokenByProfile]);
 
-  // 旧版每日：把任务/会话的总量按其创建日期归桶（近似，非真实每日消耗）。
-  const dailyTokenDataOld = React.useMemo(() => {
-    const now = new Date();
-    now.setDate(now.getDate() - tokenDays);
-    const cutoff = now.toISOString().slice(0, 10);
-    const m = new Map<string, { input: number; output: number; cacheRead: number }>();
-    const fold = (date: string, inp: number, out: number, cr: number) => {
-      if (date < cutoff) return;
-      const prev = m.get(date) ?? { input: 0, output: 0, cacheRead: 0 };
-      m.set(date, { input: prev.input + inp, output: prev.output + out, cacheRead: prev.cacheRead + cr });
-    };
-    for (const t of tasks) {
-      if (tokenTab !== "all" && (t.llm_profile_id ?? defaultProfileId) !== tokenTab) continue;
-      fold(
-        t.created_at.slice(0, 10),
-        t.tokens?.input_tokens ?? 0,
-        t.tokens?.output_tokens ?? 0,
-        t.tokens?.cache_read_tokens ?? 0,
-      );
-    }
-    for (const c of convTokens) {
-      if (tokenTab !== "all" && (c.llm_profile_id ?? defaultProfileId) !== tokenTab) continue;
-      fold(c.created_at.slice(0, 10), c.input_tokens, c.output_tokens, c.cache_read_tokens);
-    }
-    return [...m.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, v]) => ({ date: date.slice(5), ...v }));
-  }, [tasks, convTokens, tokenDays, tokenTab, defaultProfileId]);
-
-  // 新版每日：来自 llm_usage 的真实每日消耗（ts 是实际调用时刻）。
-  const dailyTokenDataNew = React.useMemo(() => {
+  // 일별: llm_usage 의 실제 호출 시각(ts) 기준.
+  const dailyTokenData = React.useMemo(() => {
     const now = new Date();
     now.setDate(now.getDate() - tokenDays);
     const cutoff = now.toISOString().slice(0, 10);
@@ -473,8 +398,6 @@ export default function DashboardPage() {
     }
     return [...m.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, v]) => ({ date: date.slice(5), ...v }));
   }, [usageStats, tokenDays, tokenTab, profileIdByName, defaultProfileId]);
-
-  const dailyTokenData = tokenVersion === "new" ? dailyTokenDataNew : dailyTokenDataOld;
 
   // activity kind label
   function kindLabel(a: Activity): string {
@@ -624,33 +547,6 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1.5 text-xs font-semibold">
             <ZapIcon className="size-3.5 text-muted-foreground" />
             {t("tokenConsumption")}
-            {/* 数据源开关：旧版=activity 统计（含历史任务），新版=llm_usage 计量账本（更准，仅覆盖启用后） */}
-            <div className="ml-1 flex gap-0.5 rounded-md border bg-muted/30 p-0.5">
-              {(
-                [
-                  { v: "old", label: t("verOld") },
-                  { v: "new", label: t("verNew") },
-                ] as const
-              ).map(({ v, label }) => (
-                <button
-                  type="button"
-                  key={v}
-                  onClick={() => setTokenVersion(v)}
-                  title={v === "new" ? t("tooltipNew") : t("tooltipOld")}
-                  className={cn(
-                    "rounded px-2 py-0.5 text-[9px] font-medium transition-colors",
-                    tokenVersion === v
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <span className="text-[10px] font-normal text-muted-foreground">
-              {tokenVersion === "new" ? t("srcNew") : t("srcOld")}
-            </span>
           </div>
           {/* Profile tabs */}
           <div className="flex flex-wrap items-center gap-1">
@@ -716,6 +612,24 @@ export default function DashboardPage() {
                 {t("taskCount", { count: displayedTokens.taskCount })}
               </div>
             </div>
+
+            {/* Per-purpose split: ledger only, all profiles. */}
+            {tokenTab === "all" && (usageStats?.by_purpose?.length ?? 0) > 0 && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-muted-foreground">{t("byPurpose")}</div>
+                {usageStats?.by_purpose?.map((p) => (
+                  <div key={p.purpose} className="flex items-center justify-between gap-2 text-[10px]">
+                    <span className="text-muted-foreground">
+                      {t(`purpose.${p.purpose}`)}
+                      <span className="ml-1 opacity-70">{t("purposeCalls", { count: p.calls })}</span>
+                    </span>
+                    <span className="font-mono font-semibold tabular-nums">
+                      {fmtTokens(p.input_tokens + p.output_tokens)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Per-type bars */}
             <div className="space-y-3">

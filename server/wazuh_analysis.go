@@ -145,6 +145,15 @@ type analysisView struct {
 	JudgeAt  int            `json:"judge_done"`
 	JudgeOf  int            `json:"judge_total"`
 	Model    string         `json:"model,omitempty"`
+	// "manual" (started from a screen) or "schedule".
+	Trigger string `json:"trigger"`
+	// Judging: why it did not run or stopped short, and how many cases went
+	// to a debate or were confirmed conservatively.
+	JudgeNote string `json:"judge_note,omitempty"`
+	Debated   int    `json:"debated"`
+	Fallback  int    `json:"fallback"`
+	// Cases left for the next run by the per-run limit.
+	Deferred int `json:"deferred"`
 }
 
 type analysisJob struct {
@@ -213,6 +222,7 @@ func (s *Server) wazuhAnalysisRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/analyses/{analysisID}/judge", s.judgeAnalysis)
 	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/analyses/{analysisID}/stop", s.stopAnalysis)
 	s.siemHistoryRoutes(mux)
+	s.siemScheduleRoutes(mux)
 }
 
 func (s *Server) findAnalysis(w http.ResponseWriter, r *http.Request) *analysisJob {
@@ -272,31 +282,45 @@ func (s *Server) startAnalysis(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 409, "indexer 주소가 없는 연결은 경보를 분석할 수 없습니다")
 		return
 	}
-	label := strings.TrimSpace(in.Label)
+	job, e := s.launchAnalysis(source, auth, in.Label, hosts, "manual")
+	if e != nil {
+		writeErr(w, 500, "분석을 시작하지 못했습니다")
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, 200, job.snapshot())
+}
+
+// launchAnalysis starts a run in the background: collect, extract, then
+// judge by itself when the schedule settings say so.
+func (s *Server) launchAnalysis(source *db.WazuhSource, auth wazuh.Credentials, label string, hosts []string, trigger string) (*analysisJob, error) {
+	label = strings.TrimSpace(label)
 	if len([]rune(label)) > 120 {
 		label = string([]rune(label)[:120])
 	}
 	id := make([]byte, 12)
 	if _, e := rand.Read(id); e != nil {
-		writeErr(w, 500, "분석을 시작하지 못했습니다")
-		return
+		return nil, e
 	}
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), analysisTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), analysisTimeout)
 	job := &analysisJob{source: source.ID, sourceName: source.Name, created: time.Now(), cancel: cancel, view: analysisView{
 		ID: hex.EncodeToString(id), Label: label, Hosts: hosts, Days: wazuh.AlertWindowDays, State: "collecting",
-		Collect: analysisStep{Status: "running"}, Patterns: map[string]int{}, Cases: []analysisCase{},
+		Collect: analysisStep{Status: "running"}, Patterns: map[string]int{}, Cases: []analysisCase{}, Trigger: trigger,
 	}}
 	addAnalysis(job)
 	s.persistAnalysis(job)
 	go func() {
 		defer cancel()
-		s.runAnalysis(ctx, job, source, auth)
+		if s.runAnalysis(ctx, job, source, auth) {
+			s.autoJudge(job)
+		}
 	}()
-	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, 200, job.snapshot())
+	return job, nil
 }
 
-func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.WazuhSource, auth wazuh.Credentials) {
+// runAnalysis collects and extracts; it reports whether the run reached the
+// point where its cases can be judged.
+func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.WazuhSource, auth wazuh.Credentials) bool {
 	fail := func(e error) {
 		job.update(func(v *analysisView) {
 			if errors.Is(e, context.Canceled) {
@@ -325,7 +349,7 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 	if e != nil {
 		log.Printf("[siem-analysis] %q failed: %v", label, e)
 		fail(e)
-		return
+		return false
 	}
 	checked := map[string]bool{}
 	for _, r := range records {
@@ -351,12 +375,12 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 	if e != nil {
 		log.Printf("[siem-analysis] %q failed: %v", label, e)
 		fail(e)
-		return
+		return false
 	}
 	verdicts, e := s.m.pg.CaseVerdicts(ctx, source.ID)
 	if e != nil {
 		fail(errors.New("사건 판정을 읽지 못했습니다"))
-		return
+		return false
 	}
 	now := time.Now()
 	job.mu.Lock()
@@ -374,8 +398,17 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 	job.mu.Unlock()
 	s.persistAnalysis(job)
 	go s.storeRunAlerts(job, collectedAlerts)
+	// A scheduled whole-connection run is also the connection's case list.
+	if job.view.Trigger == "schedule" && len(job.view.Hosts) == 0 {
+		persist, done := context.WithTimeout(context.Background(), 15*time.Second)
+		if pe := s.m.pg.SaveWazuhCases(persist, source.ID, source.Revision, cases, meta, ""); pe != nil {
+			log.Printf("[siem-analysis] case list: %v", pe)
+		}
+		done()
+	}
 	log.Printf("[siem-analysis] %q extracted: %d alert(s), %d rule(s), %d case candidate(s) in %s",
 		label, meta.Alerts, meta.Rules, len(cases), now.Sub(started).Round(100*time.Millisecond))
+	return true
 }
 
 func (s *Server) getAnalysis(w http.ResponseWriter, r *http.Request) {
@@ -409,49 +442,91 @@ func needsVerdict(c analysisCase) bool {
 	return c.Known == "" && (c.Verdict == nil || c.Verdict.Stale)
 }
 
-// judgeAnalysis sends the job's unjudged cases to the model, one at a time.
-// It is a separate, explicit request because it is the step that sends alert
-// content to the model provider.
+// autoJudge judges a finished run's cases when the schedule settings ask for
+// it; otherwise it leaves a note saying judging is turned off.
+func (s *Server) autoJudge(job *analysisJob) {
+	sched, e := s.siemSchedule(context.Background())
+	if e != nil {
+		log.Printf("[siem-analysis] schedule settings: %v", e)
+		sched = wazuh.DefaultSchedule()
+	}
+	if !sched.AutoJudge {
+		job.update(func(v *analysisView) { v.JudgeNote = "자동 판정이 꺼져 있음" })
+		s.persistAnalysis(job)
+		return
+	}
+	if msg := s.judgeJob(job, sched.JudgeLimit, sched.Debate); msg != "" {
+		job.update(func(v *analysisView) { v.JudgeNote = msg })
+		s.persistAnalysis(job)
+	}
+}
+
+// judgeAnalysis judges a run's remaining cases on request; the same work
+// autoJudge does after extraction.
 func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 	job := s.findAnalysis(w, r)
 	if job == nil {
 		return
 	}
+	sched, e := s.siemSchedule(r.Context())
+	if e != nil {
+		sched = wazuh.DefaultSchedule()
+	}
+	if msg := s.judgeJob(job, analysisMaxHosts, sched.Debate); msg != "" {
+		writeErr(w, 409, msg)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, 200, job.snapshot())
+}
+
+// judgeJob judges up to limit of the run's cases that need a verdict, in the
+// background, most severe first. It returns a message when it does not start.
+func (s *Server) judgeJob(job *analysisJob, limit int, debate bool) string {
 	s.cfgMu.Lock()
 	provider, model, ready := s.llmProv, s.llmCfg.Model, s.llmOn && s.llmProv != nil
 	s.cfgMu.Unlock()
 	if !ready {
-		writeErr(w, 409, "LLM 이 설정되지 않았습니다. LLM 메뉴에서 모델을 연결해 주세요")
-		return
+		return "LLM 이 설정되지 않았습니다. LLM 메뉴에서 모델을 연결해 주세요"
 	}
 	job.mu.Lock()
 	if job.view.State != "ready" && job.view.State != "done" {
 		job.mu.Unlock()
-		writeErr(w, 409, "분석이 끝난 뒤에 판정할 수 있습니다")
-		return
+		return "분석이 끝난 뒤에 판정할 수 있습니다"
 	}
 	todo := []int{}
-	ids := map[int]string{}
 	for i, c := range job.view.Cases {
 		if needsVerdict(c) {
 			todo = append(todo, i)
-			ids[i] = c.ID
-			job.view.Cases[i].Judge, job.view.Cases[i].JudgeError = "pending", ""
 		}
 	}
-	if len(todo) == 0 {
-		job.mu.Unlock()
-		writeErr(w, 409, "판정할 사건 후보가 없습니다")
-		return
+	// Server order is most urgent first, so the limit keeps the worst cases.
+	deferred := 0
+	if len(todo) > limit {
+		deferred = len(todo) - limit
+		todo = todo[:limit]
 	}
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), time.Duration(len(todo))*caseJudgeTimeout)
+	if len(todo) == 0 {
+		job.view.State, job.view.Deferred = "done", 0
+		job.mu.Unlock()
+		s.persistAnalysis(job)
+		return ""
+	}
+	ids := map[int]string{}
+	for _, i := range todo {
+		ids[i] = job.view.Cases[i].ID
+		job.view.Cases[i].Judge, job.view.Cases[i].JudgeError = "pending", ""
+	}
+	// Room for a debate (four calls) on every case.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(len(todo))*2*caseJudgeTimeout)
 	job.cancel = cancel
 	job.view.State, job.view.JudgeAt, job.view.JudgeOf, job.view.Model = "judging", 0, len(todo), model
+	job.view.Deferred, job.view.JudgeNote = deferred, ""
 	raw := job.raw
 	label, runID := job.view.Label, job.view.ID
 	job.mu.Unlock()
 	s.persistAnalysis(job)
-	log.Printf("[siem-analysis] %q judge start: %d case(s), model %s", label, len(todo), model)
+	log.Printf("[siem-analysis] %q judge start: %d case(s), %d deferred, debate %v, model %s", label, len(todo), deferred, debate, model)
 
 	go func() {
 		defer cancel()
@@ -471,8 +546,8 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 			if c == nil {
 				e = errors.New("사건 후보를 찾을 수 없습니다")
 			} else {
-				one, done := context.WithTimeout(ctx, caseJudgeTimeout)
-				stored, _, e = s.judgeAndRecord(one, provider, model, job.source, runID, *c, near)
+				one, done := context.WithTimeout(ctx, 2*caseJudgeTimeout)
+				stored, _, e = s.judgeAndRecord(one, provider, model, job.source, runID, *c, near, debate)
 				done()
 			}
 			job.update(func(v *analysisView) {
@@ -483,6 +558,12 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 					row.Judge, row.JudgeError = "failed", e.Error()
 				} else {
 					row.Judge, row.Verdict = "done", &caseVerdictView{CaseVerdict: stored}
+					switch stored.Method {
+					case wazuh.MethodDebate:
+						v.Debated++
+					case wazuh.MethodFallback:
+						v.Fallback++
+					}
 				}
 				v.JudgeAt++
 			})
@@ -503,6 +584,5 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[siem-analysis] %q judge end: %d of %d judged, %d failed in %s",
 			label, len(todo)-failed, len(todo), failed, time.Since(judgeStarted).Round(100*time.Millisecond))
 	}()
-	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, 200, job.snapshot())
+	return ""
 }

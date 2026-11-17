@@ -8,7 +8,6 @@ import {
   CircleDashedIcon,
   CircleMinusIcon,
   CirclePauseIcon,
-  SparklesIcon,
   SquareIcon,
   XIcon,
 } from "lucide-react";
@@ -121,7 +120,9 @@ export function AnalysisPanel({
   // Breakdowns show their first rows; the rest on request.
   const [allRules, setAllRules] = React.useState(false);
   const [allHosts, setAllHosts] = React.useState(false);
-  const active = !archived && ACTIVE.includes(job.state);
+  // A run that just finished extracting is judged by the server next, unless
+  // it left a note saying why not: keep watching it until then.
+  const active = !archived && (ACTIVE.includes(job.state) || (job.state === "ready" && !job.judge_note));
 
   React.useEffect(() => setJob(initial), [initial]);
 
@@ -391,19 +392,17 @@ export function AnalysisPanel({
                 {job.model && ` · ${job.model}`}
               </p>
             )}
-            {!archived && extracted && job.state !== "judging" && pending.length > 0 && (
-              <div className="grid grid-cols-1 gap-1.5">
-                <p>{t("judgeNote", { count: pending.length })}</p>
-                <Button
-                  size="sm"
-                  className="justify-self-start"
-                  disabled={busy}
-                  onClick={() => void act(() => analysisApi.judge(sourceId, job.id))}
-                >
-                  <SparklesIcon />
-                  {t("judge", { count: pending.length })}
-                </Button>
-              </div>
+            {job.judge_note && <p className="text-amber-600 dark:text-amber-400">{job.judge_note}</p>}
+            {((job.debated ?? 0) > 0 || (job.fallback ?? 0) > 0 || (job.deferred ?? 0) > 0) && (
+              <Fact label={t("fact.method")}>
+                {[
+                  (job.debated ?? 0) > 0 && t("methodDebated", { count: job.debated ?? 0 }),
+                  (job.fallback ?? 0) > 0 && t("methodFallback", { count: job.fallback ?? 0 }),
+                  (job.deferred ?? 0) > 0 && t("methodDeferred", { count: job.deferred ?? 0 }),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Fact>
             )}
             {!archived && job.cases.length > 0 && (
               <ul className="grid grid-cols-1 gap-1 text-foreground">
@@ -441,6 +440,11 @@ export function AnalysisPanel({
                             {verdict && (
                               <span className={cn("rounded border px-1 py-px", verdictTone[verdict.verdict])}>
                                 {tc(`verdict.${verdict.verdict}`)}
+                              </span>
+                            )}
+                            {verdict?.method && verdict.method !== "single" && (
+                              <span className="rounded border border-violet-500/50 px-1 py-px text-violet-700 dark:text-violet-300">
+                                {tc(`method.${verdict.method}`)}
                               </span>
                             )}
                             <span className="text-muted-foreground">

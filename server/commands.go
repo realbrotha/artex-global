@@ -101,7 +101,7 @@ func (s *Server) pgTokenByModel(w http.ResponseWriter, r *http.Request) {
 func (s *Server) pgUsageStats(w http.ResponseWriter, r *http.Request) {
 	pg := s.m.PG()
 	if pg == nil {
-		writeJSON(w, 200, map[string]any{"by_profile": []db.ProfileUsage{}, "daily": []db.ProfileDayUsage{}})
+		writeJSON(w, 200, map[string]any{"by_profile": []db.ProfileUsage{}, "daily": []db.ProfileDayUsage{}, "by_purpose": []db.PurposeUsage{}})
 		return
 	}
 	days := atoiDefault(r.URL.Query().Get("days"), 365)
@@ -115,7 +115,12 @@ func (s *Server) pgUsageStats(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
-	writeJSON(w, 200, map[string]any{"by_profile": byProfile, "daily": daily})
+	byPurpose, err := pg.UsageByPurpose()
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, 200, map[string]any{"by_profile": byProfile, "daily": daily, "by_purpose": byPurpose})
 }
 
 // pgLLMTasks returns distinct recorded tasks with counts, for the page's task

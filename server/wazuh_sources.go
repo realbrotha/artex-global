@@ -42,6 +42,8 @@ func (s *Server) registerWazuhSources(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/defensive/cases", s.listCases)
 	mux.HandleFunc("GET /api/defensive/wazuh/{sourceID}/cases/{caseID}", s.getCase)
 	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/cases/{caseID}/judge", s.judgeCase)
+	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/cases/{caseID}/correct", s.correctCase)
+	mux.HandleFunc("GET /api/defensive/feedback", s.getFeedback)
 	mux.HandleFunc("GET /api/defensive/accepted-risks", s.listAcceptedRisks)
 	mux.HandleFunc("PUT /api/defensive/accepted-risks", s.replaceAcceptedRisks)
 	mux.HandleFunc("GET /api/defensive/posture", s.listPosture)
@@ -407,7 +409,9 @@ type caseView struct {
 func withVerdict(c wazuh.Case, verdicts map[string]*db.CaseVerdict, now time.Time) caseView {
 	out := caseView{Case: c}
 	if v := verdicts[db.CaseKey(c)]; v != nil {
-		out.Verdict = &caseVerdictView{CaseVerdict: v, Stale: c.Last.After(v.CaseLast) || now.Sub(v.JudgedAt) > caseVerdictMaxAge}
+		// A person's verdict does not age out; only new activity reopens it.
+		aged := v.Method != wazuh.MethodHuman && now.Sub(v.JudgedAt) > caseVerdictMaxAge
+		out.Verdict = &caseVerdictView{CaseVerdict: v, Stale: c.Last.After(v.CaseLast) || aged}
 	}
 	return out
 }
@@ -574,9 +578,13 @@ func (s *Server) judgeCase(w http.ResponseWriter, r *http.Request) {
 	// Detached from the request: a judgment can outlast a proxy's response
 	// timeout, and a verdict the model already produced should still be
 	// stored. The client then finds it on its next reload.
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), caseJudgeTimeout)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 2*caseJudgeTimeout)
 	defer cancel()
-	stored, status, e := s.judgeAndRecord(llmrec.WithWorker(ctx, "siem-judge"), provider, model, id, "", *c, near)
+	sched, se := s.siemSchedule(ctx)
+	if se != nil {
+		sched = wazuh.DefaultSchedule()
+	}
+	stored, status, e := s.judgeAndRecord(llmrec.WithWorker(ctx, "siem-judge"), provider, model, id, "", *c, near, sched.Debate)
 	if e != nil {
 		writeErr(w, status, e.Error())
 		return
