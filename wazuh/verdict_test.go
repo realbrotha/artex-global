@@ -25,7 +25,9 @@ func judgedCase(t *testing.T) (Case, []Case) {
 const goodVerdict = `{"verdict":"suspicious","title":"업무 시간 중 감사 기능 중지 후 계정 정보 열람",
 "explain":"같은 사용자가 감사 기능을 2번 멈춘 뒤 20분 안에 계정 비밀번호 파일을 읽고 명령 기록을 지웠다. 작업 요청과 일치하는 근거가 없어 운영 작업으로 설명되지 않는다.",
 "evidence":["11-13 10:00 app-02 auid=1001 감사 데몬 중지 (rule 200003)","11-13 10:10 같은 계정 /etc/shadow 읽기 (rule 200005)"],
-"severity":"High","adjust":"","response":["감사 데몬 재기동","해당 계정 비밀번호 교체"]}`
+"severity":"High","adjust":"","response":["감사 데몬 재기동","해당 계정 비밀번호 교체"],
+"checks":[{"id":"actor","answer":"yes","basis":"auid=1001"},{"id":"business","answer":"no","basis":"작업 요청 근거 없음"},
+{"id":"success","answer":"yes","basis":"shadow 읽기 성공"},{"id":"restored","answer":"unknown","basis":"재기동 기록 없음"}]}`
 
 func TestVerdictPromptCarriesCaseAndTimeline(t *testing.T) {
 	c, near := judgedCase(t)

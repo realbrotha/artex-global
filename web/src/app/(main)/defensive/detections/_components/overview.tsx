@@ -36,6 +36,8 @@ interface OverviewProps {
   readonly windowDays: number;
   readonly filter: CaseFilter;
   readonly onFilter: (next: CaseFilter) => void;
+  // Page controls, at the end of the summary line rather than on a row of their own.
+  readonly actions?: React.ReactNode;
 }
 
 // One number of the summary line; a button when it filters the table.
@@ -78,7 +80,7 @@ export function Stat({
 // The whole picture before any row: how much is open, when the cases began,
 // which clusters they are in and which criteria produce most of them. Tiles
 // and bars all narrow the table below.
-export function DetectionsOverview({ cases, counts, clusterOf, windowDays, filter, onFilter }: OverviewProps) {
+export function DetectionsOverview({ cases, counts, clusterOf, windowDays, filter, onFilter, actions }: OverviewProps) {
   const t = useTranslations("protectedAssets.detections");
   // Two-hour bars for a week or so; coarser for longer windows so bars stay visible.
   const perDay = windowDays <= 10 ? 12 : windowDays <= 30 ? 6 : 1;
@@ -133,6 +135,7 @@ export function DetectionsOverview({ cases, counts, clusterOf, windowDays, filte
             value={counts.hostsHit}
             note={counts.hostsTotal > 0 ? t("tile.hostsOf", { total: counts.hostsTotal }) : undefined}
           />
+          {actions && <span className="ml-auto flex items-center gap-1">{actions}</span>}
         </div>
         <p className="flex min-h-4 flex-wrap items-baseline gap-x-2 text-[11px] text-muted-foreground">
           {hover !== null && hover < line.buckets.length && (

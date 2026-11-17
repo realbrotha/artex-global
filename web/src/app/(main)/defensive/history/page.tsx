@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { type AnalysisRun, historyApi, type Judgement } from "@/lib/wazuh-api";
 
@@ -76,18 +77,7 @@ export default function HistoryPage() {
   const segment = "px-2.5 py-1.5";
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-xl tracking-tight">{t("history.title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("history.subtitle")}</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-          <RefreshCwIcon className={cn(loading && "animate-spin")} />
-          {t("refresh")}
-        </Button>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -95,19 +85,30 @@ export default function HistoryPage() {
       )}
 
       {runId === null && (
-        <div className="flex self-start overflow-hidden rounded-lg border text-xs">
-          {VIEWS.map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              aria-pressed={view === v}
-              className={cn(segment, view === v ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-            >
-              {t(`history.view.${v}`)}
-              <span className="ml-1.5 tabular-nums opacity-70">{(v === "runs" ? runs : judgements)?.length ?? ""}</span>
-            </button>
-          ))}
+        <div className="-mb-1 flex items-center gap-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as View)}>
+            <TabsList>
+              {VIEWS.map((v) => (
+                <TabsTrigger key={v} value={v}>
+                  {t(`history.view.${v}`)}
+                  <span className="ml-1 text-muted-foreground tabular-nums">
+                    {(v === "runs" ? runs : judgements)?.length ?? ""}
+                  </span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="ml-auto"
+            onClick={() => void load()}
+            disabled={loading}
+            aria-label={t("refresh")}
+            title={t("refresh")}
+          >
+            <RefreshCwIcon className={cn(loading && "animate-spin")} />
+          </Button>
         </div>
       )}
 
@@ -193,7 +194,7 @@ export default function HistoryPage() {
                 // The stored detail keeps the state the run ended in.
                 initial={{ ...run.run.detail, state: run.run.state }}
                 archived
-                className="w-full rounded-lg border lg:sticky lg:top-4 lg:max-h-[calc(100svh-6rem)] lg:w-[26rem]"
+                className="w-full rounded-lg border lg:sticky lg:top-4 lg:max-h-[calc(100svh-5.5rem)] lg:w-[26rem]"
               />
               <div className="grid min-w-0 flex-1 grid-cols-1 content-start gap-2">
                 <div className="flex self-start justify-self-start overflow-hidden rounded-lg border text-xs">

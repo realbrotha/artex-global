@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/Autumn-27/artex/wazuh"
@@ -28,8 +29,13 @@ func (d *DB) SaveCorrection(ctx context.Context, sourceID int64, c wazuh.Case, f
 		return nil, err
 	}
 	defer tx.Rollback()
-	if _, err = tx.ExecContext(ctx, `INSERT INTO siem_corrections(source_id,case_key,criterion,actor,summary,from_verdict,to_verdict,reason)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, sourceID, CaseKey(c), c.Criterion, c.Actor, c.Summary, from, v.Verdict, reason); err != nil {
+	// Kept with its timeline: the answer set replays the judging against it.
+	caseData, err := json.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT INTO siem_corrections(source_id,case_key,criterion,actor,summary,from_verdict,to_verdict,reason,case_data)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, sourceID, CaseKey(c), c.Criterion, c.Actor, c.Summary, from, v.Verdict, reason, caseData); err != nil {
 		return nil, err
 	}
 	if err = tx.Commit(); err != nil {

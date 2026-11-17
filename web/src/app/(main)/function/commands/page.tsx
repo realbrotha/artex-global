@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { BarChart3Icon, ChevronLeftIcon, ChevronRightIcon, Loader2Icon, SearchIcon, TerminalIcon } from "lucide-react";
+import { BarChart3Icon, ChevronLeftIcon, ChevronRightIcon, Loader2Icon, SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
@@ -129,17 +129,8 @@ export default function CommandsPage() {
   const rangeEnd = page * size + commands.length;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <TerminalIcon className="h-5 w-5 text-muted-foreground" />
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-          <Badge variant="secondary">{total}</Badge>
-        </div>
-      </div>
-
-      {/* Toolbar */}
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {/* Toolbar: the total sits at its end instead of on a row of its own. */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative max-w-sm flex-1">
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -201,10 +192,11 @@ export default function CommandsPage() {
             <ChevronRightIcon />
           </Button>
         </div>
+        <span className="ml-auto text-muted-foreground text-xs tabular-nums">{t("totalCount", { count: total })}</span>
       </div>
 
       {/* History table */}
-      <div className="flex h-[calc(100vh-13rem)] min-h-0 flex-col">
+      <div className="flex h-[calc(100vh-10rem)] min-h-0 flex-col">
         <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
           <div className="min-h-0 flex-1 overflow-auto">
             <Table>

@@ -282,7 +282,7 @@ export default function ProtectedAssetsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex flex-1 flex-col gap-4">
+      <div className="flex flex-1 flex-col gap-3">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -365,7 +365,7 @@ export default function ProtectedAssetsPage() {
           )}
           {assets !== null && assets.length > 0 && (
             <>
-              <div className="flex h-[calc(100svh-9rem)] min-h-[520px] overflow-hidden rounded-lg border">
+              <div className="flex h-[calc(100svh-7.5rem)] min-h-[520px] overflow-hidden rounded-lg border">
                 {view === "map" ? (
                   <div className="min-w-0 flex-1">
                     <AssetGraph

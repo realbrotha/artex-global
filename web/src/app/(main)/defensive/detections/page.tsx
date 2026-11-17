@@ -230,46 +230,10 @@ export default function DetectionsPage() {
   const caseErrors = caseSources.filter((s) => s.error);
   const segment = "px-2.5 py-1.5";
   const segmentOn = "bg-primary text-primary-foreground";
-  const sidePanel = "sticky top-4 flex h-[calc(100svh-6rem)] shrink-0 overflow-hidden rounded-lg border";
+  const sidePanel = "sticky top-4 flex h-[calc(100svh-5.5rem)] shrink-0 overflow-hidden rounded-lg border";
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-xl tracking-tight">{t("detections.title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("detections.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {caseSources.length === 1 && (
-            <Button size="sm" onClick={() => void analyseAll(caseSources[0].id)}>
-              <ScanSearchIcon />
-              {t("analysis.all")}
-            </Button>
-          )}
-          {caseSources.length > 1 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm">
-                  <ScanSearchIcon />
-                  {t("analysis.all")}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {caseSources.map((s) => (
-                  <DropdownMenuItem key={s.id} onSelect={() => void analyseAll(s.id)}>
-                    {s.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-            <RefreshCwIcon className={cn(loading && "animate-spin")} />
-            {t("refresh")}
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -300,6 +264,43 @@ export default function DetectionsPage() {
           windowDays={windowDays}
           filter={filter}
           onFilter={setFilter}
+          actions={
+            <>
+              {caseSources.length === 1 && (
+                <Button size="xs" onClick={() => void analyseAll(caseSources[0].id)}>
+                  <ScanSearchIcon />
+                  {t("analysis.all")}
+                </Button>
+              )}
+              {caseSources.length > 1 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="xs">
+                      <ScanSearchIcon />
+                      {t("analysis.all")}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {caseSources.map((src) => (
+                      <DropdownMenuItem key={src.id} onSelect={() => void analyseAll(src.id)}>
+                        {src.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => void load()}
+                disabled={loading}
+                aria-label={t("refresh")}
+                title={t("refresh")}
+              >
+                <RefreshCwIcon className={cn(loading && "animate-spin")} />
+              </Button>
+            </>
+          }
         />
       )}
 
@@ -356,7 +357,7 @@ export default function DetectionsPage() {
                   <XIcon />
                 </button>
               ))}
-              <span className="ml-auto flex items-center gap-2 text-muted-foreground">
+              <span className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-muted-foreground">
                 {allCases.length > liveCases.length && (
                   <label className="flex items-center gap-1.5">
                     <input type="checkbox" checked={showKnown} onChange={(e) => setShowKnown(e.target.checked)} />

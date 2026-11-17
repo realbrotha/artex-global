@@ -828,11 +828,7 @@ export default function SkillsPage() {
 
   return (
     <div data-content-padding="false" className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b px-4 py-2.5 lg:px-6">
-        <div className="flex flex-col gap-0.5">
-          <h1 className="text-sm font-semibold leading-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-xs">{t("subtitle")}</p>
-        </div>
+      <div className="flex items-center gap-3 border-b px-3 py-2.5">
         {/* 缺口清单：agent 点名调用、但库里没有的 skill —— 直接是该补什么的依据。 */}
         {missing.length > 0 && (
           <Popover>
@@ -1014,7 +1010,7 @@ export default function SkillsPage() {
           )}
 
           {selected && selected.path === null && selectedSkill && (
-            <div className="max-w-5xl space-y-5">
+            <div className="space-y-5">
               <div>
                 <h2 className="font-mono text-base font-semibold">{selectedSkill.name}</h2>
                 {selectedSkill.description && (
@@ -1216,7 +1212,7 @@ export default function SkillsPage() {
             <SheetTitle>{t("newSkill")}</SheetTitle>
           </SheetHeader>
           <Tabs defaultValue="basic" className="flex min-h-0 flex-1 flex-col">
-            <TabsList className="mx-4 mt-3 shrink-0 justify-start">
+            <TabsList className="mx-3 mt-3 shrink-0 justify-start">
               <TabsTrigger value="basic">{t("tabBasic")}</TabsTrigger>
               <TabsTrigger value="mcp">
                 {t("linkedMcp")}

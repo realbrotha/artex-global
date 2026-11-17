@@ -341,7 +341,7 @@ const (
 func (s *Server) wazuhCasesOnce(parent context.Context, source *db.WazuhSource, auth wazuh.Credentials, records []wazuh.CheckRecord) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(parent), wazuhCasesTimeout)
 	defer cancel()
-	cases, meta, e := wazuhExtractCases(ctx, s.m.pg, source.Config, auth, records, nil, nil)
+	cases, meta, e := wazuhExtractCases(ctx, s.m.pg, source.Config, auth, records, nil, nil, nil)
 	failure := ""
 	if e != nil {
 		failure = e.Error()
@@ -358,7 +358,7 @@ var errNoEventCatalog = errors.New("탐지 기준이 등록되지 않았습니�
 
 // hosts limits the alerts to those agents (nil = all); collected, when set, is
 // called once the alerts are in, before the cases are built.
-func wazuhExtractCases(ctx context.Context, pg *db.DB, cfg wazuh.Config, auth wazuh.Credentials, records []wazuh.CheckRecord, hosts []string, collected func(alerts []*wazuh.Alert, capped bool)) ([]wazuh.Case, db.CaseMeta, error) {
+func wazuhExtractCases(ctx context.Context, pg *db.DB, cfg wazuh.Config, auth wazuh.Credentials, records []wazuh.CheckRecord, hosts []string, collected func(alerts []*wazuh.Alert, capped bool), watch *[]wazuh.NearMiss) ([]wazuh.Case, db.CaseMeta, error) {
 	meta := db.CaseMeta{WindowDays: wazuh.AlertWindowDays}
 	settings, e := pg.GetSiemSettings(ctx)
 	if e != nil {
@@ -367,7 +367,7 @@ func wazuhExtractCases(ctx context.Context, pg *db.DB, cfg wazuh.Config, auth wa
 	if settings[siemEventCatalog] == "" || settings[siemEventCriteria] == "" {
 		return nil, meta, errNoEventCatalog
 	}
-	in := wazuh.CaseInput{Today: time.Now(), Admin: wazuh.ParseAdminPrefixes(settings[siemAdminSources]), Posture: wazuh.PostureOf(records)}
+	in := wazuh.CaseInput{Today: time.Now(), Admin: wazuh.ParseAdminPrefixes(settings[siemAdminSources]), Posture: wazuh.PostureOf(records), Watch: watch}
 	if in.Catalog, e = wazuh.ParseEventCatalog(settings[siemEventCatalog]); e != nil {
 		return nil, meta, e
 	}
@@ -513,6 +513,8 @@ func judgeFailure(e error) (int, string) {
 		return 502, e.Error()
 	case errors.As(e, &callErr):
 		return 502, callErr.Error()
+	case errors.Is(e, errRunner):
+		return 502, e.Error()
 	case errors.Is(e, context.DeadlineExceeded):
 		return 504, "LLM 판정 시간이 초과됐습니다"
 	default:
@@ -554,11 +556,13 @@ func (s *Server) judgeCase(w http.ResponseWriter, r *http.Request) {
 	if pg == nil {
 		return
 	}
-	s.cfgMu.Lock()
-	provider, model, ready := s.llmProv, s.llmCfg.Model, s.llmOn && s.llmProv != nil
-	s.cfgMu.Unlock()
-	if !ready {
-		writeErr(w, 409, "LLM 이 설정되지 않았습니다. LLM 메뉴에서 모델을 연결해 주세요")
+	sched, se := s.siemSchedule(r.Context())
+	if se != nil {
+		sched = wazuh.DefaultSchedule()
+	}
+	complete, model, msg := s.judgeBackend(sched)
+	if msg != "" {
+		writeErr(w, 409, msg)
 		return
 	}
 	set, e := pg.GetWazuhCases(r.Context(), id)
@@ -580,11 +584,7 @@ func (s *Server) judgeCase(w http.ResponseWriter, r *http.Request) {
 	// stored. The client then finds it on its next reload.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 2*caseJudgeTimeout)
 	defer cancel()
-	sched, se := s.siemSchedule(ctx)
-	if se != nil {
-		sched = wazuh.DefaultSchedule()
-	}
-	stored, status, e := s.judgeAndRecord(llmrec.WithWorker(ctx, "siem-judge"), provider, model, id, "", *c, near, sched.Debate)
+	stored, status, e := s.judgeAndRecord(llmrec.WithWorker(ctx, "siem-judge"), complete, model, id, "", *c, near, sched)
 	if e != nil {
 		writeErr(w, status, e.Error())
 		return

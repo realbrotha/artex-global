@@ -286,17 +286,12 @@ export default function SystemSettingsPage() {
   const braveNeedsKey = webSearch && backend === "brave-free" && !braveKeySet;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       {/* 多列而非 grid：网络搜索卡片比其余高数倍，且高度随所选后端变化（brave/tavily
           的 key 输入是条件渲染）。grid 会按最高的一张撑满整行、在旁边留下大片空白，
           多列则自动按内容高度平衡填充。卡片间距靠 mb 而非 gap——多列布局下
           column-gap 只管列间距，行间距要由子元素自己给。 */}
-      <div className="columns-1 gap-4 md:gap-6 lg:columns-2">
+      <div className="columns-1 gap-3 lg:columns-2">
         <UpdateCard />
 
         <Card className="mb-4 break-inside-avoid md:mb-6">

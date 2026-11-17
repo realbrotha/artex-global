@@ -8,6 +8,7 @@ import {
   Cable,
   CalendarClock,
   ClipboardList,
+  Crosshair,
   FolderOpen,
   History,
   LayoutDashboard,
@@ -83,6 +84,8 @@ export const sidebarItems: NavGroup[] = [
       { id: "infra", title: "基础设施", url: "/defensive/assets", icon: Network },
       { id: "detections", title: "检测", url: "/defensive/detections", icon: Siren },
       { id: "posture", title: "配置检查", url: "/defensive/posture", icon: ShieldCheck },
+      // 외부 위협 동향(KEV, 보안 뉴스) 수집과 그에 따른 헌팅. 내부 관점 메뉴 옆에 둔다.
+      { id: "defensive-hunting", title: "自主狩猎", url: "/defensive/hunting", icon: Crosshair },
       { id: "chat", title: "对话", url: "/chat", icon: MessageSquare },
       {
         // 외부(블랙박스) 관점의 침투 테스트: 작업 → 공격 표면 → 취약점 → 트래픽.
@@ -102,7 +105,7 @@ export const sidebarItems: NavGroup[] = [
         icon: ScrollText,
         subItems: [
           { id: "siem-history", title: "分析记录", url: "/defensive/history", icon: History },
-          { id: "siem-feedback", title: "判定反馈", url: "/defensive/feedback", icon: MessageSquareWarning },
+          { id: "siem-quality", title: "检测质量", url: "/defensive/quality", icon: MessageSquareWarning },
           { id: "commands", title: "工具执行", url: "/function/commands", icon: Terminal },
           { id: "llm-records", title: "LLM 录制", url: "/function/llm-records", icon: Radio },
           { id: "workspace", title: "工作空间", url: "/function/workspace", icon: FolderOpen },

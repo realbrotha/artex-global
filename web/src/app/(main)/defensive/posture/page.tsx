@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { type AssetNode, hostDetailUrl, isHostNode, type PostureSource, postureApi, wazuhApi } from "@/lib/wazuh-api";
 
@@ -176,7 +177,6 @@ export default function PosturePage() {
 
   const stdLabel = (s: string) => (t.has(`checks.std.${s}`) ? t(`checks.std.${s}`) : s);
   const sevLabel = (s: string) => s || t("posture.noSev");
-  const checkedHosts = (sources ?? []).reduce((n, s) => n + s.hosts, 0);
   const mostInStd = Math.max(1, ...stds.map((s) => s.checks));
   const mostOnHost = worstHosts[0]?.checks ?? 1;
   const toggle = (patch: PostureFilter) => {
@@ -199,24 +199,7 @@ export default function PosturePage() {
   const segmentOn = "bg-primary text-primary-foreground";
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-xl tracking-tight">{t("posture.title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("posture.subtitle", { hosts: checkedHosts })}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setRisksOpen(true)}>
-            <ShieldCheckIcon />
-            {t("acceptedRisks.open")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-            <RefreshCwIcon className={cn(loading && "animate-spin")} />
-            {t("refresh")}
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -249,6 +232,22 @@ export default function PosturePage() {
                   }}
                 />
               ))}
+              <span className="ml-auto flex items-center gap-1">
+                <Button variant="outline" size="xs" onClick={() => setRisksOpen(true)}>
+                  <ShieldCheckIcon />
+                  {t("acceptedRisks.open")}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => void load()}
+                  disabled={loading}
+                  aria-label={t("refresh")}
+                  title={t("refresh")}
+                >
+                  <RefreshCwIcon className={cn(loading && "animate-spin")} />
+                </Button>
+              </span>
             </div>
             <p className="text-[11px] text-muted-foreground">{t("posture.sevTitle")}</p>
             <div className="flex h-6 gap-px overflow-hidden rounded-md">
@@ -338,6 +337,16 @@ export default function PosturePage() {
         <div className="flex min-h-0 flex-1 items-start gap-4">
           <div className="grid min-w-0 flex-1 grid-cols-1 content-start gap-2">
             <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Tabs value={view} onValueChange={(v) => selectView(v as View)}>
+                <TabsList>
+                  {VIEWS.map((v) => (
+                    <TabsTrigger key={v} value={v}>
+                      {v === "check" ? <ListIcon /> : <ServerIcon />}
+                      {t(`posture.view.${v}`)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
               <div className="relative w-full sm:w-64">
                 <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -346,20 +355,6 @@ export default function PosturePage() {
                   placeholder={t(view === "check" ? "posture.searchChecks" : "searchPlaceholder")}
                   className="h-8 pl-8 text-xs"
                 />
-              </div>
-              <div className="flex overflow-hidden rounded-lg border">
-                {VIEWS.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => selectView(v)}
-                    aria-pressed={view === v}
-                    className={cn(segment, view === v ? segmentOn : "hover:bg-muted")}
-                  >
-                    {v === "check" ? <ListIcon /> : <ServerIcon />}
-                    {t(`posture.view.${v}`)}
-                  </button>
-                ))}
               </div>
               {view === "check" && (
                 <div className="flex overflow-hidden rounded-lg border">
@@ -543,7 +538,7 @@ export default function PosturePage() {
           </div>
 
           {view === "check" && selectedRow && (
-            <aside className="sticky top-4 flex h-[calc(100svh-6rem)] w-[24rem] shrink-0 flex-col overflow-hidden rounded-lg border">
+            <aside className="sticky top-4 flex h-[calc(100svh-5.5rem)] w-[24rem] shrink-0 flex-col overflow-hidden rounded-lg border">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-1.5 border-b p-3">
                 <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
                   <span

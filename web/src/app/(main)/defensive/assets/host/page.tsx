@@ -123,7 +123,7 @@ export default function HostDetailPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
           <Link href={ASSETS_URL}>
@@ -146,7 +146,7 @@ export default function HostDetailPage() {
         </Button>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4">
+      <div className="flex flex-1 flex-col gap-3">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

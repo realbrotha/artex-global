@@ -290,7 +290,7 @@ export function AssetTree({
         <span className="text-xs tabular-nums text-muted-foreground">{findingTotal}</span>
       </button>
 
-      <div className="max-h-[24rem] min-h-0 flex-1 overflow-y-auto pr-2 lg:max-h-[calc(100vh-16rem)]">
+      <div className="max-h-[24rem] min-h-0 flex-1 overflow-y-auto pr-2 lg:max-h-[calc(100vh-11rem)]">
         <div className="flex flex-col">
           {rows}
           {rows.length === 0 && <p className="px-2 py-8 text-center text-xs text-muted-foreground">{emptyHint}</p>}

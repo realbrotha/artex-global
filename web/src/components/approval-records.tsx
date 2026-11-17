@@ -810,19 +810,14 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
     }));
   const title = taskId ? t("title.task") : t("title.history");
   return (
-    <div className="flex min-w-0 flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex min-w-0 flex-col gap-3">
+      {/* 승인 기록 화면에서는 상단 위치 표시가 제목이다. 작업 상세 탭 안에서만 제목을 둔다. */}
+      {taskId && (
         <div className="flex items-center gap-2">
-          <ClipboardListIcon className="size-5 text-muted-foreground" />
-          <h1 className="font-semibold text-xl">{title}</h1>
-          {pending.length ? <Badge variant="secondary">{t("pendingBadge", { count: pending.length })}</Badge> : null}
+          <ClipboardListIcon className="size-4 text-muted-foreground" />
+          <h2 className="font-semibold text-sm">{title}</h2>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void load(true)} disabled={loading || refreshing}>
-          <RefreshCwIcon data-icon="inline-start" className={cn(refreshing && "animate-spin")} />
-          {t("refresh")}
-        </Button>
-      </div>
-      <p className="text-muted-foreground text-sm">{t("intro")}</p>
+      )}
       <FieldGroup className="flex-row flex-wrap items-end gap-3" aria-label={t("filter.label")}>
         <Field className="w-full sm:w-40">
           <FieldLabel htmlFor={`${filterID}-status`}>{t("filter.status")}</FieldLabel>
@@ -878,6 +873,19 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
             {t("filter.clear")}
           </Button>
         ) : null}
+        <span className="ml-auto flex items-center gap-2 self-end pb-1">
+          {pending.length ? <Badge variant="secondary">{t("pendingBadge", { count: pending.length })}</Badge> : null}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => void load(true)}
+            disabled={loading || refreshing}
+            aria-label={t("refresh")}
+            title={t("refresh")}
+          >
+            <RefreshCwIcon className={cn(refreshing && "animate-spin")} />
+          </Button>
+        </span>
       </FieldGroup>
       {error ? (
         <Alert variant="destructive">

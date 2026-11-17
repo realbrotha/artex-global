@@ -200,7 +200,7 @@
       "traffic": "트래픽",
       "workspace": "작업 공간",
       "defensive": "방어",
-      "defensive-hunting": "자율 헌팅",
+      "defensive-hunting": "위협 헌팅",
       "security-sources": "로그 연결",
       "protected-assets": "보호 자산",
       "connections": "연결",
@@ -213,7 +213,11 @@
       "posture": "설정 점검",
       "siem-history": "분석 이력",
       "schedule": "분석 스케줄",
-      "siem-feedback": "판정 피드백"
+      "siem-quality": "탐지 품질",
+      "host-detail": "장비 상세",
+      "siem-feedback": "판정·정정",
+      "finding-detail": "취약점 상세",
+      "agent-detail": "에이전트 편집"
     }
   },
   "notFound": {
@@ -2198,7 +2202,8 @@
     "detailTitle": "도구 실행 상세",
     "inputLabel": "입력 Input",
     "outputLabel": "출력 Output",
-    "emptyOutput": "(비어 있음)"
+    "emptyOutput": "(비어 있음)",
+    "totalCount": "전체 {count, number}건"
   },
   "workspace": {
     "crumbRoot": "작업 공간",
@@ -2262,7 +2267,8 @@
     "deleteDesc": "이 작업의 모든 LLM 호출 기록(요청·응답 원문 포함)을 영구히 삭제합니다. 이 작업은 되돌릴 수 없습니다.",
     "cancel": "취소",
     "deleting": "삭제 중…",
-    "confirmDelete": "삭제"
+    "confirmDelete": "삭제",
+    "totalCount": "전체 {count, number}건"
   },
   "assetSync": {
     "title": "자산 동기화",
@@ -4264,7 +4270,8 @@
         "thisRun": "이 실행",
         "reused": "기존 판정",
         "unjudged": "미판정",
-        "method": "판정 방식"
+        "method": "판정 방식",
+        "review": "재검증"
       },
       "target": "{count, plural, =0 {전체 장비} other {장비 #대}}",
       "alertSpan": "장비 {hosts}대 · {from} ~ {to}",
@@ -4289,7 +4296,8 @@
       },
       "methodDebated": "토론 {count}건",
       "methodFallback": "보수적 확정 {count}건",
-      "methodDeferred": "다음 실행으로 {count}건"
+      "methodDeferred": "다음 실행으로 {count}건",
+      "reviewed": "{count}건 재검증 · {changed}건 변경"
     },
     "view": {
       "map": "맵",
@@ -4328,7 +4336,9 @@
         "cases": "사건",
         "events": "경보",
         "state": "판정",
-        "last": "최근"
+        "last": "최근",
+        "case": "사건",
+        "actor": "행위자"
       },
       "notJudged": "미판정",
       "more": "{count}개 더 보기",
@@ -4346,7 +4356,9 @@
       },
       "empty": "표시할 사건이 없습니다.",
       "autoJudgeAt": "미판정 {count}건 · {when} 예약 실행에서 자동 판정",
-      "autoJudgeOff": "미판정 {count}건 · 자동 판정이 꺼져 있음 (설정)"
+      "autoJudgeOff": "미판정 {count}건 · 자동 판정이 꺼져 있음 (설정)",
+      "casesIn": "사건 {count}건",
+      "casesHint": "줄을 누르면 오른쪽에 판정과 근거가 열립니다"
     },
     "posture": {
       "title": "설정 점검",
@@ -4490,7 +4502,8 @@
         "benign": "정상 관점",
         "arbiter": "중재",
         "reason": "토론 사유",
-        "roleSystem": "이 역할의 시스템 프롬프트"
+        "roleSystem": "이 역할의 시스템 프롬프트",
+        "research": "외부 자료 조사"
       }
     }
   },
@@ -4575,7 +4588,31 @@
       "3": "판례: 새 활동이 없고 30일 안에 판정한 사건은 기존 판정을 그대로 씁니다.",
       "4": "1차 판정: LLM이 판정하고 확신도를 매깁니다. 확신이 낮거나 심각한 사건을 정상으로 보면 토론으로 넘깁니다.",
       "5": "토론: 위협 관점과 정상 관점이 각각 주장하고 중재자가 확정합니다. 그래도 답이 안 나오면 의심으로 보수적으로 확정합니다."
-    }
+    },
+    "research": "외부 자료 조사",
+    "researchHint": "토론 전에 수집된 위협 동향과 MITRE ATT&CK 기법 설명을 찾아 중재자에게 줍니다. 외부로 나가는 것은 기법 번호뿐입니다.",
+    "review": "실행당 재검증",
+    "reviewHint": "예약 실행마다 기존 판정을 다시 판독하는 건수입니다. 0이면 끕니다.",
+    "gap": "탐지 공백 검토",
+    "gapHint": "하루 한 번, 사건이 되지 않은 경보와 위협 동향을 LLM이 검토해 새 탐지 후보를 제안합니다.",
+    "reviewEvery": "재검증 간격",
+    "reviewEveryHint": "한 번 재검증한 판정은 이 기간이 지나야 다시 고릅니다. 짧을수록 자주 다시 보지만 토큰을 더 씁니다.",
+    "days": "{count}일",
+    "judgeMode": "판정 실행 방식",
+    "judgeModeHint": "API는 설정 > LLM의 프로필(API 키)로 호출합니다. 러너는 서버 컴퓨터의 Claude Code CLI를 실행합니다. 판정, 토론, 재검증, 탐지 공백 검토에 적용되고, 대화와 진단 작업은 항상 API를 씁니다.",
+    "judgeModes": {
+      "api": "API",
+      "runner": "러너"
+    },
+    "runnerFound": "러너 설치됨 · {version}",
+    "runnerMissing": "서버에서 {command} 명령을 찾을 수 없음. 러너를 고르면 API로 대신 실행합니다.",
+    "runnerModel": "러너 모델",
+    "runnerModelHint": "비워 두면 CLI의 기본 모델을 씁니다. 예: sonnet, opus",
+    "runnerModelDefault": "CLI 기본값",
+    "runnerTest": "러너 확인",
+    "runnerTesting": "확인 중",
+    "runnerOk": "정상 응답 ({sec}초)",
+    "runnerFailed": "러너가 응답하지 않았습니다."
   },
   "siemFeedback": {
     "title": "판정 피드백",
@@ -4632,5 +4669,191 @@
     "corrections": "사람 정정 {count}건",
     "noCorrections": "아직 정정한 판정이 없습니다.",
     "howToCorrect": "이벤트 탐지에서 사건을 열고 '판정 정정'으로 고칩니다."
+  },
+  "siemQuality": {
+    "title": "탐지 품질",
+    "subtitle": "자동 판정이 틀리지 않도록 돌아가는 순환을 한곳에서 봅니다. 무엇을 했고, 무엇이 바뀌었고, 어디서 사람이 결정하는지 탭마다 나옵니다.",
+    "refresh": "새로고침",
+    "loadFailed": "탐지 품질 정보를 불러오지 못했습니다.",
+    "empty": "연결된 Wazuh가 없습니다.",
+    "auto": "자동",
+    "human": "사람",
+    "on": "켜짐",
+    "off": "꺼짐",
+    "save": "저장",
+    "saved": "저장했습니다.",
+    "saveFailed": "저장하지 못했습니다.",
+    "tab": {
+      "overview": "개요",
+      "reviews": "재검증",
+      "checklist": "검사 목록",
+      "thresholds": "임계치·관찰 대상",
+      "gaps": "탐지 공백",
+      "golden": "정답 세트",
+      "feedback": "판정·정정"
+    },
+    "flow": {
+      "judge": "자동 판정",
+      "review": "백그라운드 재검증",
+      "signal": "신호·지표",
+      "correct": "사람 정정",
+      "precedent": "판례로 다음 판정에 반영",
+      "pick": "대상 선정",
+      "reread": "기존 판정을 보지 않고 다시 판정",
+      "compare": "기존 판정과 비교",
+      "debate": "다르면 토론·중재",
+      "replace": "결론이 다르면 판정 교체",
+      "editChecks": "검사 항목 수정",
+      "facts": "코드가 사실 계산",
+      "answer": "LLM이 항목마다 답과 근거",
+      "reject": "빠지면 응답 반려",
+      "threshold": "임계치 판정",
+      "under": "미달",
+      "watch": "60% 이상은 관찰 대상",
+      "repeat": "반복 횟수 누적",
+      "lower": "임계치 하향 검토",
+      "unmatched": "사건이 안 된 경보",
+      "trends": "수집한 위협 동향",
+      "gapReview": "LLM 공백 검토(하루 1회)",
+      "propose": "새 기준 후보",
+      "decide": "채택·기각",
+      "answerSet": "정답 세트에 추가",
+      "replay": "재생 실행",
+      "accuracy": "정답률"
+    },
+    "kpi": {
+      "agree": "재검증 일치율",
+      "agreeNote": "{n}건 재검증 · {changed}건 변경",
+      "corrected": "사람 정정",
+      "correctedNote": "판정 대비 {rate}",
+      "fallback": "보수적 확정률",
+      "fallbackNote": "{n}건 · 토론 {debated}건",
+      "checked": "검사 답 포함률",
+      "checkedNote": "검사 없는 판정 {n}건 (기능 추가 이전)"
+    },
+    "weekCol": {
+      "week": "주 (월요일)",
+      "judged": "판정",
+      "debated": "토론",
+      "fallback": "보수적",
+      "failed": "실패",
+      "reviews": "재검증",
+      "agreeRate": "일치율",
+      "changed": "변경",
+      "corrected": "정정"
+    },
+    "loops": "순환별 상태",
+    "loop": {
+      "schedule": "예약 실행",
+      "everyMin": "{n}분마다",
+      "judge": "자동 판정",
+      "judgeOn": "실행당 {n}건 · 토론 {debate}",
+      "review": "재검증",
+      "reviewOn": "실행당 {n}건 · 같은 판정은 {days}일에 한 번",
+      "research": "외부 자료 조사",
+      "researchOn": "토론 전에 수집된 동향과 MITRE ATT&CK 조회",
+      "gap": "탐지 공백 검토",
+      "gapOn": "하루 1회 · 마지막 {last}",
+      "golden": "정답 세트 재생",
+      "goldenOn": "마지막 정답률 {correct}/{total}",
+      "goldenNone": "아직 실행 안 함 · 정답 {n}건"
+    },
+    "openSchedule": "분석 스케줄에서 설정 변경",
+    "reviewsHint": "예약 실행마다 기존 판정을 최대 {n}건 다시 판독합니다. 보수적 확정·토론·낮은 확신도 판정과 새 판례가 생긴 기준을 먼저 보고, 같은 판정은 {days}일에 한 번만 봅니다. 사람이 정정한 판정은 다시 판독하지 않습니다.",
+    "noReviews": "아직 재검증한 판정이 없습니다. 다음 예약 실행부터 쌓입니다.",
+    "reviewCol": {
+      "when": "시각",
+      "case": "사건",
+      "verdict": "판정",
+      "result": "결과",
+      "why": "고른 이유",
+      "note": "비고"
+    },
+    "result": {
+      "agreed": "일치",
+      "changed": "변경",
+      "kept": "불일치·유지"
+    },
+    "allPatterns": "모든 패턴 공통",
+    "checklistHint": "한 줄에 '검사ID | 질문'. LLM은 항목마다 yes·no·unknown과 근거를 답해야 하고, 하나라도 빠지면 응답을 반려합니다.",
+    "checklistStat": "검사 답이 있는 판정 {ok}건 · 없는 판정 {none}건",
+    "restore": "기본값 복원",
+    "pattern": {
+      "P1": "실패 후 성공",
+      "P2": "허용 대역 밖 로그인",
+      "P3": "침해 연쇄",
+      "P4": "방어 무력화",
+      "P5": "민감정보 반출",
+      "P6": "다수 출발지 실패",
+      "P7": "외부 정찰·웹 공격",
+      "P8": "오류 급증",
+      "P9": "고위험 단일 규칙"
+    },
+    "thresholds": "임계치 대장",
+    "thresholdsHint": "사건 추출이 쓰는 숫자입니다. 코드에 고정된 값이라 화면에서 바꿀 수 없고, 변경은 코드 수정으로 검토합니다. LLM은 임계치를 정하지 않습니다.",
+    "thCol": {
+      "pattern": "패턴",
+      "name": "임계치",
+      "value": "값",
+      "below": "미달일 때",
+      "basis": "근거"
+    },
+    "watch": "관찰 대상 {count}건",
+    "watchHint": "임계치의 60% 이상이지만 사건이 되지 않은 활동입니다. '느린 반복'은 기간 전체로는 많지만 한 번에 몰리지 않은 경우입니다. 여러 실행에서 반복되면 임계치 하향을 검토합니다.",
+    "noWatch": "관찰 대상이 없습니다.",
+    "watchCol": {
+      "kind": "종류",
+      "subject": "대상",
+      "host": "장비",
+      "count": "건수 / 기준",
+      "seen": "본 실행 수",
+      "last": "마지막",
+      "note": "내용"
+    },
+    "watchKind": {
+      "near": "근접 미달",
+      "slow": "느린 반복"
+    },
+    "proposals": "새 탐지 후보 {count}건",
+    "proposalsHint": "사건이 되지 않은 경보, 관찰 대상, 수집한 위협 동향을 LLM이 하루 한 번 검토해 제안합니다. 채택해도 자동 적용되지 않고, 실제 rule 추가는 Thaki-Siem에서 합니다. 마지막 검토: {last}",
+    "noProposals": "아직 제안이 없습니다. 예약 실행 뒤 하루 한 번 검토합니다.",
+    "proposalKind": {
+      "criterion": "새 탐지 기준",
+      "watch": "관찰 추가",
+      "log": "로그 수집"
+    },
+    "status": {
+      "accepted": "채택",
+      "dismissed": "기각"
+    },
+    "accept": "채택",
+    "dismiss": "기각",
+    "reopen": "되돌리기",
+    "how": "탐지 방법",
+    "unmatched": "사건이 되지 않은 경보 규칙 {count}개",
+    "unmatchedHint": "최근 예약 실행에서 경보는 발생했지만 어떤 사건에도 속하지 않은 rule입니다. 레벨이 높은 순입니다.",
+    "noUnmatched": "해당 rule이 없습니다.",
+    "ruleCol": {
+      "rule": "rule",
+      "level": "레벨",
+      "desc": "설명",
+      "count": "경보",
+      "hosts": "장비"
+    },
+    "goldenHint": "사람이 정정한 사건 {n}건이 정답입니다. 재생하면 각 사건을 자기 정정 없이 다시 판정해 사람 판정과 비교합니다. 판정 규칙이나 모델을 바꾼 뒤 실행해 정답률이 떨어지지 않는지 확인합니다.",
+    "goldenRun": "재생 실행",
+    "goldenRunning": "실행 중",
+    "goldenConfirm": "정답 {n}건의 경보 내용을 LLM 제공자에게 보내 다시 판정합니다. 계속할까요?",
+    "goldenEmpty": "정답 세트가 비어 있습니다. 이벤트 탐지에서 판정을 정정하면 쌓입니다.",
+    "goldenNever": "아직 재생한 적이 없습니다.",
+    "goldenAccuracy": "정답률",
+    "goldenAt": "실행 시각",
+    "goldenCol": {
+      "case": "사건",
+      "expected": "사람 판정",
+      "got": "자동 판정",
+      "method": "방식"
+    },
+    "from": "근거"
   }
 }

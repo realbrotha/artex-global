@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { type ScheduleState, type SiemSchedule, scheduleApi } from "@/lib/wazuh-api";
 
 const INTERVALS = [15, 30, 60, 120, 240, 360, 720, 1440];
+const REVIEW_EVERY = [1, 3, 7, 14, 30];
 // Monday first, as the week is read here; values are 0 = Sunday .. 6.
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
@@ -61,6 +62,7 @@ export default function SchedulePage() {
   const [saving, setSaving] = React.useState(false);
   const [running, setRunning] = React.useState(false);
   const [newTime, setNewTime] = React.useState("09:00");
+  const [probe, setProbe] = React.useState<{ ok: boolean; text: string } | "running" | null>(null);
 
   const load = React.useCallback(async () => {
     try {
@@ -79,7 +81,7 @@ export default function SchedulePage() {
 
   if (!draft) {
     return (
-      <div className="flex flex-1 flex-col gap-4">
+      <div className="flex flex-1 flex-col gap-3">
         {error ? (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -122,6 +124,22 @@ export default function SchedulePage() {
     }
   };
 
+  // One tiny request through the CLI, to see it is installed and signed in.
+  const testRunner = async () => {
+    setProbe("running");
+    try {
+      const r = await scheduleApi.testRunner(draft.runner_model);
+      setProbe({
+        ok: r.ok,
+        text: r.ok ? t("runnerOk", { sec: (r.ms / 1000).toFixed(1) }) : (r.error ?? t("runnerFailed")),
+      });
+    } catch (e) {
+      setProbe({ ok: false, text: e instanceof Error ? e.message : t("runnerFailed") });
+    }
+  };
+  const runner = state?.runner;
+  const mode = draft.judge_mode || "api";
+
   const addTime = () => {
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(newTime) || draft.times.includes(newTime)) return;
     set({ times: [...draft.times, newTime].sort() });
@@ -135,31 +153,14 @@ export default function SchedulePage() {
     );
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-xl tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => void runNow()} disabled={running}>
-            <PlayIcon />
-            {t("runNow")}
-          </Button>
-          <Button size="sm" onClick={() => void save()} disabled={!dirty || saving}>
-            <SaveIcon />
-            {t("save")}
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
         <div className="rounded-xl border bg-card px-4 py-3">
           <p className="text-[11px] text-muted-foreground">{t("status")}</p>
           <p className={cn("font-semibold", state?.schedule.enabled ? "text-emerald-600 dark:text-emerald-400" : "")}>
@@ -176,6 +177,16 @@ export default function SchedulePage() {
         <div className="rounded-xl border bg-card px-4 py-3">
           <p className="text-[11px] text-muted-foreground">{t("nextRun")}</p>
           <p className="font-semibold">{state?.schedule.enabled ? stamp(state?.next_run) : "—"}</p>
+        </div>
+        <div className="flex flex-row items-center gap-2 sm:flex-col sm:items-stretch sm:justify-center">
+          <Button size="sm" onClick={() => void save()} disabled={!dirty || saving}>
+            <SaveIcon />
+            {t("save")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void runNow()} disabled={running}>
+            <PlayIcon />
+            {t("runNow")}
+          </Button>
         </div>
       </div>
 
@@ -253,8 +264,94 @@ export default function SchedulePage() {
           <Switch checked={draft.auto_judge} onCheckedChange={(v) => set({ auto_judge: v })} />
         </Row>
 
+        <Row label={t("judgeMode")} hint={t("judgeModeHint")}>
+          {(["api", "runner"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              disabled={!draft.auto_judge}
+              className={cn(segment(mode === m), "disabled:opacity-40")}
+              onClick={() => set({ judge_mode: m })}
+            >
+              {t(`judgeModes.${m}`)}
+            </button>
+          ))}
+          <span
+            className={cn(
+              "text-xs",
+              runner?.available ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400",
+            )}
+          >
+            {runner?.available
+              ? t("runnerFound", { version: runner.version || runner.command })
+              : t("runnerMissing", { command: runner?.command ?? "claude" })}
+          </span>
+        </Row>
+
+        {mode === "runner" && (
+          <Row label={t("runnerModel")} hint={t("runnerModelHint")}>
+            <Input
+              value={draft.runner_model}
+              onChange={(e) => set({ runner_model: e.target.value.trim() })}
+              placeholder={t("runnerModelDefault")}
+              className="h-8 w-48 text-xs"
+            />
+            <Button size="xs" variant="outline" onClick={() => void testRunner()} disabled={probe === "running"}>
+              {probe === "running" ? t("runnerTesting") : t("runnerTest")}
+            </Button>
+            {probe && probe !== "running" && (
+              <span
+                className={cn(
+                  "break-all text-xs",
+                  probe.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive",
+                )}
+              >
+                {probe.text}
+              </span>
+            )}
+          </Row>
+        )}
+
         <Row label={t("debate")} hint={t("debateHint")}>
           <Switch checked={draft.debate} onCheckedChange={(v) => set({ debate: v })} disabled={!draft.auto_judge} />
+        </Row>
+
+        <Row label={t("research")} hint={t("researchHint")}>
+          <Switch
+            checked={draft.research}
+            onCheckedChange={(v) => set({ research: v })}
+            disabled={!draft.auto_judge || !draft.debate}
+          />
+        </Row>
+
+        <Row label={t("review")} hint={t("reviewHint")}>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            value={draft.review_limit}
+            onChange={(e) => set({ review_limit: Math.max(0, Number(e.target.value) || 0) })}
+            className="h-8 w-24 text-xs"
+            disabled={!draft.auto_judge}
+          />
+        </Row>
+
+        <Row label={t("reviewEvery")} hint={t("reviewEveryHint")}>
+          {REVIEW_EVERY.map((d) => (
+            <button
+              key={d}
+              type="button"
+              disabled={!draft.auto_judge || draft.review_limit === 0}
+              className={cn(segment(draft.review_every_days === d), "disabled:opacity-40")}
+              onClick={() => set({ review_every_days: d })}
+            >
+              {t("days", { count: d })}
+            </button>
+          ))}
+        </Row>
+
+        <Row label={t("gap")} hint={t("gapHint")}>
+          <Switch checked={draft.gap_review} onCheckedChange={(v) => set({ gap_review: v })} />
         </Row>
 
         <Row label={t("limit")} hint={t("limitHint")}>

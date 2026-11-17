@@ -309,6 +309,10 @@ export interface Analysis {
   fallback?: number;
   // Cases left for the next run by the per-run limit.
   deferred?: number;
+  // Background re-verification in this run.
+  reviewed?: number;
+  review_changed?: number;
+  gap_note?: string;
 }
 
 // Feedback on the automatic judging: per criterion, what people corrected,
@@ -370,18 +374,158 @@ export interface SiemSchedule {
   auto_judge: boolean;
   judge_limit: number;
   debate: boolean;
+  // Stored verdicts re-read per scheduled run; 0 = off.
+  review_limit: number;
+  // A verdict re-read within this many days is not picked again.
+  review_every_days: number;
+  // Look up collected trends and ATT&CK before a debate.
+  research: boolean;
+  // Once a day, ask what the detection criteria may be missing.
+  gap_review: boolean;
+  // api: the LLM profile · runner: a local Claude Code CLI on the server.
+  judge_mode: "api" | "runner" | "";
+  // Model the runner asks for; "" uses the CLI's default.
+  runner_model: string;
 }
+
+// ---- detection quality ----
+
+export interface QualityWeek {
+  week: string;
+  judged: number;
+  debated: number;
+  fallback: number;
+  failed: number;
+  reviews: number;
+  agreed: number;
+  changed: number;
+  corrected: number;
+}
+
+export interface Review {
+  id: number;
+  run_id: string;
+  case_key: string;
+  title: string;
+  prev: CaseVerdict["verdict"];
+  new: CaseVerdict["verdict"];
+  agreed: boolean;
+  changed: boolean;
+  pick_reason: string;
+  reason: string;
+  created_at: string;
+}
+
+export interface NearMiss {
+  pattern: string;
+  kind: "near" | "slow";
+  subject: string;
+  host: string;
+  count: number;
+  threshold: number;
+  last: string;
+  note: string;
+}
+
+export type WatchItem = NearMiss & { seen_runs: number; first_seen: string };
+
+export interface RuleCount {
+  id: string;
+  desc: string;
+  level: number;
+  count: number;
+  hosts: number;
+}
+
+export interface Proposal {
+  id: number;
+  kind: "criterion" | "watch" | "log";
+  title: string;
+  why: string;
+  how: string;
+  source: string;
+  status: "open" | "accepted" | "dismissed";
+  created_at: string;
+}
+
+export interface Threshold {
+  id: string;
+  pattern: string;
+  name: string;
+  value: string;
+  below: string;
+  basis: string;
+}
+
+export interface Check {
+  id: string;
+  question: string;
+}
+
+export interface GoldenResult {
+  at: string;
+  model: string;
+  running: boolean;
+  total: number;
+  correct: number;
+  items: { case_key: string; title: string; expected: string; got: string; method: string; error?: string }[];
+}
+
+export interface QualitySource {
+  id: string;
+  name: string;
+  weeks: QualityWeek[];
+  reviews: Review[];
+  watch: WatchItem[];
+  proposals: Proposal[];
+  unmatched: RuleCount[];
+  golden: GoldenResult | null;
+  golden_set: number;
+  checked: number;
+  unchecked: number;
+  gap_last: string;
+}
+
+export interface QualityState {
+  sources: QualitySource[];
+  thresholds: Threshold[];
+  checklist: Record<string, Check[]>;
+  checklist_default: Record<string, Check[]>;
+  checklist_edited: boolean;
+  schedule: SiemSchedule;
+  review_every_days: number;
+}
+
+export const qualityApi = {
+  get: () => http<QualityState>("/defensive/quality"),
+  saveChecklist: (checklist: Record<string, Check[]> | null) =>
+    http<{ checklist: Record<string, Check[]>; checklist_edited: boolean }>("/defensive/quality/checklist", {
+      method: "PUT",
+      body: JSON.stringify({ checklist }),
+    }),
+  decide: (id: number, status: Proposal["status"]) =>
+    http<{ ok: boolean }>(`/defensive/quality/proposals/${id}`, { method: "POST", body: JSON.stringify({ status }) }),
+  runGolden: (sourceId: string) =>
+    http<{ started: boolean }>(`/defensive/quality/golden/${encodeURIComponent(sourceId)}`, { method: "POST" }),
+};
 
 export interface ScheduleState {
   schedule: SiemSchedule;
   last_run?: string | null;
   next_run?: string;
+  // Whether the runner CLI is installed on the server.
+  runner?: { available: boolean; command: string; version: string };
 }
 
 export const scheduleApi = {
   get: () => http<ScheduleState>("/defensive/schedule"),
   save: (s: SiemSchedule) => http<ScheduleState>("/defensive/schedule", { method: "PUT", body: JSON.stringify(s) }),
   runNow: () => http<{ started: number }>("/defensive/schedule/run", { method: "POST" }),
+  testRunner: (model: string) =>
+    http<{ ok: boolean; ms: number; answer?: string; error?: string }>("/defensive/schedule/runner-test", {
+      method: "POST",
+      body: JSON.stringify({ model }),
+    }),
 };
 
 const analysisBase = (id: string) => `${base}/${encodeURIComponent(id)}/analyses`;
@@ -417,7 +561,7 @@ export interface AnalysisRun {
 // back. A later attempt's prompt lists the rules the previous answer broke.
 export interface JudgeAttempt {
   // analyst, threat, benign or arbiter; absent on records made before roles.
-  role?: "analyst" | "threat" | "benign" | "arbiter";
+  role?: "analyst" | "threat" | "benign" | "arbiter" | "research";
   // System prompt of a role other than the analyst's.
   system?: string;
   prompt: string;

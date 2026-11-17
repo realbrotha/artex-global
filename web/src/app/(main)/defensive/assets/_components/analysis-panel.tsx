@@ -393,6 +393,12 @@ export function AnalysisPanel({
               </p>
             )}
             {job.judge_note && <p className="text-amber-600 dark:text-amber-400">{job.judge_note}</p>}
+            {(job.reviewed ?? 0) > 0 && (
+              <Fact label={t("fact.review")}>
+                {t("reviewed", { count: job.reviewed ?? 0, changed: job.review_changed ?? 0 })}
+              </Fact>
+            )}
+            {job.gap_note && <p>{job.gap_note}</p>}
             {((job.debated ?? 0) > 0 || (job.fallback ?? 0) > 0 || (job.deferred ?? 0) > 0) && (
               <Fact label={t("fact.method")}>
                 {[

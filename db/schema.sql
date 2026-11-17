@@ -1561,3 +1561,67 @@ CREATE TABLE IF NOT EXISTS siem_corrections (
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
 CREATE INDEX IF NOT EXISTS siem_corrections_criterion ON siem_corrections(source_id, criterion, id DESC);
+
+-- Detection quality: background re-verification of stored verdicts.
+CREATE TABLE IF NOT EXISTS siem_reviews (
+    id BIGSERIAL PRIMARY KEY,
+    source_id BIGINT NOT NULL REFERENCES wazuh_sources(id) ON DELETE CASCADE,
+    run_id TEXT NOT NULL DEFAULT '',
+    case_key TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    prev_verdict TEXT NOT NULL,
+    new_verdict TEXT NOT NULL,
+    agreed BOOLEAN NOT NULL,
+    changed BOOLEAN NOT NULL,
+    pick_reason TEXT NOT NULL DEFAULT '',
+    reason TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX IF NOT EXISTS siem_reviews_recent ON siem_reviews(source_id, id DESC);
+
+-- Activity that came close to a threshold without becoming a case. One row
+-- per subject; seen_runs counts the scheduled runs that saw it.
+CREATE TABLE IF NOT EXISTS siem_watch (
+    source_id BIGINT NOT NULL REFERENCES wazuh_sources(id) ON DELETE CASCADE,
+    pattern TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    host TEXT NOT NULL DEFAULT '',
+    count INTEGER NOT NULL,
+    threshold INTEGER NOT NULL,
+    last_at TIMESTAMPTZ NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    seen_runs INTEGER NOT NULL DEFAULT 1,
+    first_seen TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    PRIMARY KEY (source_id, pattern, kind, subject)
+);
+
+-- Suggested additions to detection, from the gap review. A person accepts
+-- or dismisses each; nothing is applied by itself.
+CREATE TABLE IF NOT EXISTS siem_proposals (
+    id BIGSERIAL PRIMARY KEY,
+    source_id BIGINT NOT NULL REFERENCES wazuh_sources(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    why TEXT NOT NULL DEFAULT '',
+    how TEXT NOT NULL DEFAULT '',
+    origin TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','accepted','dismissed')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    decided_at TIMESTAMPTZ,
+    UNIQUE (source_id, title)
+);
+
+-- Outside knowledge fetched for judgments (ATT&CK technique pages), cached.
+CREATE TABLE IF NOT EXISTS siem_knowledge (
+    key TEXT PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+
+-- The case as a person corrected it, with its timeline: the answer set the
+-- judging is replayed against.
+ALTER TABLE siem_corrections ADD COLUMN IF NOT EXISTS case_data JSONB;

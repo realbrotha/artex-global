@@ -18,7 +18,7 @@ function AgentDetailInner() {
   const key = searchParams.get("key") ?? "";
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-3">
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon-sm">
           <Link href="/system/agents">
@@ -26,7 +26,6 @@ function AgentDetailInner() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Agent</h1>
           <p className="text-muted-foreground font-mono text-xs">{key}</p>
         </div>
       </div>

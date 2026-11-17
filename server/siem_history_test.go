@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/artex/wazuh"
 )
 
 func TestRecordingCompleterKeepsEveryAttempt(t *testing.T) {
@@ -37,5 +38,24 @@ func TestRecordingCompleterKeepsEveryAttempt(t *testing.T) {
 	// A failed request is recorded too, with its error.
 	if attempts[2].Prompt != "third" || attempts[2].Error != "provider down" {
 		t.Errorf("third attempt = %+v", attempts[2])
+	}
+}
+
+func TestResearchIsRecordedAsItsOwnEntry(t *testing.T) {
+	record := db.Judgement{}
+	addResearch(&record, wazuh.AutoResult{})
+	if len(record.Attempts) != 0 {
+		t.Fatal("no research, no entry")
+	}
+	addResearch(&record, wazuh.AutoResult{ResearchQuery: "ATT&CK: T1021", ResearchNotes: ""})
+	addResearch(&record, wazuh.AutoResult{ResearchQuery: "ATT&CK: T1021", ResearchNotes: "설명"})
+	if len(record.Attempts) != 2 || record.Attempts[0].Role != "research" || record.Attempts[0].Response != "찾은 자료 없음" || record.Attempts[1].Response != "설명" {
+		t.Errorf("attempts = %+v", record.Attempts)
+	}
+	// Only a technique id may go into an outside request.
+	for id, ok := range map[string]bool{"T1021": true, "T1021.004": true, "T1021/../x": false, "web01": false, "10.0.0.1": false, "": false} {
+		if attackID.MatchString(id) != ok {
+			t.Errorf("attackID(%q) = %v", id, !ok)
+		}
 	}
 }

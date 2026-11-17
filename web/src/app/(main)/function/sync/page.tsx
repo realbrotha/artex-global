@@ -33,16 +33,12 @@ const ASSET_TYPES: string[] = ["subdomain", "service", "app"];
 export default function AssetSyncPage() {
   const t = useTranslations("assetSync");
   return (
-    <div className="p-4 md:p-6">
-      <div className="mb-4">
-        <h1 className="font-semibold text-xl">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-      </div>
+    <div>
       <Tabs defaultValue="scopesentry">
         <TabsList>
           <TabsTrigger value="scopesentry">ScopeSentry</TabsTrigger>
         </TabsList>
-        <TabsContent value="scopesentry" className="mt-4">
+        <TabsContent value="scopesentry">
           <ScopeSentryPanel />
         </TabsContent>
       </Tabs>

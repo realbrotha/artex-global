@@ -626,57 +626,46 @@ export default function InterceptPage() {
   // ---- render ----
 
   return (
-    <div className="flex flex-1 flex-col gap-5 p-6">
-      {/* ---- header ---- */}
-      <div className="flex items-center gap-2.5">
-        <ShieldAlertIcon className="h-5 w-5 shrink-0" />
-        <div>
-          <h1 className="text-lg font-semibold leading-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle")}</p>
-        </div>
-      </div>
-
-      {/* ---- 가로채기 범위 정보 바(규칙 대조와 모델 폴백 공용: 범위 밖 도구는 둘 다 개입 안 함) ---- */}
-      <div
-        className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 ${
-          scopeTools.length === 0 ? "border-amber-400/60 bg-amber-50/50 dark:bg-amber-950/20" : "bg-muted/40"
-        }`}
-      >
-        <div className="flex min-w-0 items-center gap-2 text-sm">
-          <ListFilterIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="shrink-0 font-medium">{t("scope.label")}</span>
-          {scopeTools.length === 0 ? (
-            <span className="text-amber-700 dark:text-amber-500">{t("scope.empty")}</span>
-          ) : (
-            <>
-              <Badge variant="secondary" className="shrink-0">
-                {t("scope.toolCount", { count: scopeTools.length })}
-              </Badge>
-              <span className="truncate text-muted-foreground" title={scopeTools.join(" · ")}>
-                {scopeTools.join(" · ")}
-              </span>
-            </>
-          )}
-        </div>
-        <Button
-          variant={scopeTools.length === 0 ? "default" : "outline"}
-          size="sm"
-          className="shrink-0"
-          onClick={openScope}
-        >
-          <ListFilterIcon className="h-4 w-4" />
-          {t("scope.adjust")}
-        </Button>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       <Tabs defaultValue="rules" className="flex-1">
-        <TabsList>
-          <TabsTrigger value="rules">{t("tab.rules")}</TabsTrigger>
-          <TabsTrigger value="judge">{t("tab.model")}</TabsTrigger>
-        </TabsList>
+        {/* 탭이 먼저, 가로채기 범위(규칙 대조와 모델 폴백 공용)는 같은 줄 오른쪽에 둔다. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="rules">{t("tab.rules")}</TabsTrigger>
+            <TabsTrigger value="judge">{t("tab.model")}</TabsTrigger>
+          </TabsList>
+          <div
+            className={`ml-auto flex min-w-0 max-w-full items-center gap-2 rounded-md border px-2 py-1 text-xs ${
+              scopeTools.length === 0 ? "border-amber-400/60 bg-amber-50/50 dark:bg-amber-950/20" : "bg-muted/40"
+            }`}
+          >
+            <ListFilterIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="shrink-0 font-medium">{t("scope.label")}</span>
+            {scopeTools.length === 0 ? (
+              <span className="text-amber-700 dark:text-amber-500">{t("scope.empty")}</span>
+            ) : (
+              <>
+                <Badge variant="secondary" className="shrink-0">
+                  {t("scope.toolCount", { count: scopeTools.length })}
+                </Badge>
+                <span className="max-w-md truncate text-muted-foreground" title={scopeTools.join(" · ")}>
+                  {scopeTools.join(" · ")}
+                </span>
+              </>
+            )}
+            <Button
+              variant={scopeTools.length === 0 ? "default" : "outline"}
+              size="xs"
+              className="shrink-0"
+              onClick={openScope}
+            >
+              {t("scope.adjust")}
+            </Button>
+          </div>
+        </div>
 
         {/* ---- tab: rules ---- */}
-        <TabsContent value="rules" className="mt-4 flex flex-col gap-4">
+        <TabsContent value="rules" className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">{t("rules.priorityHint")}</p>
             <Button onClick={openNew} size="sm" className="shrink-0">
@@ -765,7 +754,7 @@ export default function InterceptPage() {
         </TabsContent>
 
         {/* ---- tab: model ---- */}
-        <TabsContent value="judge" className="mt-4">
+        <TabsContent value="judge">
           <JudgeCard />
         </TabsContent>
       </Tabs>

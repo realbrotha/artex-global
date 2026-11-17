@@ -402,28 +402,24 @@ export default function ToolsPage() {
   const openTool = (tool: Tool) => (tool.system ? setSelectedKey(tool.key) : setCustomEdit(tool));
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-        </div>
-        <div className="relative w-64">
-          <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
-          <Input
-            className="h-8 pl-8 text-sm"
-            placeholder={t("searchPlaceholder")}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       <Tabs defaultValue="system">
-        <TabsList>
-          <TabsTrigger value="system">{t("tabSystem")}</TabsTrigger>
-          <TabsTrigger value="custom">{t("tabCustom")}</TabsTrigger>
-        </TabsList>
+        {/* 탭과 검색을 한 줄에 둔다. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="system">{t("tabSystem")}</TabsTrigger>
+            <TabsTrigger value="custom">{t("tabCustom")}</TabsTrigger>
+          </TabsList>
+          <div className="relative ml-auto w-64">
+            <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
+            <Input
+              className="h-8 pl-8 text-sm"
+              placeholder={t("searchPlaceholder")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
         <TabsContent value="system">
           <Card>

@@ -823,34 +823,29 @@ export default function LLMPage() {
   const poolOn = pool?.enabled ?? false;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-xl tracking-tight">LLM</h1>
-          <p className="text-muted-foreground text-sm">{t("page.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setPoolOpen(true)}>
-            <ZapIcon /> {t("page.poolConfig")}
-            {poolOn && (
-              <Badge variant="outline" className="ml-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
-                {t("page.enabled")}
-              </Badge>
-            )}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => openEditor(null)}>
-            <PlusIcon /> {t("page.new")}
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       <Tabs defaultValue="profiles" className="flex-1">
-        <TabsList>
-          <TabsTrigger value="profiles">{t("page.tab.profiles")}</TabsTrigger>
-          <TabsTrigger value="retry">{t("page.tab.retry")}</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-wrap items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="profiles">{t("page.tab.profiles")}</TabsTrigger>
+            <TabsTrigger value="retry">{t("page.tab.retry")}</TabsTrigger>
+          </TabsList>
+          <span className="ml-auto flex items-center gap-2">
+            <Button size="xs" variant="outline" onClick={() => setPoolOpen(true)}>
+              <ZapIcon /> {t("page.poolConfig")}
+              {poolOn && (
+                <Badge variant="outline" className="ml-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
+                  {t("page.enabled")}
+                </Badge>
+              )}
+            </Button>
+            <Button size="xs" variant="outline" onClick={() => openEditor(null)}>
+              <PlusIcon /> {t("page.new")}
+            </Button>
+          </span>
+        </div>
 
-        <TabsContent value="profiles" className="mt-4">
+        <TabsContent value="profiles">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {profiles.map((p) => {
               const h = healthOf(p, health.get(p.id));
@@ -954,7 +949,7 @@ export default function LLMPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="retry" className="mt-4">
+        <TabsContent value="retry">
           <RetryPolicyPanel />
         </TabsContent>
       </Tabs>

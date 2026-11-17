@@ -817,12 +817,8 @@ export default function FindingsPage() {
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-        </div>
+    <div className="flex flex-1 flex-col gap-3">
+      <div className="-mb-1 flex flex-wrap items-center gap-3">
         <Tabs value={view} onValueChange={(v) => setView(v as FindingView)}>
           <TabsList>
             <TabsTrigger value="flat">{t("view.flat")}</TabsTrigger>
@@ -831,8 +827,8 @@ export default function FindingsPage() {
           </TabsList>
         </Tabs>
       </div>
-      <div className="flex flex-1 flex-col gap-4 md:gap-6">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="flex flex-1 flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {statCards.map((stat) => {
             const StatIcon = stat.icon;
             return (

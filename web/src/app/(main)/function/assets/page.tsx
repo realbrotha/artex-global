@@ -315,41 +315,37 @@ export default function AssetsPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] min-h-0 flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {t.rich("totalAssets", {
-              count: totalAssets,
-              n: (chunks) => <span className="tabular-nums">{chunks}</span>,
-            })}
-          </span>
-          {selected.size > 0 && (
-            <Button variant="destructive" size="sm" onClick={() => openDelete(Array.from(selected) as number[])}>
-              <Trash2Icon className="size-3.5" /> {t("deleteSelected", { count: selected.size })}
+    <div className="flex h-[calc(100vh-4.5rem)] min-h-0 flex-col gap-3">
+      <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 overflow-x-auto overflow-y-hidden">
+            <TabsList variant="default">
+              {TABS.map((tt) => (
+                <TabsTrigger key={tt.key} value={tt.key}>
+                  <tt.icon className="size-3.5" />
+                  {t(`tab.${tt.labelKey}`)}
+                  <span className="ml-1 tabular-nums text-muted-foreground">{tabCounts[tt.key]}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <span className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {t.rich("totalAssets", {
+                count: totalAssets,
+                n: (chunks) => <span className="tabular-nums">{chunks}</span>,
+              })}
+            </span>
+            {selected.size > 0 && (
+              <Button variant="destructive" size="xs" onClick={() => openDelete(Array.from(selected) as number[])}>
+                <Trash2Icon className="size-3.5" /> {t("deleteSelected", { count: selected.size })}
+              </Button>
+            )}
+            <Button variant="outline" size="xs" onClick={refresh} disabled={loading}>
+              <RefreshCwIcon className={cn("size-4", loading && "animate-spin")} /> {t("refresh")}
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCwIcon className={cn("size-4", loading && "animate-spin")} /> {t("refresh")}
-          </Button>
-          <CompanyDialog onSaved={refresh} />
-        </div>
-      </div>
-
-      <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="overflow-x-auto overflow-y-hidden">
-          <TabsList variant="default">
-            {TABS.map((tt) => (
-              <TabsTrigger key={tt.key} value={tt.key}>
-                <tt.icon className="size-3.5" />
-                {t(`tab.${tt.labelKey}`)}
-                <span className="ml-1 tabular-nums text-muted-foreground">{tabCounts[tt.key]}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+            <CompanyDialog onSaved={refresh} />
+          </span>
         </div>
 
         {/* 기업 */}

@@ -791,15 +791,15 @@ export default function TasksPage() {
   );
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
-      <TabsList className="mx-4 lg:mx-6">
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <TabsList>
         <TabsTrigger value="current">{t("tab.current")}</TabsTrigger>
         <TabsTrigger value="archived">{t("tab.archived")}</TabsTrigger>
       </TabsList>
       <TabsContent value="current">
         <Card>
-          <CardContent className="flex flex-col gap-4 px-0 pt-6">
-            <div className="flex flex-wrap items-center gap-2 px-4 lg:px-6">
+          <CardContent className="flex flex-col gap-3 px-0 pt-3">
+            <div className="flex flex-wrap items-center gap-2 px-3">
               <div className="relative w-full sm:max-w-xs">
                 <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                 <Input
@@ -926,11 +926,11 @@ export default function TasksPage() {
             </div>
 
             {tasks.length === 0 ? (
-              <div className="text-muted-foreground mx-4 flex items-center justify-center rounded-lg border border-dashed py-20 text-sm lg:mx-6">
+              <div className="text-muted-foreground mx-3 flex items-center justify-center rounded-lg border border-dashed py-20 text-sm lg:mx-6">
                 {t("empty.noTasks")}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-muted-foreground mx-4 flex items-center justify-center rounded-lg border border-dashed py-20 text-sm lg:mx-6">
+              <div className="text-muted-foreground mx-3 flex items-center justify-center rounded-lg border border-dashed py-20 text-sm lg:mx-6">
                 {t("empty.noMatch")}
               </div>
             ) : (
@@ -1809,8 +1809,8 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
 
   return (
     <Card>
-      <CardContent className="flex flex-col gap-4 px-0 pt-6">
-        <div className="flex flex-wrap items-center gap-2 px-4 lg:px-6">
+      <CardContent className="flex flex-col gap-3 px-0 pt-3">
+        <div className="flex flex-wrap items-center gap-2 px-3">
           <div className="relative w-full sm:max-w-xs">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input

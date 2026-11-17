@@ -38,6 +38,8 @@ type Verdict struct {
 	Confidence string `json:"confidence,omitempty"`
 	// Method says how the verdict was reached; set by the code, not the model.
 	Method string `json:"method,omitempty"`
+	// Checks are the answers to the checklist of the case's pattern.
+	Checks []CheckAnswer `json:"checks,omitempty"`
 }
 
 // ErrVerdictFormat: the model's answer did not satisfy the output rules.
@@ -94,6 +96,13 @@ const verdictSystemPrompt = `당신은 SIEM 사건 후보 1건을 판정하는 �
 ## 조치 (response)
 - suspicious, breach, attempt 일 때 실행 가능한 조치 1~4개(예: 공용 관리자 인증서 폐기 후 개인 인증서 발급, 허용 대역 밖 출발지 차단, 노출된 비밀정보 교체). normal, false_positive 는 빈 배열.
 
+## 검사 (checks)
+- 입력의 checks_required 는 판정 전에 반드시 확인할 항목이다. 하나도 건너뛰지 않는다.
+- 항목마다 {"id","answer","basis"} 로 답한다. answer 는 yes, no, unknown 중 하나.
+- basis 는 답의 근거가 된 timeline 줄이나 facts 항목을 200자 이내로 적는다. 확인할 근거가 없으면 unknown 으로 답하고 무엇이 없어서 모르는지 적는다.
+- 입력의 facts 는 코드가 계산한 사실이다. 그대로 믿고 쓴다.
+- 판정은 checks 의 답과 어긋나면 안 된다. (예: success 가 yes 인데 attempt 로 판정하지 않는다.)
+
 ## 사람 판례 (precedents)
 - 입력의 precedents 는 같은 탐지 기준의 사건을 사람이 직접 정정한 판정이다. LLM 판정보다 우선하는 근거다.
 - 이 사건과 사실(계정 종류, 출발지, 시각대, 행위)이 같으면 판례의 판정을 따르고 confidence 를 high 로 둔다.
@@ -105,7 +114,7 @@ const verdictSystemPrompt = `당신은 SIEM 사건 후보 1건을 판정하는 �
 - low: 근거가 부족하거나 서로 어긋나 판정이 갈릴 수 있음. 판정은 그래도 하나로 확정한다.
 
 ## 출력 형식
-{"verdict":"...","title":"...","explain":"...","evidence":["..."],"severity":"...","adjust":"","response":["..."],"confidence":"high"}`
+{"verdict":"...","title":"...","explain":"...","evidence":["..."],"severity":"...","adjust":"","response":["..."],"confidence":"high","checks":[{"id":"...","answer":"yes","basis":"..."}]}`
 
 var patternMeaning = map[string]string{
 	"P1": "실패 반복 후 로그인 성공", "P2": "허용 대역 밖·최초 출발지·root 직접 로그인", "P3": "로그인 → 권한 변경 → 침해 행위 연쇄",
@@ -179,10 +188,13 @@ func VerdictPromptWith(c Case, near []Case, precedents []Precedent) string {
 			Attack         []string   `json:"attack"`
 			Near           []nearView `json:"near_cases"`
 		} `json:"case"`
-		Precedents   []Precedent `json:"precedents"`
-		TimelineNote string      `json:"timeline_note"`
-		Timeline     []eventView `json:"timeline"`
+		Precedents   []Precedent       `json:"precedents"`
+		Checks       []Check           `json:"checks_required"`
+		Facts        map[string]string `json:"facts"`
+		TimelineNote string            `json:"timeline_note"`
+		Timeline     []eventView       `json:"timeline"`
 	}{}
+	in.Checks, in.Facts = ChecksFor(c.Pattern), CaseFacts(c)
 	in.Precedents = []Precedent{}
 	for _, p := range precedents {
 		p.Summary, p.Reason = clip(p.Summary, 200), clip(p.Reason, 300)
@@ -273,6 +285,7 @@ func ValidateVerdict(v Verdict, c Case) []string {
 	if v.Confidence != "" && !confidenceValues[v.Confidence] {
 		problems = append(problems, "confidence 는 high, medium, low 중 하나")
 	}
+	problems = append(problems, checkProblems(v, c)...)
 	return problems
 }
 
@@ -288,6 +301,11 @@ func ParseVerdict(text string) (Verdict, error) {
 	}
 	v.Title, v.Explain, v.Adjust = strings.TrimSpace(v.Title), strings.TrimSpace(v.Explain), strings.TrimSpace(v.Adjust)
 	v.Confidence = strings.ToLower(strings.TrimSpace(v.Confidence))
+	for i := range v.Checks {
+		v.Checks[i].ID = strings.TrimSpace(v.Checks[i].ID)
+		v.Checks[i].Answer = strings.ToLower(strings.TrimSpace(v.Checks[i].Answer))
+		v.Checks[i].Basis = strings.TrimSpace(v.Checks[i].Basis)
+	}
 	v.Method = "" // never taken from the model
 	lines := []string{}
 	for _, l := range v.Evidence {

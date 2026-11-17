@@ -459,22 +459,13 @@ export default function HuntingPage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-2">
-          <Badge variant="outline">Defensive · Autonomous Hunting</Badge>
-          <h1 className="font-semibold text-2xl tracking-tight">자율 위협 헌팅</h1>
-          <p className="max-w-3xl text-muted-foreground text-sm leading-relaxed">
-            취약점·공격 기법을 조사하고 공격 가설과 탐지 질문을 설계한 뒤, 허용한 Splunk 로그에서 근거를 찾습니다.
-          </p>
-        </div>
-      </div>
-      <Tabs value={view} onValueChange={(next) => setView(next as "trends" | "hunt")} className="space-y-4">
+    <div className="flex w-full flex-col gap-3 lg:h-[calc(100svh-4.5rem)]">
+      <Tabs value={view} onValueChange={(next) => setView(next as "trends" | "hunt")} className="lg:min-h-0 lg:flex-1">
         <TabsList aria-label="자율 위협 헌팅 화면">
           <TabsTrigger value="trends">위협 동향 · {trendReports.length}</TabsTrigger>
           <TabsTrigger value="hunt">헌팅 작업</TabsTrigger>
         </TabsList>
-        <TabsContent value="trends" className="mt-0">
+        <TabsContent value="trends" className="mt-0 lg:min-h-0 lg:flex-1">
           <HuntingTrendExplorer
             reports={trendReports}
             collection={trendCollection}
@@ -486,7 +477,7 @@ export default function HuntingPage() {
             onHunt={startFromReport}
           />
         </TabsContent>
-        <TabsContent value="hunt" className="mt-0 space-y-4">
+        <TabsContent value="hunt" className="mt-0 space-y-3 lg:min-h-0 lg:overflow-y-auto">
           <HuntingProgress
             run={run}
             loading={!!selectedId && !run && detailLoading}

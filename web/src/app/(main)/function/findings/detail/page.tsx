@@ -136,7 +136,7 @@ function FindingDetailInner() {
   return (
     <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col gap-0">
       {/* Sticky header */}
-      <header className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-background/95 px-4 py-2.5 backdrop-blur lg:px-6">
+      <header className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-background/95 px-3 py-2.5 backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Button asChild variant="ghost" size="icon" className="size-7">
@@ -163,7 +163,7 @@ function FindingDetailInner() {
       </header>
 
       {/* Tab content */}
-      <div className="flex-1 p-4 lg:p-6">
+      <div className="flex-1 p-3">
         {/* 概览：左（摘要 + 证据）/ 右（状态区） */}
         <TabsContent value="overview" className="mt-0">
           <div className="grid gap-4 lg:grid-cols-3">

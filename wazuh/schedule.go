@@ -23,7 +23,26 @@ type Schedule struct {
 	JudgeLimit int `json:"judge_limit"`
 	// Send unsure or failed judgments to a debate instead of leaving them.
 	Debate bool `json:"debate"`
+	// Stored verdicts re-read in the background per scheduled run; 0 = off.
+	ReviewLimit int `json:"review_limit"`
+	// A verdict re-read within this many days is not picked again.
+	ReviewEveryDays int `json:"review_every_days"`
+	// Look up outside knowledge (collected trends, ATT&CK) before a debate.
+	Research bool `json:"research"`
+	// Once a day, ask what the detection criteria may be missing.
+	GapReview bool `json:"gap_review"`
+	// How judgments reach a model: "api" (the LLM profile) or "runner" (a
+	// local Claude Code CLI). Empty means api.
+	JudgeMode string `json:"judge_mode"`
+	// Model the runner asks for; empty uses the CLI's default.
+	RunnerModel string `json:"runner_model"`
 }
+
+// Judge modes.
+const (
+	JudgeAPI    = "api"
+	JudgeRunner = "runner"
+)
 
 const (
 	ScheduleInterval = "interval"
@@ -33,7 +52,7 @@ const (
 // DefaultSchedule: hourly, judging by itself, debating what it is unsure of.
 func DefaultSchedule() Schedule {
 	return Schedule{Enabled: true, Mode: ScheduleInterval, IntervalMinutes: 60, Times: []string{"07:30"},
-		Weekdays: []int{1, 2, 3, 4, 5}, AutoJudge: true, JudgeLimit: 20, Debate: true}
+		Weekdays: []int{1, 2, 3, 4, 5}, AutoJudge: true, JudgeLimit: 20, Debate: true, ReviewLimit: 5, ReviewEveryDays: 7, Research: true, GapReview: true, JudgeMode: JudgeAPI}
 }
 
 // ErrSchedule: the schedule settings are not usable.
@@ -67,6 +86,18 @@ func (s Schedule) Validate() error {
 	}
 	if s.JudgeLimit < 1 || s.JudgeLimit > 500 {
 		return fmt.Errorf("%w: 실행당 판정 상한은 1~500건", ErrSchedule)
+	}
+	if s.ReviewLimit < 0 || s.ReviewLimit > 100 {
+		return fmt.Errorf("%w: 실행당 재검증은 0~100건", ErrSchedule)
+	}
+	if s.JudgeMode != "" && s.JudgeMode != JudgeAPI && s.JudgeMode != JudgeRunner {
+		return fmt.Errorf("%w: 판정 실행 방식은 api 또는 runner", ErrSchedule)
+	}
+	if len(s.RunnerModel) > 60 {
+		return fmt.Errorf("%w: 러너 모델 이름은 60자 이하", ErrSchedule)
+	}
+	if s.ReviewEveryDays < 1 || s.ReviewEveryDays > 90 {
+		return fmt.Errorf("%w: 재검증 간격은 1~90일", ErrSchedule)
 	}
 	return nil
 }

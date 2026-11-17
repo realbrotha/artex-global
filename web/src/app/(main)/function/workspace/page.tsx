@@ -155,20 +155,32 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {/* 헤더: 경로(브레드크럼) + 동작 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* 폴더 경로. 루트는 아이콘으로만 두어 제목처럼 보이지 않게 한다. */}
         <div className="flex min-w-0 items-center gap-1 text-sm">
-          <HardDriveIcon className="text-muted-foreground mr-1 size-4 shrink-0" />
-          {crumbs.map((c, i) => (
+          <button
+            type="button"
+            onClick={() => load("")}
+            aria-label={t("crumbRoot")}
+            title={t("crumbRoot")}
+            className={cn(
+              "rounded p-1 hover:bg-accent [&_svg]:size-4",
+              crumbs.length === 1 ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            <HardDriveIcon />
+          </button>
+          {crumbs.slice(1).map((c, i) => (
             <React.Fragment key={c.path}>
-              {i > 0 && <span className="text-muted-foreground">/</span>}
+              <span className="text-muted-foreground">/</span>
               <button
                 type="button"
                 onClick={() => load(c.path)}
                 className={cn(
                   "max-w-[160px] truncate rounded px-1.5 py-0.5 hover:bg-accent",
-                  i === crumbs.length - 1 ? "text-foreground font-medium" : "text-muted-foreground",
+                  i === crumbs.length - 2 ? "text-foreground font-medium" : "text-muted-foreground",
                 )}
               >
                 {c.name}

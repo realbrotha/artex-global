@@ -200,7 +200,7 @@
       "traffic": "Traffic",
       "workspace": "Workspace",
       "defensive": "Defensive",
-      "defensive-hunting": "Autonomous hunting",
+      "defensive-hunting": "Threat hunting",
       "security-sources": "Log connections",
       "protected-assets": "Protected assets",
       "connections": "Connections",
@@ -213,7 +213,11 @@
       "posture": "Config checks",
       "siem-history": "Analysis history",
       "schedule": "Analysis schedule",
-      "siem-feedback": "Judging feedback"
+      "siem-quality": "Detection quality",
+      "host-detail": "Host detail",
+      "siem-feedback": "Verdicts and corrections",
+      "finding-detail": "Finding detail",
+      "agent-detail": "Agent editor"
     }
   },
   "notFound": {
@@ -2198,7 +2202,8 @@
     "detailTitle": "Tool execution details",
     "inputLabel": "Input",
     "outputLabel": "Output",
-    "emptyOutput": "(empty)"
+    "emptyOutput": "(empty)",
+    "totalCount": "{count, number} total"
   },
   "workspace": {
     "crumbRoot": "Workspace",
@@ -2262,7 +2267,8 @@
     "deleteDesc": "Permanently deletes all LLM call records for this task (including raw requests/responses). This action can't be undone.",
     "cancel": "Cancel",
     "deleting": "Deleting…",
-    "confirmDelete": "Delete"
+    "confirmDelete": "Delete",
+    "totalCount": "{count, number} total"
   },
   "assetSync": {
     "title": "Asset Sync",
@@ -4264,7 +4270,8 @@
         "thisRun": "This run",
         "reused": "Earlier",
         "unjudged": "Unjudged",
-        "method": "Method"
+        "method": "Method",
+        "review": "Re-read"
       },
       "target": "{count, plural, =0 {all hosts} one {# host} other {# hosts}}",
       "alertSpan": "{hosts} hosts · {from} – {to}",
@@ -4289,7 +4296,8 @@
       },
       "methodDebated": "{count} debated",
       "methodFallback": "{count} conservative",
-      "methodDeferred": "{count} left for the next run"
+      "methodDeferred": "{count} left for the next run",
+      "reviewed": "{count} re-read · {changed} changed"
     },
     "view": {
       "map": "Map",
@@ -4328,7 +4336,9 @@
         "cases": "Cases",
         "events": "Alerts",
         "state": "Verdict",
-        "last": "Latest"
+        "last": "Latest",
+        "case": "Case",
+        "actor": "Actor"
       },
       "notJudged": "Unjudged",
       "more": "Show {count} more",
@@ -4346,7 +4356,9 @@
       },
       "empty": "No cases to show.",
       "autoJudgeAt": "{count} unjudged · judged automatically at {when}",
-      "autoJudgeOff": "{count} unjudged · automatic judging is off (settings)"
+      "autoJudgeOff": "{count} unjudged · automatic judging is off (settings)",
+      "casesIn": "{count} cases",
+      "casesHint": "Click a line to open its verdict and evidence on the right"
     },
     "posture": {
       "title": "Config checks",
@@ -4490,7 +4502,8 @@
         "benign": "Benign view",
         "arbiter": "Arbiter",
         "reason": "Why it was debated",
-        "roleSystem": "This role's system prompt"
+        "roleSystem": "This role's system prompt",
+        "research": "Outside research"
       }
     }
   },
@@ -4575,7 +4588,31 @@
       "3": "Precedent: a case with no new activity judged within 30 days keeps its verdict.",
       "4": "First verdict: the LLM judges and rates its certainty. Unsure answers, and severe cases called normal, go to a debate.",
       "5": "Debate: a threat view and a benign view argue, and an arbiter decides. If nothing valid comes back, the case is confirmed as suspicious."
-    }
+    },
+    "research": "Outside research",
+    "researchHint": "Before a debate, looks up collected threat trends and the MITRE ATT&CK technique description. Only technique ids leave this server.",
+    "review": "Re-verification per run",
+    "reviewHint": "Stored verdicts re-read in each scheduled run. 0 turns it off.",
+    "gap": "Detection gap review",
+    "gapHint": "Once a day the LLM reviews alerts in no case and threat trends, and suggests new detection candidates.",
+    "reviewEvery": "Re-verification interval",
+    "reviewEveryHint": "A verdict re-read once is not picked again until this many days pass. Shorter re-reads more often and uses more tokens.",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "judgeMode": "How judgments run",
+    "judgeModeHint": "API calls the profile in Settings > LLM with its API key. Runner runs the Claude Code CLI on the server. Applies to verdicts, debates, re-verification and the gap review; chat and pentest tasks always use the API.",
+    "judgeModes": {
+      "api": "API",
+      "runner": "Runner"
+    },
+    "runnerFound": "Runner installed · {version}",
+    "runnerMissing": "{command} is not on the server. Choosing the runner falls back to the API.",
+    "runnerModel": "Runner model",
+    "runnerModelHint": "Empty uses the CLI's default. Examples: sonnet, opus",
+    "runnerModelDefault": "CLI default",
+    "runnerTest": "Test runner",
+    "runnerTesting": "Testing",
+    "runnerOk": "Answered ({sec}s)",
+    "runnerFailed": "The runner did not answer."
   },
   "siemFeedback": {
     "title": "Judging feedback",
@@ -4632,5 +4669,191 @@
     "corrections": "{count} corrections",
     "noCorrections": "No verdict has been corrected yet.",
     "howToCorrect": "Open a case in Event detection and use 'Correct verdict'."
+  },
+  "siemQuality": {
+    "title": "Detection quality",
+    "subtitle": "The loops that keep the automatic judging honest, in one place: what each did, what changed, and where a person decides.",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load detection quality.",
+    "empty": "No Wazuh connection.",
+    "auto": "Automatic",
+    "human": "Person",
+    "on": "On",
+    "off": "Off",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Could not save.",
+    "tab": {
+      "overview": "Overview",
+      "reviews": "Re-verification",
+      "checklist": "Checklist",
+      "thresholds": "Thresholds and watch",
+      "gaps": "Detection gaps",
+      "golden": "Answer set",
+      "feedback": "Verdicts and corrections"
+    },
+    "flow": {
+      "judge": "Automatic verdict",
+      "review": "Background re-verification",
+      "signal": "Signals and metrics",
+      "correct": "Person corrects",
+      "precedent": "Precedent for the next verdict",
+      "pick": "Pick verdicts",
+      "reread": "Judge again without the stored verdict",
+      "compare": "Compare",
+      "debate": "Debate if they differ",
+      "replace": "Replace if the conclusion differs",
+      "editChecks": "Edit checks",
+      "facts": "Code computes facts",
+      "answer": "LLM answers each with a basis",
+      "reject": "Rejected if one is missing",
+      "threshold": "Threshold test",
+      "under": "Under",
+      "watch": "60% or more is watched",
+      "repeat": "Repeats are counted",
+      "lower": "Consider lowering",
+      "unmatched": "Alerts in no case",
+      "trends": "Collected threat trends",
+      "gapReview": "LLM gap review (daily)",
+      "propose": "New criterion candidates",
+      "decide": "Accept or dismiss",
+      "answerSet": "Added to the answer set",
+      "replay": "Run replay",
+      "accuracy": "Accuracy"
+    },
+    "kpi": {
+      "agree": "Re-verification agreement",
+      "agreeNote": "{n} re-read · {changed} changed",
+      "corrected": "Corrected by people",
+      "correctedNote": "{rate} of judgments",
+      "fallback": "Conservative rate",
+      "fallbackNote": "{n} · {debated} debated",
+      "checked": "With checklist answers",
+      "checkedNote": "{n} judgments without (older)"
+    },
+    "weekCol": {
+      "week": "Week (Monday)",
+      "judged": "Judged",
+      "debated": "Debated",
+      "fallback": "Fallback",
+      "failed": "Failed",
+      "reviews": "Re-read",
+      "agreeRate": "Agreement",
+      "changed": "Changed",
+      "corrected": "Corrected"
+    },
+    "loops": "State of each loop",
+    "loop": {
+      "schedule": "Scheduled run",
+      "everyMin": "every {n} min",
+      "judge": "Automatic judging",
+      "judgeOn": "{n} per run · debate {debate}",
+      "review": "Re-verification",
+      "reviewOn": "{n} per run · each verdict once in {days} days",
+      "research": "Outside research",
+      "researchOn": "collected trends and MITRE ATT&CK before a debate",
+      "gap": "Gap review",
+      "gapOn": "daily · last {last}",
+      "golden": "Answer-set replay",
+      "goldenOn": "last accuracy {correct}/{total}",
+      "goldenNone": "never run · {n} answers"
+    },
+    "openSchedule": "Change these in Analysis schedule",
+    "reviewsHint": "Each scheduled run re-reads up to {n} stored verdicts: conservative, debated and low-certainty ones and criteria with a new precedent first; each verdict once in {days} days. A person's verdict is never re-read.",
+    "noReviews": "No verdict has been re-read yet. They accumulate from the next scheduled run.",
+    "reviewCol": {
+      "when": "When",
+      "case": "Case",
+      "verdict": "Verdict",
+      "result": "Result",
+      "why": "Why picked",
+      "note": "Note"
+    },
+    "result": {
+      "agreed": "Agreed",
+      "changed": "Changed",
+      "kept": "Differed, kept"
+    },
+    "allPatterns": "Every pattern",
+    "checklistHint": "One 'id | question' per line. The LLM must answer each with yes, no or unknown and a basis; an answer that skips one is rejected.",
+    "checklistStat": "{ok} judgments with checklist answers · {none} without",
+    "restore": "Restore default",
+    "pattern": {
+      "P1": "Failures then success",
+      "P2": "Login outside allowed range",
+      "P3": "Intrusion chain",
+      "P4": "Defence disabled",
+      "P5": "Sensitive data exfiltration",
+      "P6": "Failures from many sources",
+      "P7": "External recon and web attack",
+      "P8": "Error burst",
+      "P9": "High-risk single rule"
+    },
+    "thresholds": "Threshold ledger",
+    "thresholdsHint": "The numbers case extraction decides by. They are fixed in code and cannot be changed here; a change is a reviewed code change. The LLM never sets a threshold.",
+    "thCol": {
+      "pattern": "Pattern",
+      "name": "Threshold",
+      "value": "Value",
+      "below": "When under",
+      "basis": "Basis"
+    },
+    "watch": "{count} watched",
+    "watchHint": "Activity at 60% or more of a threshold that did not become a case. 'Slow repeat' adds up over the window without bunching up. Repeats across runs suggest lowering the threshold.",
+    "noWatch": "Nothing is being watched.",
+    "watchCol": {
+      "kind": "Kind",
+      "subject": "Subject",
+      "host": "Host",
+      "count": "Count / threshold",
+      "seen": "Runs seen",
+      "last": "Last",
+      "note": "Note"
+    },
+    "watchKind": {
+      "near": "Near miss",
+      "slow": "Slow repeat"
+    },
+    "proposals": "{count} open candidates",
+    "proposalsHint": "Once a day the LLM reviews alerts in no case, the watch list and collected threat trends, and suggests additions. Accepting applies nothing; rules are added in Thaki-Siem. Last review: {last}",
+    "noProposals": "No suggestions yet. The review runs once a day after a scheduled run.",
+    "proposalKind": {
+      "criterion": "New criterion",
+      "watch": "Watch",
+      "log": "Log source"
+    },
+    "status": {
+      "accepted": "Accepted",
+      "dismissed": "Dismissed"
+    },
+    "accept": "Accept",
+    "dismiss": "Dismiss",
+    "reopen": "Reopen",
+    "how": "How to detect",
+    "unmatched": "{count} rules that fired into no case",
+    "unmatchedHint": "Rules that fired in the latest scheduled run but belong to no case, highest level first.",
+    "noUnmatched": "None.",
+    "ruleCol": {
+      "rule": "Rule",
+      "level": "Level",
+      "desc": "Description",
+      "count": "Alerts",
+      "hosts": "Hosts"
+    },
+    "goldenHint": "The {n} cases people corrected are the answers. A replay judges each again without its own correction and compares it with the person's verdict. Run it after changing the judging rules or the model.",
+    "goldenRun": "Run replay",
+    "goldenRunning": "Running",
+    "goldenConfirm": "This sends the alerts of {n} cases to the LLM provider to judge them again. Continue?",
+    "goldenEmpty": "The answer set is empty. Correcting a verdict in Event detection adds to it.",
+    "goldenNever": "Never replayed.",
+    "goldenAccuracy": "Accuracy",
+    "goldenAt": "Run at",
+    "goldenCol": {
+      "case": "Case",
+      "expected": "Person",
+      "got": "Automatic",
+      "method": "Method"
+    },
+    "from": "From"
   }
 }

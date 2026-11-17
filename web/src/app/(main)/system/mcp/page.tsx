@@ -357,12 +357,7 @@ export default function MCPPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">MCP</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <button
           type="button"

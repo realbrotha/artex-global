@@ -33,17 +33,23 @@ const SYNC_URL = "/function/sync";
 function Section({
   title,
   description,
+  action,
   children,
 }: {
   readonly title: string;
   readonly description: string;
+  // Page controls, in the first section's header rather than on a row of their own.
+  readonly action?: React.ReactNode;
   readonly children: React.ReactNode;
 }) {
   return (
     <section className="grid grid-cols-1 gap-2">
-      <div>
-        <h2 className="font-medium text-sm">{title}</h2>
-        <p className="text-muted-foreground text-xs">{description}</p>
+      <div className="flex items-end gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="font-medium text-sm">{title}</h2>
+          <p className="text-muted-foreground text-xs">{description}</p>
+        </div>
+        {action}
       </div>
       <div className="grid grid-cols-1 divide-y rounded-lg border">{children}</div>
     </section>
@@ -113,39 +119,37 @@ export default function ConnectionsPage() {
   const syncReady = Boolean(sync?.exists && sync.configured && sync.enabled);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-semibold text-xl tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm">
-              <PlusIcon />
-              {t("add")}
-              <ChevronDownIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setSheet({ source: null })}>{t("wazuh.title")}</DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={SOURCES_URL}>{t("logs.title")}</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={SYNC_URL}>{t("sync.title")}</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Section title={t("wazuh.title")} description={t("wazuh.description")}>
+      <Section
+        title={t("wazuh.title")}
+        description={t("wazuh.description")}
+        action={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="xs">
+                <PlusIcon />
+                {t("add")}
+                <ChevronDownIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setSheet({ source: null })}>{t("wazuh.title")}</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={SOURCES_URL}>{t("logs.title")}</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={SYNC_URL}>{t("sync.title")}</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      >
         {wazuh === null && <Skeleton className="m-3 h-10" />}
         {wazuh?.length === 0 && <EmptyRow text={t("none")} action="" />}
         {wazuh?.map((source) => (

@@ -154,6 +154,13 @@ type analysisView struct {
 	Fallback  int    `json:"fallback"`
 	// Cases left for the next run by the per-run limit.
 	Deferred int `json:"deferred"`
+	// Activity close to a threshold, and rules that fired into no case.
+	NearMisses []wazuh.NearMiss  `json:"near_misses"`
+	Unmatched  []wazuh.RuleCount `json:"unmatched"`
+	// Background re-verification in this run.
+	Reviewed      int    `json:"reviewed"`
+	ReviewChanged int    `json:"review_changed"`
+	GapNote       string `json:"gap_note,omitempty"`
 }
 
 type analysisJob struct {
@@ -182,6 +189,8 @@ func (j *analysisJob) snapshot() analysisView {
 	out.Hosts = append([]string{}, j.view.Hosts...)
 	out.TopRules = append([]analysisRule{}, j.view.TopRules...)
 	out.AlertByHost = append([]analysisHostCount{}, j.view.AlertByHost...)
+	out.NearMisses = append([]wazuh.NearMiss{}, j.view.NearMisses...)
+	out.Unmatched = append([]wazuh.RuleCount{}, j.view.Unmatched...)
 	out.Patterns = map[string]int{}
 	for k, n := range j.view.Patterns {
 		out.Patterns[k] = n
@@ -223,6 +232,7 @@ func (s *Server) wazuhAnalysisRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/analyses/{analysisID}/stop", s.stopAnalysis)
 	s.siemHistoryRoutes(mux)
 	s.siemScheduleRoutes(mux)
+	s.siemQualityRoutes(mux)
 }
 
 func (s *Server) findAnalysis(w http.ResponseWriter, r *http.Request) *analysisJob {
@@ -357,6 +367,7 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 	}
 	var collected time.Time
 	var collectedAlerts []*wazuh.Alert
+	var watch []wazuh.NearMiss
 	cases, meta, e := wazuhExtractCases(ctx, s.m.pg, source.Config, auth, records, job.view.Hosts, func(alerts []*wazuh.Alert, capped bool) {
 		collected = time.Now()
 		collectedAlerts = alerts
@@ -371,7 +382,7 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 			v.Checked, v.AlertHosts, v.AlertFrom, v.AlertTo, v.TopRules, v.AlertByHost = len(checked), len(hostCount), from, to, top, byHost
 			v.State, v.Extract.Status = "extracting", "running"
 		})
-	})
+	}, &watch)
 	if e != nil {
 		log.Printf("[siem-analysis] %q failed: %v", label, e)
 		fail(e)
@@ -393,6 +404,8 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 		row.Timeline = nil
 		job.view.Cases = append(job.view.Cases, row)
 	}
+	job.view.NearMisses = wazuh.SortNearMisses(watch)
+	job.view.Unmatched = wazuh.UnmatchedRules(collectedAlerts, cases, 30)
 	job.view.State = "ready"
 	job.view.AlertsStored = -1
 	job.mu.Unlock()
@@ -403,6 +416,9 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 		persist, done := context.WithTimeout(context.Background(), 15*time.Second)
 		if pe := s.m.pg.SaveWazuhCases(persist, source.ID, source.Revision, cases, meta, ""); pe != nil {
 			log.Printf("[siem-analysis] case list: %v", pe)
+		}
+		if pe := s.m.pg.SaveWatch(persist, source.ID, wazuh.SortNearMisses(watch)); pe != nil {
+			log.Printf("[siem-analysis] watch list: %v", pe)
 		}
 		done()
 	}
@@ -443,19 +459,27 @@ func needsVerdict(c analysisCase) bool {
 }
 
 // autoJudge judges a finished run's cases when the schedule settings ask for
-// it; otherwise it leaves a note saying judging is turned off.
+// it; otherwise it leaves a note saying judging is turned off. A scheduled
+// run then re-reads some stored verdicts and reviews detection gaps.
 func (s *Server) autoJudge(job *analysisJob) {
 	sched, e := s.siemSchedule(context.Background())
 	if e != nil {
 		log.Printf("[siem-analysis] schedule settings: %v", e)
 		sched = wazuh.DefaultSchedule()
 	}
+	after := func() {
+		if job.view.Trigger != "schedule" {
+			return
+		}
+		s.reviewJob(job, sched)
+		s.gapReview(job, sched)
+	}
 	if !sched.AutoJudge {
 		job.update(func(v *analysisView) { v.JudgeNote = "자동 판정이 꺼져 있음" })
 		s.persistAnalysis(job)
 		return
 	}
-	if msg := s.judgeJob(job, sched.JudgeLimit, sched.Debate); msg != "" {
+	if msg := s.judgeJob(job, sched, sched.JudgeLimit, after); msg != "" {
 		job.update(func(v *analysisView) { v.JudgeNote = msg })
 		s.persistAnalysis(job)
 	}
@@ -472,7 +496,7 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 	if e != nil {
 		sched = wazuh.DefaultSchedule()
 	}
-	if msg := s.judgeJob(job, analysisMaxHosts, sched.Debate); msg != "" {
+	if msg := s.judgeJob(job, sched, analysisMaxHosts, nil); msg != "" {
 		writeErr(w, 409, msg)
 		return
 	}
@@ -481,13 +505,13 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 }
 
 // judgeJob judges up to limit of the run's cases that need a verdict, in the
-// background, most severe first. It returns a message when it does not start.
-func (s *Server) judgeJob(job *analysisJob, limit int, debate bool) string {
-	s.cfgMu.Lock()
-	provider, model, ready := s.llmProv, s.llmCfg.Model, s.llmOn && s.llmProv != nil
-	s.cfgMu.Unlock()
-	if !ready {
-		return "LLM 이 설정되지 않았습니다. LLM 메뉴에서 모델을 연결해 주세요"
+// background, most severe first, then calls after (which may be nil). It
+// returns a message when it does not start.
+func (s *Server) judgeJob(job *analysisJob, sched wazuh.Schedule, limit int, after func()) string {
+	debate := sched.Debate
+	complete, model, msg := s.judgeBackend(sched)
+	if msg != "" {
+		return msg
 	}
 	job.mu.Lock()
 	if job.view.State != "ready" && job.view.State != "done" {
@@ -510,6 +534,9 @@ func (s *Server) judgeJob(job *analysisJob, limit int, debate bool) string {
 		job.view.State, job.view.Deferred = "done", 0
 		job.mu.Unlock()
 		s.persistAnalysis(job)
+		if after != nil {
+			go after()
+		}
 		return ""
 	}
 	ids := map[int]string{}
@@ -547,7 +574,7 @@ func (s *Server) judgeJob(job *analysisJob, limit int, debate bool) string {
 				e = errors.New("사건 후보를 찾을 수 없습니다")
 			} else {
 				one, done := context.WithTimeout(ctx, 2*caseJudgeTimeout)
-				stored, _, e = s.judgeAndRecord(one, provider, model, job.source, runID, *c, near, debate)
+				stored, _, e = s.judgeAndRecord(one, complete, model, job.source, runID, *c, near, sched)
 				done()
 			}
 			job.update(func(v *analysisView) {
@@ -583,6 +610,9 @@ func (s *Server) judgeJob(job *analysisJob, limit int, debate bool) string {
 		s.persistAnalysis(job)
 		log.Printf("[siem-analysis] %q judge end: %d of %d judged, %d failed in %s",
 			label, len(todo)-failed, len(todo), failed, time.Since(judgeStarted).Round(100*time.Millisecond))
+		if after != nil {
+			after()
+		}
 	}()
 	return ""
 }

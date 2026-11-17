@@ -180,16 +180,7 @@ export default function AssetInterceptPage() {
   const placeholder = KIND_OPTIONS.find((o) => o.value === form.kind)?.placeholder ?? "";
 
   return (
-    <div className="flex flex-1 flex-col gap-5 p-6">
-      {/* header */}
-      <div className="flex items-center gap-2.5">
-        <BanIcon className="h-5 w-5 shrink-0" />
-        <div>
-          <h1 className="text-lg font-semibold leading-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{t("subtitle")}</p>
-        </div>
-      </div>
-
+    <div className="flex flex-1 flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">{t("intro")}</p>
         <Button onClick={openNew} size="sm" className="shrink-0">

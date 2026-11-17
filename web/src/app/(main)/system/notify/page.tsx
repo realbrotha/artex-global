@@ -36,6 +36,8 @@ import { formatBacklog, StatTile } from "./_components/stat-tile";
 // 字段定义与解析在 _components/channel-fields.ts，控件与过滤摘要在
 // _components/channel-form.tsx，投递记录在 _components/delivery-list.tsx——
 // 拆开是因为它们各自能被单独读懂，而挤在一个文件里时这个页面接近 1100 行。
+type NotifyTab = "channels" | "deliveries" | "settings";
+
 export default function NotifyPage() {
   const t = useTranslations("notifyPage");
   // 渠道类型展示名：已知的 6 种走 i18n（notifyPage.kind.<kind>），
@@ -43,7 +45,7 @@ export default function NotifyPage() {
   const kindLabel = (k: string) => (k in CHANNEL_FIELDS ? t(`kind.${k}`) : k);
   const [meta, setMeta] = React.useState<NotificationMeta | null>(null);
   const [channels, setChannels] = React.useState<NotificationChannel[]>([]);
-  const [tab, setTab] = React.useState<"channels" | "deliveries">("channels");
+  const [tab, setTab] = React.useState<NotifyTab>("channels");
 
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<NotificationChannel | null>(null);
@@ -268,95 +270,89 @@ export default function NotifyPage() {
   const defaultRate = meta?.kinds.find((k) => k.kind === form.kind)?.default_rate_per_min ?? 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+    <div className="flex flex-1 flex-col gap-3">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as NotifyTab)}>
+        {/* 탭이 먼저, 전체 켜기·끄기는 같은 줄 오른쪽 끝. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="channels">{t("tab.channels")}</TabsTrigger>
+            <TabsTrigger value="deliveries">{t("tab.deliveries")}</TabsTrigger>
+            <TabsTrigger value="settings">{t("global.title")}</TabsTrigger>
+          </TabsList>
+          {meta && (
+            <label className="ml-auto flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">{t("globalSwitch")}</span>
+              <Switch
+                checked={meta.enabled}
+                disabled={globalSaving}
+                onCheckedChange={toggleGlobal}
+                aria-label={t("aria.globalSwitch")}
+              />
+            </label>
+          )}
         </div>
+
         {meta && (
-          // 用 div 而不是 label：Switch 自带 aria-label，外面再套一层 label
-          // 既关联不到任何原生控件，又会让点击文字看起来应该能切换。
-          <div className="flex shrink-0 items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{t("globalSwitch")}</span>
-            <Switch
-              checked={meta.enabled}
-              disabled={globalSaving}
-              onCheckedChange={toggleGlobal}
-              aria-label={t("aria.globalSwitch")}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <StatTile
+              label={t("stats.channels")}
+              value={`${meta.stats.channels_on} / ${meta.stats.channels}`}
+              hint={t("stats.channelsHint")}
+            />
+            <StatTile label={t("stats.sentToday")} value={String(meta.stats.sent_today)} />
+            <StatTile label={t("stats.pending")} value={String(meta.stats.pending)} />
+            <StatTile
+              label={t("stats.failed")}
+              value={String(meta.stats.failed)}
+              tone={meta.stats.failed > 0 ? "red" : undefined}
+            />
+            <StatTile
+              label={t("stats.backlog")}
+              value={formatBacklog(meta.stats.backlog_age_ms, t)}
+              // 积压年龄比积压条数有用得多：积压 3 条可以是从 3 秒到 3 小时。
+              hint={meta.stats.backlog_age_ms > 5 * 60_000 ? t("stats.backlogStuck") : undefined}
+              tone={meta.stats.backlog_age_ms > 5 * 60_000 ? "red" : undefined}
             />
           </div>
         )}
-      </div>
 
-      {meta && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <StatTile
-            label={t("stats.channels")}
-            value={`${meta.stats.channels_on} / ${meta.stats.channels}`}
-            hint={t("stats.channelsHint")}
-          />
-          <StatTile label={t("stats.sentToday")} value={String(meta.stats.sent_today)} />
-          <StatTile label={t("stats.pending")} value={String(meta.stats.pending)} />
-          <StatTile
-            label={t("stats.failed")}
-            value={String(meta.stats.failed)}
-            tone={meta.stats.failed > 0 ? "red" : undefined}
-          />
-          <StatTile
-            label={t("stats.backlog")}
-            value={formatBacklog(meta.stats.backlog_age_ms, t)}
-            // 积压年龄比积压条数有用得多：积压 3 条可以是从 3 秒到 3 小时。
-            hint={meta.stats.backlog_age_ms > 5 * 60_000 ? t("stats.backlogStuck") : undefined}
-            tone={meta.stats.backlog_age_ms > 5 * 60_000 ? "red" : undefined}
-          />
-        </div>
-      )}
-
-      <Card className="gap-3">
-        <CardHeader>
-          <CardTitle className="text-base">{t("global.title")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="n-base">{t("global.baseUrl")}</Label>
-            <Input
-              id="n-base"
-              placeholder="https://artex.example.com"
-              value={baseURL}
-              onChange={(e) => setBaseURL(e.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">{t("global.baseUrlHint")}</p>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="n-digest">{t("global.digest")}</Label>
-            <Input
-              id="n-digest"
-              type="number"
-              min={1}
-              max={1440}
-              placeholder="30"
-              value={digestMin}
-              onChange={(e) => setDigestMin(e.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">{t("global.digestHint")}</p>
-          </div>
-          <div className="sm:col-span-2">
-            <Button onClick={saveGlobal} disabled={globalSaving}>
-              {t("global.save")}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "channels" | "deliveries")} className="flex flex-col gap-4">
-        <TabsList>
-          <TabsTrigger value="channels">{t("tab.channels")}</TabsTrigger>
-          <TabsTrigger value="deliveries">{t("tab.deliveries")}</TabsTrigger>
-        </TabsList>
+        <TabsContent value="settings">
+          <Card className="gap-3">
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="n-base">{t("global.baseUrl")}</Label>
+                <Input
+                  id="n-base"
+                  placeholder="https://artex.example.com"
+                  value={baseURL}
+                  onChange={(e) => setBaseURL(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">{t("global.baseUrlHint")}</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="n-digest">{t("global.digest")}</Label>
+                <Input
+                  id="n-digest"
+                  type="number"
+                  min={1}
+                  max={1440}
+                  placeholder="30"
+                  value={digestMin}
+                  onChange={(e) => setDigestMin(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">{t("global.digestHint")}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <Button onClick={saveGlobal} disabled={globalSaving}>
+                  {t("global.save")}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="channels">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <button
               type="button"
               onClick={openAdd}

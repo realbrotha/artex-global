@@ -214,12 +214,8 @@ export default function AgentsPage() {
   const editing = agents.find((a) => a.key === editKey) ?? null;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-        </div>
+    <div className="flex flex-1 flex-col gap-3">
+      <div className="flex items-start justify-end gap-3">
         <CreateAgentDialog
           onCreated={(key) => {
             reload();

@@ -11,7 +11,6 @@ import (
 
 	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/artex/wazuh"
-	"github.com/Autumn-27/norma/llm"
 )
 
 const historyWriteTimeout = 10 * time.Second
@@ -44,23 +43,19 @@ func recordingCompleter(inner wazuh.Completer, system *string, attempts *[]db.Ju
 	}
 }
 
-// judgeAndRecord judges one case to a conclusion (single pass, debate when
-// unsure, conservative fallback), stores the verdict, and records the
-// judgment (every prompt and answer, the method and why) whether or not it
-// succeeded. runID is "" outside an analysis run. A failure, which only a
-// failed model call produces, comes back as an HTTP status and a message
-// that is safe to show.
-func (s *Server) judgeAndRecord(ctx context.Context, provider llm.Provider, model string, sourceID int64, runID string, c wazuh.Case, near []wazuh.Case, debate bool) (*db.CaseVerdict, int, error) {
+// judgeAndRecord judges one case to a conclusion (single pass, outside
+// knowledge and a debate when unsure, conservative fallback), stores the
+// verdict, and records the judgment (every prompt and answer, the method and
+// why) whether or not it succeeded. runID is "" outside an analysis run. A
+// failure, which only a failed model call produces, comes back as an HTTP
+// status and a message that is safe to show.
+func (s *Server) judgeAndRecord(ctx context.Context, complete wazuh.Completer, model string, sourceID int64, runID string, c wazuh.Case, near []wazuh.Case, sched wazuh.Schedule) (*db.CaseVerdict, int, error) {
 	started := time.Now()
 	record := db.Judgement{SourceID: sourceID, RunID: runID, Case: c, Model: model}
-	// People's corrections on the same criterion guide the model.
-	precedents, pe := s.m.pg.Precedents(ctx, sourceID, c.Criterion, precedentsShown)
-	if pe != nil {
-		log.Printf("[siem-analysis] precedents: %v", pe)
-	}
-	result, e := wazuh.JudgeCaseAuto(ctx, recordingCompleter(caseCompleter(provider), &record.System, &record.Attempts), c, near, precedents, debate)
+	result, e := wazuh.JudgeCaseAuto(ctx, recordingCompleter(complete, &record.System, &record.Attempts), c, s.judgeOptions(ctx, sourceID, c, near, sched, ""))
 	verdict := result.Verdict
 	record.Reason = result.Reason
+	addResearch(&record, result.AutoResult())
 	var stored *db.CaseVerdict
 	status := 0
 	if e != nil {
@@ -76,14 +71,51 @@ func (s *Server) judgeAndRecord(ctx context.Context, provider llm.Provider, mode
 		record.Error = e.Error()
 	}
 	record.Ms = time.Since(started).Milliseconds()
-	// The request may already be cancelled or timed out; the record is
-	// written regardless.
+	s.saveJudgement(ctx, record)
+	return stored, status, e
+}
+
+// judgeOptions gathers what a judgment works with: nearby cases, people's
+// corrections on the same criterion (except exceptKey's own, for a replay),
+// and the research step.
+func (s *Server) judgeOptions(ctx context.Context, sourceID int64, c wazuh.Case, near []wazuh.Case, sched wazuh.Schedule, exceptKey string) wazuh.JudgeOptions {
+	o := wazuh.JudgeOptions{Near: near, Debate: sched.Debate}
+	var e error
+	if exceptKey == "" {
+		o.Precedents, e = s.m.pg.Precedents(ctx, sourceID, c.Criterion, precedentsShown)
+	} else {
+		o.Precedents, e = s.m.pg.PrecedentsExcept(ctx, sourceID, c.Criterion, exceptKey, precedentsShown)
+	}
+	if e != nil {
+		log.Printf("[siem-analysis] precedents: %v", e)
+	}
+	if sched.Research {
+		o.Research = s.researchCase
+	}
+	return o
+}
+
+// addResearch puts the research step into the judgment record as its own
+// entry: what was searched for and what was found.
+func addResearch(record *db.Judgement, r wazuh.AutoResult) {
+	if r.ResearchQuery == "" {
+		return
+	}
+	notes := r.ResearchNotes
+	if notes == "" {
+		notes = "찾은 자료 없음"
+	}
+	record.Attempts = append(record.Attempts, db.JudgeAttempt{Role: "research", Prompt: r.ResearchQuery, Response: notes})
+}
+
+// saveJudgement writes a judgment record even when the request that asked
+// for it is already cancelled or timed out.
+func (s *Server) saveJudgement(ctx context.Context, record db.Judgement) {
 	write, done := context.WithTimeout(context.WithoutCancel(ctx), historyWriteTimeout)
 	defer done()
 	if pe := s.m.pg.SaveJudgement(write, record); pe != nil {
 		log.Printf("[siem-analysis] judgment record: %v", pe)
 	}
-	return stored, status, e
 }
 
 // persistAnalysis stores the job as it is now, so the run can be opened

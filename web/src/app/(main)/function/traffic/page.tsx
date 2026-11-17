@@ -344,12 +344,8 @@ export default function TrafficPage() {
   const rangeEnd = page * size + exchanges.length;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex items-center gap-4">
         <div className="flex items-center gap-4 text-sm">
           <span
             className={cn(
@@ -625,7 +621,7 @@ export default function TrafficPage() {
         ) : null}
       </div>
       {/* History table */}
-      <div className="flex h-[calc(100vh-15rem)] min-h-0 flex-col">
+      <div className="flex h-[calc(100vh-10rem)] min-h-0 flex-col">
         <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
           <div className="min-h-0 flex-1 overflow-auto">
             <Table>

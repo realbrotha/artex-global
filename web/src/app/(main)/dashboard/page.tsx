@@ -423,12 +423,6 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 pb-6">
       {/* ── Header ── */}
-      <div>
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-xs text-muted-foreground">{t("subtitle")}</p>
-        </div>
-      </div>
 
       <SiemSummary />
 

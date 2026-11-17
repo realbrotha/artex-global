@@ -133,6 +133,7 @@ func (s *Server) siemScheduleRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/defensive/schedule", s.getSiemSchedule)
 	mux.HandleFunc("PUT /api/defensive/schedule", s.putSiemSchedule)
 	mux.HandleFunc("POST /api/defensive/schedule/run", s.runSiemScheduleNow)
+	mux.HandleFunc("POST /api/defensive/schedule/runner-test", s.testRunner)
 }
 
 func (s *Server) scheduleView(ctx context.Context) (map[string]any, error) {
@@ -141,7 +142,9 @@ func (s *Server) scheduleView(ctx context.Context) (map[string]any, error) {
 		return nil, e
 	}
 	last := s.scheduleLastRun(ctx)
-	out := map[string]any{"schedule": sched, "last_run": last}
+	path, version := runnerStatus()
+	out := map[string]any{"schedule": sched, "last_run": last,
+		"runner": map[string]any{"available": path != "", "command": runnerCommand, "version": version}}
 	if next := sched.Next(last, time.Now()); !next.IsZero() {
 		out["next_run"] = next
 	}
@@ -172,6 +175,10 @@ func (s *Server) putSiemSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 	if e := in.Validate(); e != nil {
 		writeErr(w, 400, e.Error())
+		return
+	}
+	if !runnerModelRe.MatchString(in.RunnerModel) {
+		writeErr(w, 400, "러너 모델 이름을 확인해 주세요")
 		return
 	}
 	raw, _ := json.Marshal(in)

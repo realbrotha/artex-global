@@ -74,8 +74,8 @@ export function HuntingTrendExplorer({
   }, [selectedKey]);
 
   return (
-    <Card className="gap-0 py-0">
-      <CardHeader className="flex flex-row items-start justify-between gap-3 py-4">
+    <Card className="h-full gap-0 py-0 lg:min-h-0">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 py-3">
         <div className="space-y-1">
           <CardTitle className="text-base">자동 위협 동향 리포트</CardTitle>
           <CardDescription>
@@ -86,7 +86,7 @@ export function HuntingTrendExplorer({
           {starting || collection?.busy ? <Spinner /> : <RefreshCwIcon />}지금 수집
         </Button>
       </CardHeader>
-      <CardContent className="space-y-3 pb-4">
+      <CardContent className="flex flex-col gap-3 pb-3 lg:min-h-0 lg:flex-1">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-xs">
           <span>
             리포트 <strong className="text-foreground">{reports.length}건</strong>
@@ -141,10 +141,10 @@ export function HuntingTrendExplorer({
             ))}
           </fieldset>
         </div>
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="grid gap-3 lg:min-h-80 lg:flex-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <section
             ref={listRef}
-            className="flex flex-col overflow-hidden rounded-lg border lg:h-[calc(100vh-390px)] lg:max-h-[540px] lg:min-h-[320px]"
+            className="flex flex-col overflow-hidden rounded-lg border lg:min-h-0"
             aria-label="위협 동향 목록"
           >
             <div className="flex items-center justify-between border-b px-3 py-2 text-muted-foreground text-xs">
@@ -190,7 +190,7 @@ export function HuntingTrendExplorer({
           <article
             ref={detailRef}
             key={selected?.topic_key ?? "empty"}
-            className="flex h-[440px] min-h-64 flex-col overflow-hidden rounded-lg border lg:h-[calc(100vh-390px)] lg:max-h-[540px] lg:min-h-[320px]"
+            className="flex h-[440px] min-h-64 flex-col overflow-hidden rounded-lg border lg:h-auto lg:min-h-0"
             aria-label="선택한 위협 동향 리포트"
           >
             {selected ? (

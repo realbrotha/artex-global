@@ -182,10 +182,6 @@ export default function LogsPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-3">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-      </div>
       <div className="flex flex-1 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Input
@@ -230,7 +226,7 @@ export default function LogsPage() {
             const el = e.currentTarget;
             stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
           }}
-          className="h-[calc(100vh-14rem)] overflow-auto rounded-lg border bg-card p-2 font-mono text-xs leading-relaxed"
+          className="h-[calc(100vh-9rem)] overflow-auto rounded-lg border bg-card p-2 font-mono text-xs leading-relaxed"
         >
           {hasMore && (
             <div className="flex justify-center py-2">

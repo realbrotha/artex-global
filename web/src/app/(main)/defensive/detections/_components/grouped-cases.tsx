@@ -16,6 +16,9 @@ import { isCleared, type ListedCase, severityTone, stamp, verdictTone } from "..
 const GROUP_PAGE = 50;
 const CASE_PAGE = 20;
 const FLAGGED = ["breach", "suspicious", "attempt"] as const;
+// Columns of the case lines inside an opened group.
+const CASE_COLUMNS =
+  "grid grid-cols-[4.5rem_minmax(0,1.2fr)_minmax(0,1.6fr)_3.5rem_5.5rem_6.5rem_1rem] items-center gap-x-3";
 const COLUMNS = "grid grid-cols-[1rem_1rem_4.5rem_minmax(0,1fr)_4rem_4rem_4.5rem_7.5rem_6rem] items-center gap-x-2";
 
 export const caseKey = (c: ListedCase) => `${c.sourceId}/${c.id}`;
@@ -82,7 +85,14 @@ export function GroupedCases({ groups, by, selected, onSelect, checked, onCheck 
           const name = by === "cluster" ? group.label || t("detections.noCluster") : (group.title ?? group.label);
           return (
             <div key={group.key} className="border-b last:border-b-0">
-              <div className={cn(COLUMNS, "px-3 py-2 hover:bg-muted/50", group.live === 0 && "opacity-60")}>
+              <div
+                className={cn(
+                  COLUMNS,
+                  "px-3 py-2 hover:bg-muted/50",
+                  expanded && "bg-muted/50 font-medium",
+                  group.live === 0 && "opacity-60",
+                )}
+              >
                 <input
                   type="checkbox"
                   aria-label={t("detections.selectGroup", { name })}
@@ -135,75 +145,91 @@ export function GroupedCases({ groups, by, selected, onSelect, checked, onCheck 
               </div>
 
               {expanded && (
-                <div className="border-t bg-muted/20">
-                  {by === "host" && group.sourceId && (
-                    <Link
-                      href={hostDetailUrl(group.sourceId, `host:${group.label.split(".")[0].toLowerCase()}`)}
-                      className="flex items-center gap-1 px-3 pt-2 pl-12 text-[11px] text-muted-foreground hover:text-foreground [&_svg]:size-3"
-                    >
-                      {t("host.detail")}
-                      <ArrowUpRightIcon />
-                    </Link>
-                  )}
-                  {group.cases.slice(0, limit).map((c) => {
-                    const key = caseKey(c);
-                    const verdict = c.verdict;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => onSelect(c)}
-                        aria-pressed={selected === key}
-                        className={cn(
-                          COLUMNS,
-                          "w-full px-3 py-1.5 text-left hover:bg-muted",
-                          selected === key && "bg-primary/10 hover:bg-primary/10",
-                          isCleared(c) && "opacity-60",
-                        )}
-                      >
-                        <span />
-                        <span />
-                        <span>
-                          <span className={cn("rounded border px-1.5 py-0.5 text-[10px]", severityTone[c.severity])}>
-                            {t(`cases.severity.${c.severity}`)}
-                          </span>
-                        </span>
-                        <span className="col-span-3 flex min-w-0 items-baseline gap-2">
-                          <span className="truncate">
-                            {by === "rule" ? c.hosts.join(", ") : (verdict?.title ?? c.title ?? c.criterion)}
-                          </span>
-                          <span className="min-w-0 truncate text-[11px] text-muted-foreground">
-                            {by === "rule"
-                              ? c.actor
-                              : c.hosts.length > 1 || by === "cluster"
-                                ? c.hosts.join(", ")
-                                : c.actor}
-                          </span>
-                        </span>
-                        <span className="text-right text-muted-foreground tabular-nums">{c.n.toLocaleString()}</span>
-                        <span className="text-[10px]">
-                          {c.known ? (
-                            <span className="text-muted-foreground">{t("cases.known")}</span>
-                          ) : verdict ? (
-                            <span
-                              className={cn(
-                                "rounded border px-1.5 py-0.5",
-                                verdictTone[verdict.verdict],
-                                verdict.stale && "opacity-50",
-                              )}
-                            >
-                              {t(`cases.verdict.${verdict.verdict}`)}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">{t("detections.notJudged")}</span>
+                // The group's cases, set apart from the group rows: indented,
+                // with their own column names, each line opening the detail.
+                <div className="border-t bg-muted/30 py-1.5 pr-3 pl-10">
+                  <div className="overflow-hidden rounded-md border border-l-2 border-l-primary/50 bg-background">
+                    <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        {t("detections.casesIn", { count: group.cases.length })}
+                      </span>
+                      <span>{t("detections.casesHint")}</span>
+                      {by === "host" && group.sourceId && (
+                        <Link
+                          href={hostDetailUrl(group.sourceId, `host:${group.label.split(".")[0].toLowerCase()}`)}
+                          className="ml-auto flex items-center gap-1 hover:text-foreground [&_svg]:size-3"
+                        >
+                          {t("host.detail")}
+                          <ArrowUpRightIcon />
+                        </Link>
+                      )}
+                    </div>
+                    <div className={cn(CASE_COLUMNS, "border-b px-3 py-1 text-[10px] text-muted-foreground")}>
+                      <span>{t("detections.col.severity")}</span>
+                      <span>{t(by === "rule" ? "detections.col.name.host" : "detections.col.case")}</span>
+                      <span>{t(by === "rule" ? "detections.col.actor" : "detections.col.name.host")}</span>
+                      <span className="text-right">{t("detections.col.events")}</span>
+                      <span>{t("detections.col.state")}</span>
+                      <span className="text-right">{t("detections.col.last")}</span>
+                      <span />
+                    </div>
+                    {group.cases.slice(0, limit).map((c) => {
+                      const key = caseKey(c);
+                      const verdict = c.verdict;
+                      const hosts = c.hosts.join(", ");
+                      const title = verdict?.title ?? c.title ?? c.criterion;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => onSelect(c)}
+                          aria-pressed={selected === key}
+                          className={cn(
+                            CASE_COLUMNS,
+                            "w-full border-b px-3 py-1.5 text-left last:border-b-0 hover:bg-muted",
+                            selected === key && "bg-primary/10 hover:bg-primary/10",
+                            isCleared(c) && "opacity-60",
                           )}
-                        </span>
-                        <span className="text-right text-[11px] text-muted-foreground tabular-nums">
-                          {stamp(c.last)}
-                        </span>
-                      </button>
-                    );
-                  })}
+                        >
+                          <span>
+                            <span className={cn("rounded border px-1.5 py-0.5 text-[10px]", severityTone[c.severity])}>
+                              {t(`cases.severity.${c.severity}`)}
+                            </span>
+                          </span>
+                          <span className="truncate font-medium" title={by === "rule" ? hosts : title}>
+                            {by === "rule" ? hosts : title}
+                          </span>
+                          <span className="truncate text-muted-foreground" title={by === "rule" ? c.actor : hosts}>
+                            {by === "rule" ? c.actor : hosts}
+                          </span>
+                          <span className="text-right text-muted-foreground tabular-nums">{c.n.toLocaleString()}</span>
+                          <span className="text-[10px]">
+                            {c.known ? (
+                              <span className="text-muted-foreground">{t("cases.known")}</span>
+                            ) : verdict ? (
+                              <span
+                                className={cn(
+                                  "rounded border px-1.5 py-0.5",
+                                  verdictTone[verdict.verdict],
+                                  verdict.stale && "opacity-50",
+                                )}
+                              >
+                                {t(`cases.verdict.${verdict.verdict}`)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">{t("detections.notJudged")}</span>
+                            )}
+                          </span>
+                          <span className="text-right text-[11px] text-muted-foreground tabular-nums">
+                            {stamp(c.last)}
+                          </span>
+                          <ChevronRightIcon
+                            className={cn("size-3.5 text-muted-foreground", selected === key && "text-primary")}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
                   {group.cases.length > limit && (
                     <button
                       type="button"

@@ -51,6 +51,9 @@ func WithWorker(ctx context.Context, worker string) context.Context {
 	return context.WithValue(ctx, workerContextKey{}, worker)
 }
 
+// WorkerFrom returns the lane label attached with WithWorker, "" when none.
+func WorkerFrom(ctx context.Context) string { return workerFrom(ctx) }
+
 // workerFrom returns the explicit lane override, or "" when none is set.
 func workerFrom(ctx context.Context) string {
 	if ctx == nil {

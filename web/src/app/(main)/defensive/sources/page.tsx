@@ -309,7 +309,7 @@ export default function PurpleSourcesPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex flex-wrap items-center gap-3 border-b px-4 py-3 lg:px-6">
+      <header className="flex flex-wrap items-center gap-3 border-b px-3 py-3">
         <SidebarTrigger className="-ml-1" />
         <Button asChild variant="ghost" size="sm">
           <Link href="/defensive/hunting">
@@ -317,10 +317,8 @@ export default function PurpleSourcesPage() {
             {tp("defensive-hunting")}
           </Link>
         </Button>
-        <CableIcon className="size-5 text-violet-500" />
-        <h1 className="font-semibold">{t("title")}</h1>
       </header>
-      <div className="flex flex-col gap-5 p-4 lg:p-6">
+      <div className="flex flex-col gap-5 p-3">
         <p className="max-w-3xl text-sm text-muted-foreground">{t("description")}</p>
         {error ? (
           <Alert variant="destructive">

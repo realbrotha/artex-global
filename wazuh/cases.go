@@ -121,6 +121,9 @@ type CaseInput struct {
 	Criteria EventCriteria
 	Known    []KnownActivity
 	Admin    []string // allowed management source prefixes
+	// Watch, when set, receives activity that came close to a threshold
+	// without meeting it.
+	Watch *[]NearMiss
 	// Seen holds (host, user, src) first observed inside the window; nil
 	// when the first-seen baseline is unavailable (no "new source" signal).
 	Seen map[[3]string]bool
@@ -374,6 +377,16 @@ func BuildCases(in CaseInput) []Case {
 		fails[k] = append(fails[k], x.ev)
 	}
 	loginsByTime := byTime(logins)
+	// Many failures over the window that never became a P1 case: either they
+	// never bunched up, or no successful login followed them.
+	for _, k := range failOrder {
+		if fl := fails[k]; len(fl) >= 2*p1Fails {
+			sorted := byTime(fl)
+			in.watch(NearMiss{Pattern: "P1", Kind: WatchSlow, Subject: fmt.Sprintf("src=%s user=%s", k.src, k.user),
+				Host: sorted[len(sorted)-1].a.Host, Count: len(fl), Threshold: p1Fails, Last: sorted[len(sorted)-1].t,
+				Note: fmt.Sprintf("분석 기간에 인증 실패 %d회 누적. 실패 뒤 30분 안에 로그인 성공이 없어 사건이 되지 않음", len(fl))})
+		}
+	}
 	for _, k := range failOrder {
 		fl := byTime(fails[k])
 		for _, l := range loginsByTime {
@@ -387,6 +400,9 @@ func BuildCases(in CaseInput) []Case {
 				}
 			}
 			if len(before) < p1Fails {
+				in.watch(NearMiss{Pattern: "P1", Kind: WatchNear, Subject: fmt.Sprintf("src=%s user=%s", k.src, k.user), Host: l.a.Host,
+					Count: len(before), Threshold: p1Fails, Last: l.t,
+					Note: fmt.Sprintf("실패 %d회 후 로그인 성공 (기준 %d회)", len(before), p1Fails)})
 				continue
 			}
 			fol := session(l.a.Host, k.user, l.t)
@@ -681,6 +697,9 @@ func BuildCases(in CaseInput) []Case {
 		fl := perUser[u]
 		total := distinctSrc(fl)
 		if total < p6Sources {
+			in.watch(NearMiss{Pattern: "P6", Kind: WatchNear, Subject: "user=" + u, Host: fl[len(fl)-1].a.Host,
+				Count: total, Threshold: p6Sources, Last: fl[len(fl)-1].t,
+				Note: fmt.Sprintf("출발지 %d곳에서 인증 실패 (기준 %d곳)", total, p6Sources)})
 			continue
 		}
 		order, parts := byActor(fl, actorKey)
@@ -714,6 +733,11 @@ func BuildCases(in CaseInput) []Case {
 			all = append(all, x.ev)
 		}
 		if zone(s, admin) != "external" || (len(rl) < p7Requests && len(isAttack) == 0) {
+			if zone(s, admin) == "external" && len(all) > 0 {
+				in.watch(NearMiss{Pattern: "P7", Kind: WatchNear, Subject: "src=" + s, Host: all[len(all)-1].a.Host,
+					Count: len(rl), Threshold: p7Requests, Last: all[len(all)-1].t,
+					Note: fmt.Sprintf("외부 출발지 요청 %d건 (기준 %d건)", len(rl), p7Requests)})
+			}
 			continue
 		}
 		order, parts := byActor(byTime(all), func(a *Alert) string { return "host:" + a.Host })
