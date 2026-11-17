@@ -5,13 +5,16 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/artex/llmrec"
 	"github.com/Autumn-27/artex/wazuh"
 )
 
@@ -30,6 +33,76 @@ type analysisStep struct {
 	// "", "running", "done" or "failed"
 	Status string `json:"status"`
 	Ms     int64  `json:"ms,omitempty"`
+}
+
+// analysisRule is one detection rule and how many collected alerts it fired.
+type analysisRule struct {
+	ID    string `json:"id"`
+	Desc  string `json:"desc"`
+	Level int    `json:"level"`
+	Count int    `json:"count"`
+}
+
+// analysisHostCount is one host and how many collected alerts came from it.
+type analysisHostCount struct {
+	Host  string `json:"host"`
+	Count int    `json:"count"`
+}
+
+// Rows kept per breakdown; the panel shows the first few and the rest on request.
+const (
+	analysisTopRules = 50
+	analysisTopHosts = 100
+)
+
+// alertDigest summarises the collected alerts for the collect step: the hosts
+// they came from, the period they span, and the rules that fired, most first.
+func alertDigest(alerts []*wazuh.Alert) (byHost []analysisHostCount, from, to *time.Time, top []analysisRule) {
+	seen := map[string]int{}
+	rules := map[string]*analysisRule{}
+	for _, a := range alerts {
+		seen[a.Host]++
+		t := a.T
+		if from == nil || t.Before(*from) {
+			from = &t
+		}
+		if to == nil || t.After(*to) {
+			to = &t
+		}
+		r := rules[a.RuleID]
+		if r == nil {
+			r = &analysisRule{ID: a.RuleID, Desc: a.Desc, Level: a.Level}
+			rules[a.RuleID] = r
+		}
+		r.Count++
+	}
+	top = make([]analysisRule, 0, len(rules))
+	for _, r := range rules {
+		top = append(top, *r)
+	}
+	sort.Slice(top, func(i, j int) bool {
+		if top[i].Count != top[j].Count {
+			return top[i].Count > top[j].Count
+		}
+		return top[i].ID < top[j].ID
+	})
+	if len(top) > analysisTopRules {
+		top = top[:analysisTopRules]
+	}
+	byHost = make([]analysisHostCount, 0, len(seen))
+	for host, n := range seen {
+		byHost = append(byHost, analysisHostCount{Host: host, Count: n})
+	}
+	sort.Slice(byHost, func(i, j int) bool {
+		if byHost[i].Count != byHost[j].Count {
+			return byHost[i].Count > byHost[j].Count
+		}
+		return byHost[i].Host < byHost[j].Host
+	})
+	if len(byHost) > analysisTopHosts {
+		byHost = byHost[:analysisTopHosts]
+	}
+	return byHost, from, to, top
 }
 
 type analysisCase struct {
@@ -51,8 +124,21 @@ type analysisView struct {
 	Collect analysisStep `json:"collect"`
 	Alerts  int          `json:"alerts"`
 	Capped  bool         `json:"capped"`
-	Rules   int          `json:"rules"`
-	Extract analysisStep `json:"extract"`
+	// Collect detail: hosts with a config-check result, hosts that produced
+	// alerts, the period the alerts span and the rules that fired most.
+	Checked    int            `json:"checked_hosts"`
+	AlertHosts int            `json:"alert_hosts"`
+	AlertFrom  *time.Time     `json:"alert_from,omitempty"`
+	AlertTo    *time.Time     `json:"alert_to,omitempty"`
+	TopRules   []analysisRule `json:"top_rules"`
+	// Alerts per host, most first. AlertHosts is the full count.
+	AlertByHost []analysisHostCount `json:"alert_by_host"`
+	// Alerts written to the run history; -1 while they are being written.
+	AlertsStored int `json:"alerts_stored"`
+	Rules        int `json:"rules"`
+	// Why first-seen logins could not be used, when they could not.
+	SeenNote string       `json:"seen_note,omitempty"`
+	Extract  analysisStep `json:"extract"`
 	// Case candidates per correlation pattern ("P1".."P9").
 	Patterns map[string]int `json:"patterns"`
 	Cases    []analysisCase `json:"cases"`
@@ -62,12 +148,14 @@ type analysisView struct {
 }
 
 type analysisJob struct {
-	mu      sync.Mutex
-	view    analysisView
-	source  int64
-	raw     []wazuh.Case // with timelines, for the verdict prompt
-	created time.Time
-	cancel  context.CancelFunc
+	mu     sync.Mutex
+	view   analysisView
+	source int64
+	// Connection name, for the stored run.
+	sourceName string
+	raw        []wazuh.Case // with timelines, for the verdict prompt
+	created    time.Time
+	cancel     context.CancelFunc
 }
 
 func (j *analysisJob) update(f func(v *analysisView)) {
@@ -83,6 +171,8 @@ func (j *analysisJob) snapshot() analysisView {
 	// Never nil: an empty list must reach the client as [], not null.
 	out.Cases = append([]analysisCase{}, j.view.Cases...)
 	out.Hosts = append([]string{}, j.view.Hosts...)
+	out.TopRules = append([]analysisRule{}, j.view.TopRules...)
+	out.AlertByHost = append([]analysisHostCount{}, j.view.AlertByHost...)
 	out.Patterns = map[string]int{}
 	for k, n := range j.view.Patterns {
 		out.Patterns[k] = n
@@ -122,6 +212,7 @@ func (s *Server) wazuhAnalysisRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/defensive/wazuh/{sourceID}/analyses/{analysisID}", s.getAnalysis)
 	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/analyses/{analysisID}/judge", s.judgeAnalysis)
 	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/analyses/{analysisID}/stop", s.stopAnalysis)
+	s.siemHistoryRoutes(mux)
 }
 
 func (s *Server) findAnalysis(w http.ResponseWriter, r *http.Request) *analysisJob {
@@ -191,11 +282,12 @@ func (s *Server) startAnalysis(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), analysisTimeout)
-	job := &analysisJob{source: source.ID, created: time.Now(), cancel: cancel, view: analysisView{
+	job := &analysisJob{source: source.ID, sourceName: source.Name, created: time.Now(), cancel: cancel, view: analysisView{
 		ID: hex.EncodeToString(id), Label: label, Hosts: hosts, Days: wazuh.AlertWindowDays, State: "collecting",
 		Collect: analysisStep{Status: "running"}, Patterns: map[string]int{}, Cases: []analysisCase{},
 	}}
 	addAnalysis(job)
+	s.persistAnalysis(job)
 	go func() {
 		defer cancel()
 		s.runAnalysis(ctx, job, source, auth)
@@ -219,24 +311,45 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 				v.Extract.Status = "failed"
 			}
 		})
+		s.persistAnalysis(job)
 	}
 	started := time.Now()
+	label := job.view.Label
+	scope := "all hosts"
+	if n := len(job.view.Hosts); n > 0 {
+		scope = strconv.Itoa(n) + " host(s)"
+	}
+	log.Printf("[siem-analysis] %q start: %s, last %d days", label, scope, job.view.Days)
 	// Posture (config-check results) feeds case severity, as in the scheduled run.
 	records, e := wazuh.CheckRecords(ctx, source.Config, auth)
 	if e != nil {
+		log.Printf("[siem-analysis] %q failed: %v", label, e)
 		fail(e)
 		return
 	}
+	checked := map[string]bool{}
+	for _, r := range records {
+		checked[r.Agent] = true
+	}
 	var collected time.Time
-	cases, meta, e := wazuhExtractCases(ctx, s.m.pg, source.Config, auth, records, job.view.Hosts, func(alerts int, capped bool) {
+	var collectedAlerts []*wazuh.Alert
+	cases, meta, e := wazuhExtractCases(ctx, s.m.pg, source.Config, auth, records, job.view.Hosts, func(alerts []*wazuh.Alert, capped bool) {
 		collected = time.Now()
+		collectedAlerts = alerts
+		byHost, from, to, top := alertDigest(alerts)
+		hostCount := map[string]bool{}
+		for _, a := range alerts {
+			hostCount[a.Host] = true
+		}
 		job.update(func(v *analysisView) {
 			v.Collect = analysisStep{Status: "done", Ms: collected.Sub(started).Milliseconds()}
-			v.Alerts, v.Capped = alerts, capped
+			v.Alerts, v.Capped = len(alerts), capped
+			v.Checked, v.AlertHosts, v.AlertFrom, v.AlertTo, v.TopRules, v.AlertByHost = len(checked), len(hostCount), from, to, top, byHost
 			v.State, v.Extract.Status = "extracting", "running"
 		})
 	})
 	if e != nil {
+		log.Printf("[siem-analysis] %q failed: %v", label, e)
 		fail(e)
 		return
 	}
@@ -248,7 +361,7 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 	now := time.Now()
 	job.mu.Lock()
 	job.raw = cases
-	job.view.Rules = meta.Rules
+	job.view.Rules, job.view.SeenNote = meta.Rules, meta.SeenNote
 	job.view.Extract = analysisStep{Status: "done", Ms: now.Sub(collected).Milliseconds()}
 	for _, c := range cases {
 		job.view.Patterns[c.Pattern]++
@@ -257,7 +370,12 @@ func (s *Server) runAnalysis(ctx context.Context, job *analysisJob, source *db.W
 		job.view.Cases = append(job.view.Cases, row)
 	}
 	job.view.State = "ready"
+	job.view.AlertsStored = -1
 	job.mu.Unlock()
+	s.persistAnalysis(job)
+	go s.storeRunAlerts(job, collectedAlerts)
+	log.Printf("[siem-analysis] %q extracted: %d alert(s), %d rule(s), %d case candidate(s) in %s",
+		label, meta.Alerts, meta.Rules, len(cases), now.Sub(started).Round(100*time.Millisecond))
 }
 
 func (s *Server) getAnalysis(w http.ResponseWriter, r *http.Request) {
@@ -280,6 +398,7 @@ func (s *Server) stopAnalysis(w http.ResponseWriter, r *http.Request) {
 			v.State = "stopped"
 		}
 	})
+	s.persistAnalysis(job)
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, 200, job.snapshot())
 }
@@ -329,11 +448,17 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 	job.cancel = cancel
 	job.view.State, job.view.JudgeAt, job.view.JudgeOf, job.view.Model = "judging", 0, len(todo), model
 	raw := job.raw
+	label, runID := job.view.Label, job.view.ID
 	job.mu.Unlock()
+	s.persistAnalysis(job)
+	log.Printf("[siem-analysis] %q judge start: %d case(s), model %s", label, len(todo), model)
 
 	go func() {
 		defer cancel()
-		complete := caseCompleter(provider)
+		// Labels these calls in the LLM records and the usage ledger.
+		ctx := llmrec.WithWorker(ctx, "siem-judge")
+		judgeStarted := time.Now()
+		failed := 0
 		for _, i := range todo {
 			if ctx.Err() != nil {
 				break
@@ -347,27 +472,22 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 				e = errors.New("사건 후보를 찾을 수 없습니다")
 			} else {
 				one, done := context.WithTimeout(ctx, caseJudgeTimeout)
-				var verdict wazuh.Verdict
-				if verdict, e = wazuh.JudgeCase(one, complete, *c, near); e == nil {
-					if stored, e = s.m.pg.SaveCaseVerdict(one, job.source, *c, verdict, model); e != nil {
-						e = errors.New("판정을 저장하지 못했습니다")
-					}
-				} else {
-					_, msg := judgeFailure(e)
-					e = errors.New(msg)
-				}
+				stored, _, e = s.judgeAndRecord(one, provider, model, job.source, runID, *c, near)
 				done()
 			}
 			job.update(func(v *analysisView) {
 				row := &v.Cases[i]
 				row.JudgeMs = time.Since(started).Milliseconds()
 				if e != nil {
+					failed++
 					row.Judge, row.JudgeError = "failed", e.Error()
 				} else {
 					row.Judge, row.Verdict = "done", &caseVerdictView{CaseVerdict: stored}
 				}
 				v.JudgeAt++
 			})
+			// Saved case by case, so a run cut short keeps what it judged.
+			s.persistAnalysis(job)
 		}
 		job.update(func(v *analysisView) {
 			for i := range v.Cases {
@@ -379,6 +499,9 @@ func (s *Server) judgeAnalysis(w http.ResponseWriter, r *http.Request) {
 				v.State = "done"
 			}
 		})
+		s.persistAnalysis(job)
+		log.Printf("[siem-analysis] %q judge end: %d of %d judged, %d failed in %s",
+			label, len(todo)-failed, len(todo), failed, time.Since(judgeStarted).Round(100*time.Millisecond))
 	}()
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, 200, job.snapshot())

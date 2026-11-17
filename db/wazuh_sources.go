@@ -190,3 +190,21 @@ func (d *DB) WazuhHostIssues(ctx context.Context, id int64, node string) ([]wazu
 	}
 	return out, nil
 }
+
+// WazuhIssues returns the stored config-check issues of every node of a
+// connection, keyed by node id.
+func (d *DB) WazuhIssues(ctx context.Context, id int64) (map[string][]wazuh.Issue, error) {
+	var raw []byte
+	e := d.QueryRowContext(ctx, `SELECT COALESCE(checks, '{}'::jsonb) FROM wazuh_sources WHERE id=$1`, id).Scan(&raw)
+	if errors.Is(e, sql.ErrNoRows) {
+		return nil, ErrWazuhSourceNotFound
+	}
+	if e != nil {
+		return nil, e
+	}
+	out := map[string][]wazuh.Issue{}
+	if e = json.Unmarshal(raw, &out); e != nil {
+		return nil, e
+	}
+	return out, nil
+}

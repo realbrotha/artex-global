@@ -1102,7 +1102,7 @@ export default function DashboardPage() {
               {t("noAssetData")}
               <Link
                 prefetch={false}
-                href="/defensive/assets?tab=discovered"
+                href="/function/assets"
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 <PlusIcon /> {t("addAssets")}

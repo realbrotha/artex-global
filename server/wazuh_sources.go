@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/artex/llmrec"
 	"github.com/Autumn-27/artex/wazuh"
 	"github.com/Autumn-27/norma/llm"
 )
@@ -43,6 +44,7 @@ func (s *Server) registerWazuhSources(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/defensive/wazuh/{sourceID}/cases/{caseID}/judge", s.judgeCase)
 	mux.HandleFunc("GET /api/defensive/accepted-risks", s.listAcceptedRisks)
 	mux.HandleFunc("PUT /api/defensive/accepted-risks", s.replaceAcceptedRisks)
+	mux.HandleFunc("GET /api/defensive/posture", s.listPosture)
 	s.wazuhAnalysisRoutes(mux)
 }
 
@@ -354,7 +356,7 @@ var errNoEventCatalog = errors.New("탐지 기준이 등록되지 않았습니�
 
 // hosts limits the alerts to those agents (nil = all); collected, when set, is
 // called once the alerts are in, before the cases are built.
-func wazuhExtractCases(ctx context.Context, pg *db.DB, cfg wazuh.Config, auth wazuh.Credentials, records []wazuh.CheckRecord, hosts []string, collected func(alerts int, capped bool)) ([]wazuh.Case, db.CaseMeta, error) {
+func wazuhExtractCases(ctx context.Context, pg *db.DB, cfg wazuh.Config, auth wazuh.Credentials, records []wazuh.CheckRecord, hosts []string, collected func(alerts []*wazuh.Alert, capped bool)) ([]wazuh.Case, db.CaseMeta, error) {
 	meta := db.CaseMeta{WindowDays: wazuh.AlertWindowDays}
 	settings, e := pg.GetSiemSettings(ctx)
 	if e != nil {
@@ -380,7 +382,7 @@ func wazuhExtractCases(ctx context.Context, pg *db.DB, cfg wazuh.Config, auth wa
 	}
 	meta.Alerts = len(in.Alerts)
 	if collected != nil {
-		collected(meta.Alerts, meta.Capped)
+		collected(in.Alerts, meta.Capped)
 	}
 	in.Seen, meta.SeenNote = wazuh.SeenLogins(ctx, cfg, auth, wazuh.AlertWindowDays, time.Now())
 	return wazuh.BuildCases(in), meta, nil
@@ -574,15 +576,9 @@ func (s *Server) judgeCase(w http.ResponseWriter, r *http.Request) {
 	// stored. The client then finds it on its next reload.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), caseJudgeTimeout)
 	defer cancel()
-	verdict, e := wazuh.JudgeCase(ctx, caseCompleter(provider), *c, near)
+	stored, status, e := s.judgeAndRecord(llmrec.WithWorker(ctx, "siem-judge"), provider, model, id, "", *c, near)
 	if e != nil {
-		status, msg := judgeFailure(e)
-		writeErr(w, status, msg)
-		return
-	}
-	stored, e := pg.SaveCaseVerdict(ctx, id, *c, verdict, model)
-	if e != nil {
-		writeErr(w, 500, "판정을 저장하지 못했습니다")
+		writeErr(w, status, e.Error())
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
@@ -871,4 +867,49 @@ func ImportWazuhSource(ctx context.Context, pg *db.DB, dataDir, keyDir, name str
 	}
 	_, err = pg.SaveWazuhSource(ctx, id, revision, name, cfg, true, cipher)
 	return id == 0, err
+}
+
+// listPosture returns, per enabled connection, every config-check item with
+// the hosts that fail it, need a review, errored or are accepted. Evidence is
+// not included: it is read per host (wazuhHostChecks).
+func (s *Server) listPosture(w http.ResponseWriter, r *http.Request) {
+	pg := s.pg(w)
+	if pg == nil {
+		return
+	}
+	rows, e := pg.ListWazuhSources(r.Context())
+	if e != nil {
+		wazuhSourceError(w, e)
+		return
+	}
+	type entry struct {
+		ID       string               `json:"id"`
+		Name     string               `json:"name"`
+		SyncedAt *time.Time           `json:"synced_at"`
+		Hosts    int                  `json:"hosts"` // hosts with a check result
+		Checks   []wazuh.CheckSummary `json:"checks"`
+	}
+	out := []entry{}
+	for _, row := range rows {
+		if !row.Enabled {
+			continue
+		}
+		issues, e := pg.WazuhIssues(r.Context(), row.ID)
+		if e != nil {
+			wazuhSourceError(w, e)
+			return
+		}
+		names := map[string]string{}
+		checked := 0
+		for _, n := range row.Graph.Nodes {
+			names[n.ID] = n.Name
+			if n.Checks != nil {
+				checked++
+			}
+		}
+		out = append(out, entry{ID: strconv.FormatInt(row.ID, 10), Name: row.Name, SyncedAt: row.SyncedAt,
+			Hosts: checked, Checks: wazuh.SummarizeChecks(issues, names)})
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, 200, map[string]any{"sources": out})
 }

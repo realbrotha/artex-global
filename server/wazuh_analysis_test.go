@@ -99,3 +99,25 @@ func TestAnalysisStoreEvictsOldJobs(t *testing.T) {
 		t.Error("snapshot shares state with the job")
 	}
 }
+
+func TestAlertDigest(t *testing.T) {
+	at := func(h int) time.Time { return time.Date(2026, 11, 10, h, 0, 0, 0, time.UTC) }
+	alerts := []*wazuh.Alert{
+		{T: at(5), Host: "web01", RuleID: "5710", Desc: "sshd: invalid user", Level: 5},
+		{T: at(3), Host: "web01", RuleID: "5710", Desc: "sshd: invalid user", Level: 5},
+		{T: at(9), Host: "db01", RuleID: "5402", Desc: "sudo to root", Level: 3},
+	}
+	hosts, from, to, top := alertDigest(alerts)
+	if len(hosts) != 2 || hosts[0] != (analysisHostCount{Host: "web01", Count: 2}) || !from.Equal(at(3)) || !to.Equal(at(9)) {
+		t.Errorf("hosts=%v from=%v to=%v", hosts, from, to)
+	}
+	if len(top) != 2 || top[0].ID != "5710" || top[0].Count != 2 || top[1].ID != "5402" {
+		t.Errorf("top = %+v", top)
+	}
+	if hosts, from, to, top := alertDigest(nil); len(hosts) != 0 || from != nil || to != nil || len(top) != 0 {
+		t.Error("no alerts must give an empty digest")
+	}
+	if raw, _ := json.Marshal((&analysisJob{}).snapshot()); !strings.Contains(string(raw), `"top_rules":[]`) || !strings.Contains(string(raw), `"alert_by_host":[]`) {
+		t.Errorf("empty snapshot = %s", raw)
+	}
+}

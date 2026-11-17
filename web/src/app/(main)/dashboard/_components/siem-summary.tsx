@@ -123,7 +123,7 @@ export function SiemSummary() {
           : t("hostsOk")}
       </Tile>
       <Tile
-        href={`${ASSETS_URL}?tab=list`}
+        href={"/defensive/posture"}
         icon={<ShieldAlertIcon />}
         label={t("fails")}
         value={summary.fail}
@@ -132,7 +132,7 @@ export function SiemSummary() {
         {t("failsDetail", { hosts: summary.failingHosts, accepted: summary.accepted })}
       </Tile>
       <Tile
-        href={`${ASSETS_URL}?tab=cases`}
+        href={"/defensive/detections"}
         icon={<SirenIcon />}
         label={t("cases")}
         value={summary.live.length}
@@ -140,7 +140,7 @@ export function SiemSummary() {
       >
         {bySeverity.length > 0 ? bySeverity.map(([s, n]) => `${tc(`severity.${s}`)} ${n}`).join(" · ") : t("casesNone")}
       </Tile>
-      <Tile href={`${ASSETS_URL}?tab=cases`} icon={<SparklesIcon />} label={t("unjudged")} value={summary.unjudged}>
+      <Tile href={"/defensive/detections"} icon={<SparklesIcon />} label={t("unjudged")} value={summary.unjudged}>
         {summary.unjudged > 0 ? t("unjudgedDetail") : t("unjudgedNone")}
       </Tile>
     </div>

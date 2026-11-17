@@ -203,8 +203,13 @@
       "protected-assets": "保护资产",
       "connections": "连接",
       "activity": "执行记录",
-      "analysis": "分析",
-      "config": "设置"
+      "config": "设置",
+      "pentest": "渗透",
+      "attack-surface": "攻击面",
+      "infra": "基础设施",
+      "detections": "事件检测",
+      "posture": "配置检查",
+      "siem-history": "分析记录"
     }
   },
   "notFound": {
@@ -2316,7 +2321,7 @@
     "moreErrors": "…共 {count} 条错误"
   },
   "assets": {
-    "title": "资产",
+    "title": "攻击面",
     "totalAssets": "共 <n>{count}</n> 项资产",
     "deleteSelected": "删除已选 ({count})",
     "refresh": "刷新",
@@ -3959,7 +3964,7 @@
     "refresh": "刷新"
   },
   "protectedAssets": {
-    "title": "资产",
+    "title": "基础设施",
     "refresh": "刷新",
     "manageConnections": "管理连接",
     "loadFailed": "无法加载保护资产。",
@@ -3969,8 +3974,6 @@
     "emptyDescription": "连接 Wazuh manager 后，可获取已安装 agent 的设备及其关系。",
     "addConnection": "添加 Wazuh 连接",
     "searchPlaceholder": "搜索主机名、IP 或角色",
-    "tabGraph": "基础设施图",
-    "tabList": "设备列表",
     "noMatch": "没有符合条件的设备。",
     "close": "关闭",
     "memberCount": "{count} 台设备",
@@ -4167,9 +4170,16 @@
         "attempt": "尝试",
         "normal": "正常",
         "false_positive": "误报"
-      }
+      },
+      "unjudged": "未判定 {count}",
+      "caseCount": "{count} 个事件",
+      "sort": {
+        "risk": "按风险",
+        "count": "按事件数",
+        "name": "按名称"
+      },
+      "generatedShort": "最近 {days} 天告警 {alerts, number} 条 · {when} 分析"
     },
-    "tabDiscovered": "发现的资产",
     "host": {
       "tabOverview": "概览",
       "detail": "查看详情",
@@ -4180,7 +4190,8 @@
       "grouped": "按分组",
       "depth": "按层级",
       "tier": "第 {depth} 层 · {count} 台",
-      "tierGroups": "服务组 · {count} 个"
+      "tierGroups": "服务组 · {count} 个",
+      "gateways": "Bastion · {count} 台"
     },
     "analysis": {
       "title": "SIEM 日志分析",
@@ -4225,7 +4236,233 @@
         "P8": "错误激增",
         "P9": "高风险单一规则"
       },
-      "all": "全部 SIEM 日志分析"
+      "all": "全部 SIEM 日志分析",
+      "fact": {
+        "target": "对象",
+        "alerts": "告警",
+        "span": "范围",
+        "posture": "检查结果",
+        "rules": "规则",
+        "severity": "严重度",
+        "hosts": "相关主机",
+        "thisRun": "本次执行",
+        "reused": "已有判定",
+        "unjudged": "未判定"
+      },
+      "target": "{count, plural, =0 {全部主机} other {主机 #台}}",
+      "alertSpan": "主机 {hosts}台 · {from} ~ {to}",
+      "checked": "已应用 {count}台 (用于调整严重度)",
+      "topRules": "触发最多的规则",
+      "caseHosts": "{count}台",
+      "seenNote": "未使用首次登录判别: {note}",
+      "judgeStats": "本次运行: 完成 {done} · 失败 {failed} · 平均 {sec}秒",
+      "summaryPending": "判定前: 事件候选 {count}件中未判定 {pending}件",
+      "summaryFlagged": "需要确认的事件 {count}件",
+      "summaryTime": "耗时: 收集 {collect}秒 · 提取 {extract}秒 · 判定 {judge}秒",
+      "showAll": "显示全部 {count}项",
+      "showLess": "收起",
+      "byHost": "按主机统计告警",
+      "judgedRun": "已判定 {done}件 · 失败 {failed}件",
+      "judgeNotRun": "未执行 LLM 判定",
+      "caseCount": "{count}件",
+      "stepNote": {
+        "waiting": "需点击按钮后进行",
+        "skipped": "未执行",
+        "partial": "剩余未判定 {count}件"
+      }
+    },
+    "view": {
+      "map": "地图",
+      "table": "表格"
+    },
+    "detections": {
+      "title": "事件检测",
+      "subtitle": "从告警中提取的事件候选及 LLM 判定",
+      "searchPlaceholder": "搜索对象、设备、检测基准、摘要",
+      "noConnection": "尚未连接 Wazuh。在 设置 > 连接 中添加后,事件候选将显示在此处。",
+      "tile": {
+        "open": "未处理事件",
+        "severe": "Critical · High",
+        "unjudged": "未判定",
+        "hosts": "受影响主机",
+        "hostsOf": "/ {total}台"
+      },
+      "noCluster": "无集群",
+      "rules": {
+        "title": "事件最多的检测基准",
+        "count": "{cases}件 · 主机 {hosts}台"
+      },
+      "group": {
+        "rule": "按基准",
+        "host": "按主机",
+        "cluster": "按集群"
+      },
+      "col": {
+        "severity": "严重度",
+        "name": {
+          "rule": "检测基准",
+          "host": "主机",
+          "cluster": "集群"
+        },
+        "hosts": "主机",
+        "cases": "事件",
+        "events": "告警",
+        "state": "判定",
+        "last": "最近"
+      },
+      "notJudged": "未判定",
+      "more": "再显示 {count}项",
+      "judgeSelected": "判定所选分组的 {count}件",
+      "groupCount": "{groups}个分组 · 事件 {cases}件",
+      "closeDetail": "关闭详情",
+      "selectAll": "选择所有可见分组",
+      "selectGroup": "选择 {name}",
+      "time": {
+        "bar": "{from} ~ {to} · 新事件 {count}件",
+        "click": "点击仅显示该时段"
+      },
+      "clusters": {
+        "title": "按集群统计事件",
+        "count": "{count}件"
+      },
+      "empty": "没有可显示的事件。"
+    },
+    "posture": {
+      "title": "配置检查",
+      "subtitle": "{hosts} 台设备的 KISA·CIS 配置检查结果",
+      "itemCount": "{count} 个项目",
+      "hostCount": "{count} 台设备",
+      "searchChecks": "搜索代码、标题、设备",
+      "empty": "暂无检查结果。设备上运行 config-check 后将显示。",
+      "view": {
+        "check": "按项目",
+        "host": "按设备"
+      },
+      "sevTitle": "按等级统计",
+      "stdTitle": "按基准统计",
+      "hostsTitle": "{result} 项目最多的主机",
+      "noSev": "未分级",
+      "itemShort": "{count}项",
+      "sort": {
+        "impact": "主机数",
+        "severity": "等级",
+        "code": "代码"
+      },
+      "col": {
+        "sev": "等级",
+        "code": "代码",
+        "title": "检查项",
+        "std": "基准"
+      },
+      "more": "再显示 {count}项",
+      "closeDetail": "关闭详情",
+      "detailHint": "点击主机可查看该主机的检查结果和依据。"
+    },
+    "history": {
+      "title": "分析记录",
+      "subtitle": "SIEM 日志分析的执行和 LLM 判定记录,原样保存发送给模型的内容和收到的回答",
+      "view": {
+        "runs": "分析执行",
+        "judgements": "判定记录"
+      },
+      "col": {
+        "when": "时间",
+        "label": "对象",
+        "source": "连接",
+        "state": "状态",
+        "alerts": "告警",
+        "cases": "事件候选",
+        "judged": "判定",
+        "model": "模型",
+        "case": "事件",
+        "hosts": "主机",
+        "verdict": "判定",
+        "tries": "请求",
+        "ms": "耗时",
+        "origin": "来源",
+        "pattern": "模式",
+        "severity": "严重度"
+      },
+      "state": {
+        "collecting": "收集中",
+        "extracting": "提取中",
+        "ready": "未判定",
+        "judging": "判定中",
+        "done": "完成",
+        "failed": "失败",
+        "stopped": "已停止"
+      },
+      "emptyRuns": "暂无分析执行记录。在基础设施图右键或事件检测中执行 SIEM 日志分析后会留下记录。",
+      "emptyJudgements": "暂无判定记录。执行 LLM 判定后会留下记录。",
+      "back": "返回列表",
+      "originRun": "分析执行",
+      "originDirect": "单独判定",
+      "failed": "失败",
+      "sec": "{sec}秒",
+      "tries": "{count}次",
+      "detail": {
+        "case": "判定对象",
+        "basis": "严重度依据",
+        "period": "期间",
+        "events": "告警 {count}件",
+        "outcome": "判定结果",
+        "evidence": "依据",
+        "response": "建议措施",
+        "adjust": "等级调整 → {severity}: {reason}",
+        "error": "失败原因",
+        "sent": "发送给 LLM 的内容和收到的回答",
+        "system": "系统提示词 (判定规则)",
+        "request": "请求 {n}",
+        "answer": "回答 {n}",
+        "retry": "上一次回答违反格式规则,因此重新请求",
+        "noAnswer": "无回答",
+        "loadFailed": "无法加载判定记录。",
+        "chars": "{count}字"
+      },
+      "runCases": "事件候选 {count}件",
+      "noCases": "本次执行未产生事件候选。",
+      "origin": {
+        "inRun": "本次执行中判定",
+        "earlier": "其他时间判定",
+        "none": "未判定",
+        "known": "正常业务"
+      },
+      "noRecord": "该判定在记录功能加入之前进行,没有提示词记录。重新判定后会留下记录。",
+      "earlierNote": "这是在其他时间({when})进行的判定记录,不属于本次执行。",
+      "timeline": "告警时间线 ({count}件)",
+      "timelineClipped": "告警时间线 (首尾 {shown}件 / 共 {total}件)",
+      "noTimeline": "本次执行未保存告警时间线。",
+      "caseInfo": "事件信息",
+      "judgement": "LLM 判定",
+      "notJudged": "该事件未进行 LLM 判定。",
+      "knownNote": "与正常业务登记一致: {reason}",
+      "runSummary": "{when} · {source} · 告警 {alerts, number}件 · 事件候选 {cases}件 · 本次判定 {judged}件",
+      "alerts": {
+        "tab": "收集的告警 {count, number}件",
+        "allRules": "全部规则",
+        "allHosts": "全部主机",
+        "search": "搜索描述、行为者、来源、原文后按 Enter",
+        "none": "本次执行未保存告警原文。可能是记录功能加入之前的执行,或已超出原文保留上限(最近 20 次)。",
+        "storing": "正在保存告警原文,请稍后刷新。",
+        "capped": "告警较多,仅保存最近 {max, number}件 (共收集 {total, number}件)。",
+        "page": "{from, number}–{to, number} / {total, number}",
+        "prev": "上一页",
+        "next": "下一页",
+        "noMatch": "没有符合条件的告警。",
+        "loadFailed": "无法加载告警。",
+        "col": {
+          "time": "时间",
+          "host": "主机",
+          "rule": "规则",
+          "level": "级别",
+          "desc": "描述",
+          "actor": "行为者",
+          "src": "来源"
+        },
+        "object": "对象",
+        "fullLog": "原始日志",
+        "noLog": "该告警没有原始日志。"
+      }
     }
   },
   "connections": {

@@ -224,35 +224,79 @@ export interface Tier {
   count: number;
 }
 
-export const TIER_LABEL_W = 132;
-const TIER_COLS = 4;
-const MAX_DEPTH = 8;
+// A labelled outline around hosts that share a role but are not a cluster:
+// the bastions, shown as a service group.
+export interface Frame {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  count: number;
+}
 
-// Lays the map out top-down by how deep a host sits in the "runs on" chain:
+export const TIER_LABEL_W = 132;
+const MAX_DEPTH = 8;
+// Width-to-height ratio the map is usually shown at; used to pick how many
+// columns a block gets so the whole picture fits with the largest zoom.
+const VIEW_ASPECT = 1.7;
+
+const mean = (xs: number[]) => xs.reduce((sum, v) => sum + v, 0) / xs.length;
+
+// Spreads items along a row: each keeps the x it asked for when it can, and
+// is pushed right just far enough to clear its left neighbour.
+function sweep<T>(items: T[], want: (item: T) => number, width: (item: T) => number, gap: number, min: number) {
+  const out = new Map<T, number>();
+  let next = min;
+  for (const item of [...items].sort((a, b) => want(a) - want(b))) {
+    const x = Math.max(want(item), next);
+    out.set(item, x);
+    next = x + width(item) + gap;
+  }
+  return out;
+}
+
+// Lays the map out top-down by how deep a host sits in the "runs on" chain,
+// arranged so the lines cross as little as possible (a layered layout with
+// barycentre ordering, as in Sugiyama-style graph drawing):
 //
-//   - service groups (OpenStack) on top
+//   - service groups on top: OpenStack, and the bastions as one framed group
+//     (a role the hosts play, like OpenStack, rather than a depth)
 //   - depth 0: hosts that run on nothing we know of (physical machines)
 //   - depth 1: their guests, depth 2: guests of guests, and so on
 //
+// What keeps the lines apart:
+//
+//   - every level is ONE row, never wrapped: a line to a block in a second
+//     row would have to pass through the blocks of the first
+//   - guests follow the left-to-right order of their hosts
+//   - a host sits over the middle of its guests, OpenStack over the middle of
+//     its hosts, and each bastion over the cluster it fronts
+//
 // A VM whose hypervisor is unknown still sits at depth 1: it runs on
-// something, just not on a host with an agent. Within a tier, hosts follow
-// their parent's order, and members of one Kubernetes cluster share a box.
-export function layoutByDepth(nodes: AssetNode[], edges: AssetEdge[]): { pos: Map<string, Placement>; tiers: Tier[] } {
+// something, just not on a host with an agent. Members of one Kubernetes
+// cluster share a box; the box is as narrow as the view allows, so one row
+// still fits the screen.
+export function layoutByDepth(
+  nodes: AssetNode[],
+  edges: AssetEdge[],
+): { pos: Map<string, Placement>; tiers: Tier[]; frames: Frame[] } {
   const pos = new Map<string, Placement>();
   const tiers: Tier[] = [];
+  const frames: Frame[] = [];
   const hosts = nodes.filter(isHostNode);
   const hostIds = new Set(hosts.map((h) => h.id));
   const clusterIds = new Set(nodes.filter((n) => n.kind === "k8s_cluster").map((c) => c.id));
+  const byName = (a: AssetNode, b: AssetNode) => a.name.localeCompare(b.name);
 
   const clusterOf = new Map<string, string>();
   const parentOf = new Map<string, string>();
+  const gatewayOf = new Map<string, string>();
   for (const e of edges) {
-    if (e.kind === "member_of" && hostIds.has(e.from) && clusterIds.has(e.to) && !clusterOf.has(e.from)) {
-      clusterOf.set(e.from, e.to);
-    }
-    if (e.kind === "runs_on" && hostIds.has(e.from) && hostIds.has(e.to) && !parentOf.has(e.from)) {
-      parentOf.set(e.from, e.to);
-    }
+    if (!hostIds.has(e.from)) continue;
+    if (e.kind === "member_of" && clusterIds.has(e.to) && !clusterOf.has(e.from)) clusterOf.set(e.from, e.to);
+    if (e.kind === "runs_on" && hostIds.has(e.to) && !parentOf.has(e.from)) parentOf.set(e.from, e.to);
+    if (e.kind === "gateway_of" && clusterIds.has(e.to) && !gatewayOf.has(e.from)) gatewayOf.set(e.from, e.to);
   }
 
   const kindOf = new Map(hosts.map((h) => [h.id, h.kind]));
@@ -269,75 +313,190 @@ export function layoutByDepth(nodes: AssetNode[], edges: AssetEdge[]): { pos: Ma
     return depth;
   };
 
+  // Bastions are a service group, like OpenStack: what matters about them is
+  // the role (the way in to a cluster), not how deep they run.
+  const gateways = hosts.filter((h) => gatewayOf.has(h.id));
   const byDepth = new Map<number, AssetNode[]>();
   for (const h of hosts) {
+    if (gatewayOf.has(h.id)) continue;
     const d = depthOf(h.id);
     byDepth.set(d, [...(byDepth.get(d) ?? []), h]);
   }
+  const depths = [...byDepth.keys()].sort((a, b) => a - b);
 
-  const x0 = TIER_LABEL_W;
-  let y = 0;
-  const groups = nodes.filter((n) => n.kind === "openstack").sort((a, b) => a.name.localeCompare(b.name));
-  if (groups.length > 0) {
-    groups.forEach((g, i) => {
-      pos.set(g.id, { x: x0 + i * (NODE_W + BLOCK_GAP), y });
-    });
-    tiers.push({ depth: -1, y, count: groups.length });
-    y += NODE_H + ROW_GAP;
+  // Blocks of each level, in order: guests follow their host's rank, and the
+  // members of one cluster form one block.
+  interface Block {
+    cluster?: string;
+    members: AssetNode[];
   }
-
-  // Order within a tier: parent's rank first, so guests sit under their host.
   const rank = new Map<string, number>();
-  for (const depth of [...byDepth.keys()].sort((a, b) => a - b)) {
+  const blocksOf = new Map<number, Block[]>();
+  const boxedAt = new Map<string, number>();
+  for (const depth of depths) {
     const list = (byDepth.get(depth) ?? []).sort(
       (a, b) =>
         (rank.get(parentOf.get(a.id) ?? "") ?? Number.MAX_SAFE_INTEGER) -
           (rank.get(parentOf.get(b.id) ?? "") ?? Number.MAX_SAFE_INTEGER) ||
         (clusterOf.get(a.id) ?? "").localeCompare(clusterOf.get(b.id) ?? "") ||
-        a.name.localeCompare(b.name),
+        byName(a, b),
     );
     list.forEach((h, i) => {
       rank.set(h.id, i);
     });
-
-    // Blocks: one per cluster (in order of first member), loose hosts between.
-    const blocks: { cluster?: string; members: AssetNode[] }[] = [];
+    const blocks: Block[] = [];
     for (const h of list) {
-      const cluster = clusterOf.get(h.id);
+      // A cluster is boxed in the first level it appears in; members deeper down stay loose.
+      const own = clusterOf.get(h.id);
+      const cluster = own !== undefined && (boxedAt.get(own) ?? depth) === depth ? own : undefined;
+      if (cluster !== undefined) boxedAt.set(cluster, depth);
       const open = blocks.find((b) => cluster !== undefined && b.cluster === cluster);
       const last = blocks.at(-1);
+      // Loose hosts share a block only while they share a host, so each run sits
+      // under its own. The top level has no hosts above it: there every machine
+      // is a block of its own, which keeps the whole level on one line however
+      // narrow the blocks below are made.
+      const sameHost =
+        depth !== depths[0] && last?.members.length ? parentOf.get(last.members[0].id) === parentOf.get(h.id) : false;
       if (open) open.members.push(h);
-      else if (cluster === undefined && last && last.cluster === undefined) last.members.push(h);
+      else if (cluster === undefined && last && last.cluster === undefined && sameHost) last.members.push(h);
       else blocks.push({ cluster, members: [h] });
     }
+    blocksOf.set(depth, blocks);
+  }
 
-    const top = y;
+  const sizeOf = (block: Block, cols: number) => {
+    const grid = gridSize(block.members.length, Math.min(cols, block.members.length));
+    return block.cluster === undefined ? grid : { w: grid.w + 2 * BOX_PAD, h: BOX_HEADER + grid.h + BOX_PAD };
+  };
+  const frameSize =
+    gateways.length > 0
+      ? (() => {
+          const grid = gridSize(gateways.length, gateways.length);
+          return { w: grid.w + 2 * BOX_PAD, h: BOX_HEADER + grid.h + BOX_PAD };
+        })()
+      : undefined;
+  const groups = nodes.filter((n) => n.kind === "openstack").sort(byName);
+  const hasGroupRow = groups.length > 0 || gateways.length > 0;
+  const groupRowH = hasGroupRow ? Math.max(groups.length > 0 ? NODE_H : 0, frameSize?.h ?? 0) : 0;
+
+  // Fewer columns make a level narrower but taller. Pick the count that lets
+  // the whole map be shown largest.
+  let cols = 1;
+  let best = -1;
+  for (const candidate of [1, 2, 3, 4]) {
+    let width = 0;
+    let height = hasGroupRow ? groupRowH + ROW_GAP : 0;
+    for (const depth of depths) {
+      const sizes = (blocksOf.get(depth) ?? []).map((b) => sizeOf(b, candidate));
+      width = Math.max(width, sizes.reduce((sum, s) => sum + s.w, 0) + Math.max(0, sizes.length - 1) * BLOCK_GAP);
+      height += Math.max(0, ...sizes.map((s) => s.h)) + ROW_GAP;
+    }
+    const zoom = Math.min(VIEW_ASPECT / Math.max(1, width + TIER_LABEL_W), 1 / Math.max(1, height));
+    if (zoom > best) {
+      best = zoom;
+      cols = candidate;
+    }
+  }
+
+  // Rows top to bottom; x is settled afterwards, once every level is known.
+  const x0 = TIER_LABEL_W;
+  let y = 0;
+  if (hasGroupRow) {
+    tiers.push({ depth: -1, y, count: groups.length + (gateways.length > 0 ? 1 : 0) });
+    y += groupRowH + ROW_GAP;
+  }
+  const groupY = 0;
+  for (const depth of depths) {
+    const blocks = blocksOf.get(depth) ?? [];
     let x = x0;
     let rowH = 0;
     for (const block of blocks) {
-      const cols = Math.min(TIER_COLS, block.members.length);
-      const grid = gridSize(block.members.length, cols);
-      // A cluster drawn in an earlier tier keeps its box there; later members stay loose.
-      const boxed = block.cluster !== undefined && !pos.has(block.cluster);
-      const w = boxed ? grid.w + 2 * BOX_PAD : grid.w;
-      const h = boxed ? BOX_HEADER + grid.h + BOX_PAD : grid.h;
-      if (x > x0 && x + w > x0 + LINE_W) {
-        x = x0;
-        y += rowH + BLOCK_GAP;
-        rowH = 0;
-      }
-      if (boxed && block.cluster !== undefined) pos.set(block.cluster, { x, y, w, h });
+      const size = sizeOf(block, cols);
+      const boxed = block.cluster !== undefined;
+      const used = Math.min(cols, block.members.length);
+      if (block.cluster !== undefined) pos.set(block.cluster, { x, y, w: size.w, h: size.h });
       block.members.forEach((n, i) => {
         pos.set(n.id, {
-          x: x + (boxed ? BOX_PAD : 0) + (i % cols) * (NODE_W + CELL_GAP_X),
-          y: y + (boxed ? BOX_HEADER : 0) + Math.floor(i / cols) * (NODE_H + CELL_GAP_Y),
+          x: x + (boxed ? BOX_PAD : 0) + (i % used) * (NODE_W + CELL_GAP_X),
+          y: y + (boxed ? BOX_HEADER : 0) + Math.floor(i / used) * (NODE_H + CELL_GAP_Y),
         });
       });
-      x += w + BLOCK_GAP;
-      rowH = Math.max(rowH, h);
+      x += size.w + BLOCK_GAP;
+      rowH = Math.max(rowH, size.h);
     }
-    tiers.push({ depth, y: top, count: list.length });
+    tiers.push({ depth, y, count: (byDepth.get(depth) ?? []).length });
     y += rowH + ROW_GAP;
+  }
+
+  const centre = (id: string) => {
+    const at = pos.get(id);
+    return at ? at.x + (at.w ?? NODE_W) / 2 : undefined;
+  };
+  const centres = (ids: string[]) => ids.map(centre).filter((v): v is number => v !== undefined);
+
+  // The top level moves over its guests. Only when it is all loose hosts: a
+  // boxed level keeps its order, a box cannot be pulled apart.
+  const top = depths[0];
+  const topBlocks = top === undefined ? [] : (blocksOf.get(top) ?? []);
+  if (top !== undefined && topBlocks.every((b) => b.cluster === undefined)) {
+    const guestsOf = new Map<string, string[]>();
+    for (const [guest, hv] of parentOf) guestsOf.set(hv, [...(guestsOf.get(hv) ?? []), guest]);
+    const row = byDepth.get(top) ?? [];
+    const aims = new Map(row.map((h) => [h.id, centres(guestsOf.get(h.id) ?? [])]));
+    const anchored = row.filter((h) => (aims.get(h.id) ?? []).length > 0);
+    const placed = sweep(
+      anchored,
+      (h) => mean(aims.get(h.id) as number[]) - NODE_W / 2,
+      () => NODE_W,
+      BLOCK_GAP,
+      x0,
+    );
+    let next = Math.max(x0, ...[...placed.values()].map((x) => x + NODE_W + BLOCK_GAP));
+    for (const h of row) {
+      const at = pos.get(h.id) as Placement;
+      const x = placed.get(h) ?? next;
+      if (!placed.has(h)) next += NODE_W + BLOCK_GAP;
+      pos.set(h.id, { ...at, x });
+    }
+  }
+
+  // Service groups: OpenStack over the hosts it is made of, the bastion frame
+  // over the clusters it fronts, bastions inside in the order of their clusters.
+  if (hasGroupRow) {
+    const membersOf = new Map<string, string[]>();
+    for (const e of edges) {
+      if (e.kind === "member_of" && hostIds.has(e.from)) membersOf.set(e.to, [...(membersOf.get(e.to) ?? []), e.from]);
+    }
+    type Item = { id: string; w: number; want: number };
+    const items: Item[] = groups.map((g, i) => {
+      const over = centres(membersOf.get(g.id) ?? []);
+      return { id: g.id, w: NODE_W, want: over.length > 0 ? mean(over) - NODE_W / 2 : x0 + i * (NODE_W + BLOCK_GAP) };
+    });
+    const fronted = (h: AssetNode) => centre(gatewayOf.get(h.id) ?? "") ?? 0;
+    const inOrder = [...gateways].sort((a, b) => fronted(a) - fronted(b) || byName(a, b));
+    if (frameSize) {
+      items.push({ id: "frame", w: frameSize.w, want: mean(inOrder.map(fronted)) - frameSize.w / 2 });
+    }
+    const placed = sweep(
+      items,
+      (item) => item.want,
+      (item) => item.w,
+      BLOCK_GAP,
+      x0,
+    );
+    for (const item of items) {
+      const x = placed.get(item) as number;
+      if (item.id !== "frame") {
+        pos.set(item.id, { x, y: groupY });
+        continue;
+      }
+      if (!frameSize) continue;
+      frames.push({ id: "gateways", x, y: groupY, w: frameSize.w, h: frameSize.h, count: gateways.length });
+      inOrder.forEach((n, i) => {
+        pos.set(n.id, { x: x + BOX_PAD + i * (NODE_W + CELL_GAP_X), y: groupY + BOX_HEADER });
+      });
+    }
   }
 
   // Clusters with no member host still need a place.
@@ -347,5 +506,5 @@ export function layoutByDepth(nodes: AssetNode[], edges: AssetEdge[]): { pos: Ma
     pos.set(id, { x: spare, y, w: NODE_W + 2 * BOX_PAD, h: BOX_HEADER + BOX_PAD });
     spare += NODE_W + 2 * BOX_PAD + BLOCK_GAP;
   }
-  return { pos, tiers };
+  return { pos, tiers, frames };
 }

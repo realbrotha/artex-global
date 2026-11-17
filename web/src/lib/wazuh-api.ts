@@ -269,7 +269,22 @@ export interface Analysis {
   collect: AnalysisStep;
   alerts: number;
   capped: boolean;
+  // Collect detail: hosts with a config-check result, hosts that produced
+  // alerts, the period the alerts span and the rules that fired most.
+  checked_hosts: number;
+  alert_hosts: number;
+  alert_from?: string;
+  alert_to?: string;
+  top_rules: { id: string; desc: string; level: number; count: number }[];
+  // Alerts per host, most first.
+  alert_by_host?: { host: string; count: number }[];
+  // Alerts written to the run history; -1 while they are being written.
+  alerts_stored?: number;
+  // Stored runs only: each case's alert timeline by case id.
+  timelines?: Record<string, SiemCaseEvent[] | null>;
   rules: number;
+  // Why first-seen logins could not be used, when they could not.
+  seen_note?: string;
   extract: AnalysisStep;
   patterns: Record<string, number>;
   cases: AnalysisCase[];
@@ -289,4 +304,106 @@ export const analysisApi = {
     http<Analysis>(`${analysisBase(sourceId)}/${encodeURIComponent(id)}/judge`, { method: "POST" }),
   stop: (sourceId: string, id: string) =>
     http<Analysis>(`${analysisBase(sourceId)}/${encodeURIComponent(id)}/stop`, { method: "POST" }),
+};
+
+// One stored manual analysis. detail is present on a single-run fetch.
+export interface AnalysisRun {
+  id: string;
+  source_name: string;
+  label: string;
+  state: Analysis["state"];
+  started_at: string;
+  updated_at: string;
+  hosts: number;
+  alerts: number;
+  cases: number;
+  judged: number;
+  model: string;
+  detail?: Analysis;
+}
+
+// One request to the model inside a judgment: what was sent and what came
+// back. A later attempt's prompt lists the rules the previous answer broke.
+export interface JudgeAttempt {
+  prompt: string;
+  response: string;
+  error?: string;
+  ms: number;
+}
+
+// One LLM judgment of a case candidate. run_id is "" when it was asked for
+// outside a manual analysis. Prompts are present on a single fetch.
+export interface Judgement {
+  id: number;
+  run_id: string;
+  case_key: string;
+  case: SiemCase;
+  model: string;
+  system_prompt?: string;
+  attempts?: JudgeAttempt[];
+  tries: number;
+  verdict?: Omit<CaseVerdict, "model" | "judged_at" | "stale">;
+  error?: string;
+  ms: number;
+  judged_at: string;
+}
+
+// One alert a run collected, as it read it.
+export interface RunAlert {
+  seq: number;
+  t: string;
+  host: string;
+  rule: string;
+  level: number;
+  desc: string;
+  actor: string;
+  src: string;
+  object: string;
+  full_log: string;
+}
+
+export const historyApi = {
+  alerts: (runId: string, f: { rule?: string; host?: string; q?: string; offset?: number; limit?: number }) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(f)) {
+      if (value !== undefined && value !== "") params.set(key, String(value));
+    }
+    return http<{ total: number; alerts: RunAlert[] }>(
+      `/defensive/analysis-runs/${encodeURIComponent(runId)}/alerts?${params}`,
+    );
+  },
+  runs: () => http<{ runs: AnalysisRun[] }>("/defensive/analysis-runs"),
+  run: (id: string) =>
+    // latest: the newest recorded judgment of each case key, from any run or screen.
+    http<{ run: AnalysisRun; judgements: Judgement[]; latest: Record<string, Judgement> }>(
+      `/defensive/analysis-runs/${encodeURIComponent(id)}`,
+    ),
+  judgements: () => http<{ judgements: Judgement[] }>("/defensive/judgements"),
+  judgement: (id: number) => http<Judgement>(`/defensive/judgements/${id}`),
+};
+
+// One config-check item across every host of a connection. A host is in at
+// most one of the four lists.
+export interface CheckSummary {
+  code: string;
+  std?: string;
+  sev?: string;
+  title?: string;
+  fail: string[];
+  review: string[];
+  error: string[];
+  accepted: string[];
+}
+
+export interface PostureSource {
+  id: string;
+  name: string;
+  synced_at: string | null;
+  // Hosts that have a check result.
+  hosts: number;
+  checks: CheckSummary[];
+}
+
+export const postureApi = {
+  list: () => http<{ sources: PostureSource[] }>("/defensive/posture"),
 };

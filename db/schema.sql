@@ -1488,3 +1488,57 @@ CREATE TABLE IF NOT EXISTS case_verdicts (
     judged_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     PRIMARY KEY (source_id, case_key)
 );
+
+-- Manual SIEM log analysis runs. detail is the run as the panel showed it
+-- (steps, counts, case candidates and their verdicts), kept so a past run
+-- can be opened again.
+CREATE TABLE IF NOT EXISTS siem_analysis_runs (
+    id TEXT PRIMARY KEY,
+    source_id BIGINT NOT NULL REFERENCES wazuh_sources(id) ON DELETE CASCADE,
+    source_name TEXT NOT NULL DEFAULT '',
+    label TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL,
+    detail JSONB NOT NULL CHECK (jsonb_typeof(detail)='object'),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX IF NOT EXISTS siem_analysis_runs_started ON siem_analysis_runs(started_at DESC);
+
+-- Every LLM judgment of a case candidate, whichever screen asked for it:
+-- the case as it was, each prompt sent and each answer received, and the
+-- verdict or the failure. run_id is '' for a judgment made outside a run.
+CREATE TABLE IF NOT EXISTS siem_judgements (
+    id BIGSERIAL PRIMARY KEY,
+    source_id BIGINT NOT NULL REFERENCES wazuh_sources(id) ON DELETE CASCADE,
+    run_id TEXT NOT NULL DEFAULT '',
+    case_key TEXT NOT NULL,
+    case_data JSONB NOT NULL CHECK (jsonb_typeof(case_data)='object'),
+    model TEXT NOT NULL DEFAULT '',
+    system_prompt TEXT NOT NULL DEFAULT '',
+    attempts JSONB NOT NULL CHECK (jsonb_typeof(attempts)='array'),
+    verdict JSONB,
+    error TEXT NOT NULL DEFAULT '',
+    ms BIGINT NOT NULL DEFAULT 0,
+    judged_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX IF NOT EXISTS siem_judgements_run ON siem_judgements(run_id) WHERE run_id <> '';
+CREATE INDEX IF NOT EXISTS siem_judgements_at ON siem_judgements(judged_at DESC);
+
+-- The alerts a manual analysis collected, as it read them, so a past run can
+-- be inspected alert by alert. Kept for the most recent runs only.
+CREATE TABLE IF NOT EXISTS siem_analysis_alerts (
+    run_id TEXT NOT NULL REFERENCES siem_analysis_runs(id) ON DELETE CASCADE,
+    seq INTEGER NOT NULL,
+    t TIMESTAMPTZ NOT NULL,
+    host TEXT NOT NULL DEFAULT '',
+    rule_id TEXT NOT NULL DEFAULT '',
+    level INTEGER NOT NULL DEFAULT 0,
+    descr TEXT NOT NULL DEFAULT '',
+    actor TEXT NOT NULL DEFAULT '',
+    src TEXT NOT NULL DEFAULT '',
+    object TEXT NOT NULL DEFAULT '',
+    full_log TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (run_id, seq)
+);
+CREATE INDEX IF NOT EXISTS siem_analysis_alerts_rule ON siem_analysis_alerts(run_id, rule_id);
+CREATE INDEX IF NOT EXISTS siem_analysis_alerts_host ON siem_analysis_alerts(run_id, host);

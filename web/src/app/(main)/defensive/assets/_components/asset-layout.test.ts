@@ -241,3 +241,140 @@ describe("edge crossings", () => {
     for (const n of nodes) expect((pos.get(n.id) as Placement).x).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe("bastions in the depth layout", () => {
+  it("shows bastions as a service group beside OpenStack, not as a depth", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const { nodes, edges } = sample();
+    nodes.push(host("bastion-a", "vm"), host("bastion-b", "vm"));
+    edges.push(
+      { from: "bastion-a", to: "k8s-a", kind: "gateway_of" },
+      { from: "bastion-b", to: "k8s-b", kind: "gateway_of" },
+    );
+    const { pos, tiers, frames } = layoutByDepth(nodes, edges);
+    const at = (id: string) => pos.get(id) as Placement;
+
+    // No row of their own between the levels: groups, physical hosts, VMs.
+    expect(tiers.map((t) => t.depth)).toEqual([-1, 0, 1]);
+    // OpenStack and the bastion frame are the two service groups.
+    expect(tiers[0].count).toBe(2);
+    // The bastions are not counted among the VMs.
+    expect(tiers[2].count).toBe(nodes.filter((n) => n.kind === "vm" && !n.id.startsWith("bastion")).length);
+
+    expect(frames).toHaveLength(1);
+    const frame = frames[0];
+    expect(frame.count).toBe(2);
+    expect(frame.y).toBe(at("os").y);
+    expect(frame.x).toBeGreaterThan(at("os").x + NODE_W);
+    for (const id of ["bastion-a", "bastion-b"]) expect(inside(at(id), frame)).toBe(true);
+    // Everything below starts under the frame, and nothing else touches it.
+    expect(at("hv1").y).toBeGreaterThan(frame.y + frame.h);
+    for (const n of nodes.filter((n) => !n.id.startsWith("bastion"))) expect(overlaps(at(n.id), frame)).toBe(false);
+  });
+
+  it("still shows the group row when there are bastions but no OpenStack", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const nodes: AssetNode[] = [cluster("k8s"), host("n1", "vm"), host("jump", "vm")];
+    const edges: AssetEdge[] = [
+      { from: "n1", to: "k8s", kind: "member_of" },
+      { from: "jump", to: "k8s", kind: "gateway_of" },
+    ];
+    const { pos, tiers, frames } = layoutByDepth(nodes, edges);
+    expect(tiers[0]).toMatchObject({ depth: -1, count: 1 });
+    expect(frames).toHaveLength(1);
+    expect((pos.get("jump") as Placement).y).toBeLessThan((pos.get("n1") as Placement).y);
+  });
+
+  it("draws no frame when nothing fronts a cluster", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const { nodes, edges } = sample();
+    expect(layoutByDepth(nodes, edges).frames).toHaveLength(0);
+  });
+});
+
+describe("depth layout line crossings", () => {
+  // Straight lines between node centres; counts pairs that properly intersect.
+  const segmentCrossings = (pos: Map<string, Placement>, edges: AssetEdge[]) => {
+    const mid = (id: string) => {
+      const r = rect(pos.get(id) as Placement);
+      return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+    };
+    const side = (a: { x: number; y: number }, b: { x: number; y: number }, c: { x: number; y: number }) =>
+      Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+    const lines = edges.filter((e) => pos.has(e.from) && pos.has(e.to)).map((e) => [mid(e.from), mid(e.to)] as const);
+    let n = 0;
+    for (let i = 0; i < lines.length; i++) {
+      for (let j = i + 1; j < lines.length; j++) {
+        const [a, b] = lines[i];
+        const [c, d] = lines[j];
+        if (side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0) n++;
+      }
+    }
+    return n;
+  };
+
+  // Shaped like a real deployment: two physical hosts each running a small
+  // cluster and a single VM, three larger clusters on unknown hypervisors,
+  // each behind its own bastion.
+  function deployment() {
+    const nodes: AssetNode[] = [{ id: "os", kind: "openstack", name: "os" }, host("hv-a"), host("hv-b")];
+    const edges: AssetEdge[] = [
+      { from: "hv-a", to: "os", kind: "member_of" },
+      { from: "hv-b", to: "os", kind: "member_of" },
+    ];
+    const vm = (id: string, clusterId?: string, hv?: string) => {
+      nodes.push(host(id, "vm"));
+      if (clusterId) edges.push({ from: id, to: clusterId, kind: "member_of" });
+      if (hv) edges.push({ from: id, to: hv, kind: "runs_on" });
+    };
+    for (const c of ["small-a", "small-b", "big-1", "big-2", "big-3"]) nodes.push(cluster(c));
+    // Names chosen so that name order disagrees with host order.
+    vm("z-single", undefined, "hv-a");
+    vm("a-single", undefined, "hv-b");
+    for (let i = 0; i < 2; i++) vm(`sa${i}`, "small-a", "hv-b");
+    for (let i = 0; i < 2; i++) vm(`sb${i}`, "small-b", "hv-a");
+    for (let i = 0; i < 6; i++) vm(`b1-${i}`, "big-1");
+    for (let i = 0; i < 9; i++) vm(`b2-${i}`, "big-2");
+    for (let i = 0; i < 3; i++) vm(`b3-${i}`, "big-3");
+    for (const [bastion, target] of [
+      ["z-bastion", "big-1"],
+      ["m-bastion", "big-2"],
+      ["a-bastion", "big-3"],
+    ]) {
+      nodes.push(host(bastion, "vm"));
+      edges.push({ from: bastion, to: target, kind: "gateway_of" });
+    }
+    return { nodes, edges };
+  }
+
+  it("draws a realistic deployment without a single crossing", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const { nodes, edges } = deployment();
+    const { pos } = layoutByDepth(nodes, edges);
+    // Cluster membership is drawn as a box, not a line.
+    const lines = edges.filter((e) => e.kind !== "member_of" || e.to === "os");
+    expect(segmentCrossings(pos, lines)).toBe(0);
+  });
+
+  it("keeps every level on one row and every node clear of the others", async () => {
+    const { layoutByDepth } = await import("./asset-layout");
+    const { nodes, edges } = deployment();
+    const { pos, tiers } = layoutByDepth(nodes, edges);
+    const at = (id: string) => pos.get(id) as Placement;
+    // All cluster boxes of the VM level start at the level's y: nothing wrapped.
+    const vmTier = tiers.find((t) => t.depth === 1);
+    for (const c of ["small-a", "small-b", "big-1", "big-2", "big-3"]) expect(at(c).y).toBe(vmTier?.y);
+    const plain = nodes.filter((n) => n.kind !== "k8s_cluster");
+    for (let i = 0; i < plain.length; i++) {
+      for (let j = i + 1; j < plain.length; j++) expect(overlaps(at(plain[i].id), at(plain[j].id))).toBe(false);
+    }
+    for (const n of nodes) expect(at(n.id).x).toBeGreaterThanOrEqual(0);
+    // The physical hosts are level with each other, whatever the column count below.
+    expect(at("hv-a").y).toBe(at("hv-b").y);
+    expect(at("hv-a").y).toBe(tiers.find((t) => t.depth === 0)?.y);
+    // Hosts sit over their own guests, bastions in the order of their clusters.
+    expect(at("hv-a").x < at("hv-b").x).toBe(at("small-b").x < at("small-a").x);
+    expect(at("z-bastion").x < at("m-bastion").x).toBe(at("big-1").x < at("big-2").x);
+    expect(at("m-bastion").x < at("a-bastion").x).toBe(at("big-2").x < at("big-3").x);
+  });
+});

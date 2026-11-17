@@ -203,8 +203,13 @@
       "protected-assets": "Protected assets",
       "connections": "Connections",
       "activity": "Activity",
-      "analysis": "Analysis",
-      "config": "Settings"
+      "config": "Settings",
+      "pentest": "Pentest",
+      "attack-surface": "Attack surface",
+      "infra": "Infrastructure",
+      "detections": "Event detection",
+      "posture": "Config checks",
+      "siem-history": "Analysis history"
     }
   },
   "notFound": {
@@ -385,7 +390,7 @@
     },
     "coverageGraph": {
       "kind": {
-        "company": "Company",
+        "company": "Scope",
         "root_domain": "Root domain",
         "subdomain": "Subdomain",
         "ip": "IP",
@@ -472,7 +477,7 @@
           "agent": "Agent discovery",
           "anchor": "Blackboard anchor",
           "api": "Asset API",
-          "company": "Company association",
+          "company": "Scope association",
           "legacy": "Legacy association",
           "manual": "Manual add",
           "system": "System association",
@@ -630,7 +635,7 @@
         "title": "Test scope",
         "hint": "(Coverage denominator + authorized boundary, {count} total)",
         "kind": {
-          "company": "Company",
+          "company": "Scope",
           "root_domain": "Root domain",
           "subdomain": "Subdomain",
           "ip": "IP",
@@ -644,13 +649,13 @@
           "manual": "Manual"
         },
         "placeholder": {
-          "company": "Company name or id",
+          "company": "Scope name or id",
           "ipCidr": "e.g. 10.0.0.1 or 10.0.0.0/24",
           "icp": "e.g. ICP registration number",
           "keyword": "e.g. company name keyword",
           "domain": "e.g. example.com"
         },
-        "companyFallback": "Company #{id}",
+        "companyFallback": "Scope #{id}",
         "inherited": "Inherited",
         "empty": "No test scope. Once added, it can serve as the denominator for asset coverage."
       },
@@ -1174,7 +1179,7 @@
       "technology": "Technology fingerprint (array field)",
       "port": "Port number (integer)",
       "status_code": "HTTP status code (integer)",
-      "company_id": "Owning company ID (integer)",
+      "company_id": "Owning scope ID (integer)",
       "task_id": "Source task ID (integer)"
     },
     "op": {
@@ -1434,7 +1439,7 @@
     },
     "assetTree": {
       "kind": {
-        "company": "Company",
+        "company": "Scope",
         "root_domain": "Root domain",
         "subdomain": "Subdomain",
         "ip": "IP",
@@ -1625,7 +1630,7 @@
     "kind": {
       "finding": "Finding",
       "asset": "Asset",
-      "company": "Company",
+      "company": "Scope",
       "endpoint": "Endpoint",
       "ip": "IP",
       "app": "App",
@@ -2294,7 +2299,7 @@
     "dimProject": "By project",
     "dimTask": "By task",
     "syncAssetsLabel": "Assets to sync:",
-    "createCompany": "Create a company per project and record it in the asset scope",
+    "createCompany": "Create a scope per project and record its entries",
     "searchProject": "Search project name",
     "searchTask": "Search task name",
     "selectedCount": "{count} selected",
@@ -2312,25 +2317,25 @@
       "app": "App",
       "ip": "IP"
     },
-    "resultCompanies": "New/updated companies: {names}",
+    "resultCompanies": "New/updated scopes: {names}",
     "moreErrors": "… {count} errors in total"
   },
   "assets": {
-    "title": "Assets",
+    "title": "Attack surface",
     "totalAssets": "<n>{count}</n> total",
     "deleteSelected": "Delete selected ({count})",
     "refresh": "Refresh",
     "companyTable": {
-      "name": "Company",
+      "name": "Scope",
       "count": "Asset count",
-      "scope": "Asset scope",
+      "scope": "Entries",
       "actions": "Actions"
     },
-    "noScope": "No scope set",
-    "deleteCompanyAria": "Delete company {name}",
-    "companyEmpty": "No companies registered yet. Click \"Add company\" in the top right and enter an asset scope; the system will automatically attribute matching assets to it.",
+    "noScope": "No entries",
+    "deleteCompanyAria": "Delete scope {name}",
+    "companyEmpty": "No scopes registered yet. Click \"Add scope\" in the top right and enter domains or IP ranges; the system will automatically put matching assets in that scope.",
     "tab": {
-      "company": "Company",
+      "company": "Scope",
       "rootDomain": "Root domain",
       "ip": "IP",
       "subdomain": "Subdomain",
@@ -2341,7 +2346,7 @@
     "col": {
       "domain": "Domain",
       "icp": "ICP registration",
-      "ownerCompany": "Owning company",
+      "ownerCompany": "Owning scope",
       "cSegment": "C segment",
       "boundDomains": "Bound domains",
       "openPorts": "Open ports",
@@ -2360,7 +2365,7 @@
       "fullUrl": "Full URL",
       "params": "Parameters"
     },
-    "unassigned": "Unassigned",
+    "unassigned": "Out of scope",
     "deleteAssetAria": "Delete asset {target}",
     "authFallback": "Auth",
     "emptyData": "No data",
@@ -2371,9 +2376,9 @@
       "confirm": "Confirm deletion"
     },
     "deleteCompanyDialog": {
-      "title": "Delete company · {name}",
-      "body": "This permanently deletes the company and its asset scope settings. It cannot be undone.",
-      "alsoDeleteAssets": "Also delete all assets belonging to this company",
+      "title": "Delete scope · {name}",
+      "body": "This permanently deletes the scope and its entries. It cannot be undone.",
+      "alsoDeleteAssets": "Also delete all assets belonging to this scope",
       "alsoDeleteHint": "If not selected, the assets are kept and only their attribution is released"
     },
     "cancel": "Cancel",
@@ -2387,32 +2392,32 @@
     "toast": {
       "deleted": "Deleted {count} assets",
       "deleteFailed": "Delete failed: {msg}",
-      "companyDeletedWithAssets": "Deleted the company along with {count} assets",
-      "companyDeleted": "Company deleted"
+      "companyDeletedWithAssets": "Deleted the scope along with {count} assets",
+      "companyDeleted": "Scope deleted"
     },
     "companyDialog": {
-      "addButton": "Add company",
-      "title": "Add company",
-      "description": "Set up a company and its asset scope. Keywords are used only as Agent hints and do not auto-attribute assets.",
-      "nameLabel": "Company name",
+      "addButton": "Add scope",
+      "title": "Add scope",
+      "description": "Set up a scope and its entries (domains, IPs, CIDRs). Keywords are used only as Agent hints and do not auto-attribute assets.",
+      "nameLabel": "Scope name",
       "namePlaceholder": "e.g. Acme Corp (name must be unique)",
-      "nameRequired": "Please enter a company name",
-      "createdWithInvalid": "Company created with {added} scope entries added. {invalid} rows are invalid",
-      "created": "Company created with {added} scope entries added",
-      "exists": "Company already exists. Please use a different name"
+      "nameRequired": "Please enter a scope name",
+      "createdWithInvalid": "Scope created with {added} entries added. {invalid} rows are invalid",
+      "created": "Scope created with {added} entries added",
+      "exists": "A scope with this name already exists. Please use a different name"
     },
     "editScope": {
       "button": "Edit",
-      "title": "Edit asset scope · {name}",
-      "description": "Editing replaces the entire existing scope. ICP matches assets precisely, while company keywords are used only as Agent hints.",
+      "title": "Edit entries · {name}",
+      "description": "Editing replaces all existing entries. ICP matches assets precisely, while company keywords are used only as Agent hints.",
       "overwrite": "Overwrite and save",
       "savedWithInvalid": "Saved. {invalid} rows are invalid",
       "updated": "Scope updated. {added} total"
     },
     "appendScope": {
       "button": "Append",
-      "title": "Append asset scope · {name}",
-      "description": "The new scope is added to the existing scope. ICP matches assets precisely, while company keywords are used only as Agent hints.",
+      "title": "Add entries · {name}",
+      "description": "The new entries are added to the existing ones. ICP matches assets precisely, while company keywords are used only as Agent hints.",
       "scopeRequired": "Please enter the scope to append",
       "appended": "Added {added} scope entries"
     }
@@ -2674,9 +2679,9 @@
       "scopeNone": "No asset scope set",
       "scopeEntry": "{label}: {value}",
       "scopeMore": "and {count} more",
-      "placeholder": "Search company name or asset scope",
-      "empty": "No matching companies",
-      "fallback": "Company #{id}",
+      "placeholder": "Search scope name or entries",
+      "empty": "No matching scopes",
+      "fallback": "Scope #{id}",
       "assetCount": "{count} assets"
     },
     "categoryManage": {
@@ -2737,8 +2742,8 @@
       "goalPlaceholder": "What to achieve. e.g. Gain admin page access, gain server access",
       "sourceLabel": "Linked tasks",
       "sourceHint": "You can link up to {max} tasks. The new task inherits the selected tasks' persistent blackboard, asset scope, and related traffic as live read-only, and writes to its own independent blackboard.",
-      "companyLabel": "Linked company asset scope",
-      "companyHint": "When you create the task, the assets the selected company currently owns are added to \"Test assets,\" and the domains, IPs, CIDRs, ICP, and company keywords are provided to the Agent as scope context. It does not auto-generate intents or override the execution goal.",
+      "companyLabel": "Linked scope",
+      "companyHint": "When you create the task, the assets currently in the selected scope are added to \"Test assets,\" and the domains, IPs, CIDRs, ICP, and company keywords are provided to the Agent as scope context. It does not auto-generate intents or override the execution goal.",
       "interceptLabel": "Per-task asset block / allow rules (optional)",
       "interceptHint": "Applies only to this task and is not added to the global rules. The evaluation order is as follows. First, assets are checked against the \"block\" rules (including global ones); if a rule matches, testing is prohibited. If none match and this task has \"allow\" rules set, an asset must match one allow rule to pass; otherwise testing is likewise not allowed. If no allow rule is set, no whitelist is applied.",
       "llmLabel": "LLM profile chain",
@@ -2754,7 +2759,7 @@
       "seedLabel": "Dispatch the first intent immediately (description + goal)",
       "seedHint": "When on, right after creation it dispatches \"description + goal\" as a single intent so the worker starts immediately without waiting for the first planning round; when it finishes, the planner takes over to assess and follow up. Recommended for cases usually solved by a single work, like CTF; when off, it follows the standard flow of planning first, then executing.",
       "coverageLabel": "Asset coverage feature",
-      "coverageHint": "On by default. It calculates and displays test coverage, shows testing progress on the situation map, and automatically accumulates the tested scope. When off, coverage is no longer calculated or displayed, the situation map shows only assets without progress, and the agent no longer receives scope-related tools. Turning it off does not affect \"Linked company asset scope\".",
+      "coverageHint": "On by default. It calculates and displays test coverage, shows testing progress on the situation map, and automatically accumulates the tested scope. When off, coverage is no longer calculated or displayed, the situation map shows only assets without progress, and the agent no longer receives scope-related tools. Turning it off does not affect \"Linked scope\".",
       "cancel": "Cancel",
       "creating": "Creating",
       "create": "Create",
@@ -2984,7 +2989,7 @@
         "agent": "Agent discovery",
         "anchor": "Blackboard anchor",
         "api": "Asset API",
-        "company": "Company association",
+        "company": "Scope association",
         "legacy": "Legacy association",
         "manual": "Manual add",
         "system": "System association",
@@ -3959,7 +3964,7 @@
     "refresh": "Refresh"
   },
   "protectedAssets": {
-    "title": "Assets",
+    "title": "Infrastructure",
     "refresh": "Refresh",
     "manageConnections": "Manage connections",
     "loadFailed": "Couldn't load protected assets.",
@@ -3969,8 +3974,6 @@
     "emptyDescription": "Connect a Wazuh manager to bring in hosts that run an agent and how they relate.",
     "addConnection": "Add Wazuh connection",
     "searchPlaceholder": "Search hostname, IP, or role",
-    "tabGraph": "Infrastructure map",
-    "tabList": "Hosts",
     "noMatch": "No hosts match.",
     "close": "Close",
     "memberCount": "{count} hosts",
@@ -4167,9 +4170,16 @@
         "attempt": "Attempt",
         "normal": "Normal",
         "false_positive": "False positive"
-      }
+      },
+      "unjudged": "{count} unjudged",
+      "caseCount": "{count, plural, one {# case} other {# cases}}",
+      "sort": {
+        "risk": "Risk",
+        "count": "Most cases",
+        "name": "Name"
+      },
+      "generatedShort": "{alerts, number} alerts, last {days} days · analysed {when}"
     },
-    "tabDiscovered": "Discovered assets",
     "host": {
       "tabOverview": "Overview",
       "detail": "View details",
@@ -4180,7 +4190,8 @@
       "grouped": "By group",
       "depth": "By depth",
       "tier": "Level {depth} · {count} hosts",
-      "tierGroups": "Service groups · {count}"
+      "tierGroups": "Service groups · {count}",
+      "gateways": "Bastions · {count}"
     },
     "analysis": {
       "title": "SIEM log analysis",
@@ -4225,7 +4236,233 @@
         "P8": "Error burst",
         "P9": "High-risk single rule"
       },
-      "all": "Analyse all SIEM logs"
+      "all": "Analyse all SIEM logs",
+      "fact": {
+        "target": "Target",
+        "alerts": "Alerts",
+        "span": "Span",
+        "posture": "Posture",
+        "rules": "Rules",
+        "severity": "Severity",
+        "hosts": "Hosts",
+        "thisRun": "This run",
+        "reused": "Earlier",
+        "unjudged": "Unjudged"
+      },
+      "target": "{count, plural, =0 {all hosts} one {# host} other {# hosts}}",
+      "alertSpan": "{hosts} hosts · {from} – {to}",
+      "checked": "{count} hosts applied (adjusts severity)",
+      "topRules": "Rules that fired most",
+      "caseHosts": "{count}",
+      "seenNote": "First-seen logins not used: {note}",
+      "judgeStats": "This run: {done} done · {failed} failed · {sec}s average",
+      "summaryPending": "Before judging: {pending} of {count} case candidates unjudged",
+      "summaryFlagged": "{count} cases need a look",
+      "summaryTime": "Time: collect {collect}s · extract {extract}s · judge {judge}s",
+      "showAll": "Show all {count}",
+      "showLess": "Show less",
+      "byHost": "Alerts by host",
+      "judgedRun": "{done} judged · {failed} failed",
+      "judgeNotRun": "LLM judging was not run",
+      "caseCount": "{count}",
+      "stepNote": {
+        "waiting": "waits for your go-ahead",
+        "skipped": "not run",
+        "partial": "{count} left unjudged"
+      }
+    },
+    "view": {
+      "map": "Map",
+      "table": "Table"
+    },
+    "detections": {
+      "title": "Event detection",
+      "subtitle": "Case candidates extracted from alerts, with LLM verdicts",
+      "searchPlaceholder": "Search subject, host, criterion, summary",
+      "noConnection": "No Wazuh connected. Add one under Settings > Connections to see case candidates here.",
+      "tile": {
+        "open": "Open cases",
+        "severe": "Critical · High",
+        "unjudged": "Unjudged",
+        "hosts": "Hosts affected",
+        "hostsOf": "/ {total}"
+      },
+      "noCluster": "No cluster",
+      "rules": {
+        "title": "Criteria with the most cases",
+        "count": "{cases} cases · {hosts} hosts"
+      },
+      "group": {
+        "rule": "By criterion",
+        "host": "By host",
+        "cluster": "By cluster"
+      },
+      "col": {
+        "severity": "Severity",
+        "name": {
+          "rule": "Criterion",
+          "host": "Host",
+          "cluster": "Cluster"
+        },
+        "hosts": "Hosts",
+        "cases": "Cases",
+        "events": "Alerts",
+        "state": "Verdict",
+        "last": "Latest"
+      },
+      "notJudged": "Unjudged",
+      "more": "Show {count} more",
+      "judgeSelected": "Judge {count} in selected groups",
+      "groupCount": "{groups} groups · {cases} cases",
+      "closeDetail": "Close detail",
+      "selectAll": "Select all visible groups",
+      "selectGroup": "Select {name}",
+      "time": {
+        "bar": "{from} – {to} · {count} new cases",
+        "click": "Click to show only this slot"
+      },
+      "clusters": {
+        "title": "Cases by cluster",
+        "count": "{count}"
+      },
+      "empty": "No cases to show."
+    },
+    "posture": {
+      "title": "Config checks",
+      "subtitle": "KISA and CIS configuration checks on {hosts, plural, one {# host} other {# hosts}}",
+      "itemCount": "{count, plural, one {# check} other {# checks}}",
+      "hostCount": "{count, plural, one {# host} other {# hosts}}",
+      "searchChecks": "Search code, title, host",
+      "empty": "No check results yet. They appear once config-check has run on a host.",
+      "view": {
+        "check": "By check",
+        "host": "By host"
+      },
+      "sevTitle": "Checks by grade",
+      "stdTitle": "Checks by standard",
+      "hostsTitle": "Hosts with the most {result} checks",
+      "noSev": "Ungraded",
+      "itemShort": "{count}",
+      "sort": {
+        "impact": "Most hosts",
+        "severity": "Grade",
+        "code": "Code"
+      },
+      "col": {
+        "sev": "Grade",
+        "code": "Code",
+        "title": "Check",
+        "std": "Standard"
+      },
+      "more": "Show {count} more",
+      "closeDetail": "Close detail",
+      "detailHint": "Click a host to open its check results and evidence."
+    },
+    "history": {
+      "title": "Analysis history",
+      "subtitle": "SIEM log analysis runs and LLM judgments, with what was sent to the model and what it answered",
+      "view": {
+        "runs": "Analysis runs",
+        "judgements": "Judgments"
+      },
+      "col": {
+        "when": "When",
+        "label": "Target",
+        "source": "Connection",
+        "state": "State",
+        "alerts": "Alerts",
+        "cases": "Cases",
+        "judged": "Judged",
+        "model": "Model",
+        "case": "Case",
+        "hosts": "Hosts",
+        "verdict": "Verdict",
+        "tries": "Requests",
+        "ms": "Time",
+        "origin": "Origin",
+        "pattern": "Pattern",
+        "severity": "Severity"
+      },
+      "state": {
+        "collecting": "Collecting",
+        "extracting": "Extracting",
+        "ready": "Not judged",
+        "judging": "Judging",
+        "done": "Done",
+        "failed": "Failed",
+        "stopped": "Stopped"
+      },
+      "emptyRuns": "No analysis runs yet. Run a SIEM log analysis from the infrastructure map or the Event detection screen.",
+      "emptyJudgements": "No judgments yet. They appear once an LLM verdict is run.",
+      "back": "Back to list",
+      "originRun": "Analysis run",
+      "originDirect": "Single judgment",
+      "failed": "Failed",
+      "sec": "{sec}s",
+      "tries": "{count}",
+      "detail": {
+        "case": "Judged case",
+        "basis": "Severity basis",
+        "period": "Period",
+        "events": "{count} alerts",
+        "outcome": "Verdict",
+        "evidence": "Evidence",
+        "response": "Recommended actions",
+        "adjust": "Severity adjusted → {severity}: {reason}",
+        "error": "Failure",
+        "sent": "What was sent to the LLM and what it answered",
+        "system": "System prompt (judging rules)",
+        "request": "Request {n}",
+        "answer": "Answer {n}",
+        "retry": "Asked again because the previous answer broke the output rules",
+        "noAnswer": "No answer",
+        "loadFailed": "Could not load the judgment.",
+        "chars": "{count} chars"
+      },
+      "runCases": "{count} case candidates",
+      "noCases": "This run produced no case candidates.",
+      "origin": {
+        "inRun": "Judged in this run",
+        "earlier": "Judged at another time",
+        "none": "Not judged",
+        "known": "Known activity"
+      },
+      "noRecord": "This verdict was made before judgments were recorded, so there is no prompt record. Judge it again to get one.",
+      "earlierNote": "This judgment was recorded at another time ({when}), not in this run.",
+      "timeline": "Alert timeline ({count})",
+      "timelineClipped": "Alert timeline (first and last {shown} of {total})",
+      "noTimeline": "No alert timeline was stored with this run.",
+      "caseInfo": "Case",
+      "judgement": "LLM judgment",
+      "notJudged": "This case has no LLM verdict.",
+      "knownNote": "Matches the known-activity registry: {reason}",
+      "runSummary": "{when} · {source} · {alerts, number} alerts · {cases} case candidates · {judged} judged in this run",
+      "alerts": {
+        "tab": "{count, number} alerts collected",
+        "allRules": "All rules",
+        "allHosts": "All hosts",
+        "search": "Search description, actor, source, raw log, then Enter",
+        "none": "No alerts were stored with this run. It ran before alerts were recorded, or it is older than the 20 most recent runs.",
+        "storing": "The alerts are still being stored. Refresh in a moment.",
+        "capped": "Only the latest {max, number} alerts were stored ({total, number} collected).",
+        "page": "{from, number}–{to, number} of {total, number}",
+        "prev": "Previous",
+        "next": "Next",
+        "noMatch": "No alerts match.",
+        "loadFailed": "Could not load the alerts.",
+        "col": {
+          "time": "Time",
+          "host": "Host",
+          "rule": "Rule",
+          "level": "Level",
+          "desc": "Description",
+          "actor": "Actor",
+          "src": "Source"
+        },
+        "object": "Object",
+        "fullLog": "Raw log",
+        "noLog": "This alert has no raw log."
+      }
     }
   },
   "connections": {

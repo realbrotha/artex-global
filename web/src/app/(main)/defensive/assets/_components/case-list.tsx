@@ -40,8 +40,146 @@ export function needsVerdict(c: SiemCase): boolean {
   return !c.known && (!c.verdict || c.verdict.stale);
 }
 
-const stamp = (iso: string) =>
+export const stamp = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+interface CaseDetailProps {
+  readonly c: ListedCase;
+  // The verdict to show: the stored one, or one just returned by a judge.
+  readonly verdict?: CaseVerdict;
+  readonly compact?: boolean;
+  readonly onVerdict?: (verdict: CaseVerdict) => void;
+}
+
+// Everything behind one case: verdict and evidence, the judge button, its
+// fields and the alert timeline, fetched when the case is first shown.
+export function CaseDetail({ c, verdict, compact = false, onVerdict }: CaseDetailProps) {
+  const t = useTranslations("protectedAssets.cases");
+  const [timeline, setTimeline] = React.useState<SiemCaseEvent[] | "error" | undefined>(undefined);
+  const [judging, setJudging] = React.useState(false);
+  const [judgeError, setJudgeError] = React.useState("");
+
+  React.useEffect(() => {
+    let alive = true;
+    setTimeline(undefined);
+    setJudgeError("");
+    wazuhApi
+      .caseDetail(c.sourceId, c.id)
+      .then((full) => alive && setTimeline(full.timeline ?? []))
+      .catch(() => alive && setTimeline("error"));
+    return () => {
+      alive = false;
+    };
+  }, [c.sourceId, c.id]);
+
+  const judge = async () => {
+    setJudging(true);
+    setJudgeError("");
+    try {
+      onVerdict?.(await wazuhApi.judgeCase(c.sourceId, c.id));
+    } catch (e) {
+      setJudgeError(e instanceof Error ? e.message : t("judgeFailed"));
+    } finally {
+      setJudging(false);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-2 text-xs">
+      {verdict && (
+        <div className="grid grid-cols-1 gap-1.5 rounded-md bg-muted/40 p-2">
+          {verdict.stale && <p className="text-amber-600 dark:text-amber-400">{t("verdictStale")}</p>}
+          <ul className="grid grid-cols-1 gap-0.5">
+            {verdict.evidence.map((line, index) => (
+              <li key={`${index}:${line}`} className="break-all font-mono text-[11px]">
+                {line}
+              </li>
+            ))}
+          </ul>
+          {verdict.adjust && <p>{t("verdictAdjust", { severity: verdict.severity, reason: verdict.adjust })}</p>}
+          {(verdict.response?.length ?? 0) > 0 && (
+            <div>
+              <p className="text-[10px] text-muted-foreground">{t("verdictResponse")}</p>
+              <ul className="list-disc pl-4">
+                {verdict.response?.map((action) => (
+                  <li key={action} className="break-words">
+                    {action}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground">
+            {t("verdictBy", {
+              model: verdict.model || "LLM",
+              when: new Date(verdict.judged_at).toLocaleString(),
+            })}
+          </p>
+        </div>
+      )}
+      {!c.known && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="xs" variant="outline" onClick={() => void judge()} disabled={judging}>
+            {judging ? <Spinner /> : <SparklesIcon />}
+            {verdict ? t("judgeAgain") : t("judge")}
+          </Button>
+          {judgeError && <span className="break-words text-destructive">{judgeError}</span>}
+        </div>
+      )}
+      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+        {(
+          [
+            ["summary", verdict ? c.summary : ""],
+            ["actor", c.actor],
+            ["hosts", c.hosts.join(", ")],
+            ["period", `${stamp(c.first)} ~ ${stamp(c.last)}`],
+            ["basis", c.sev_basis],
+            ["entity", c.entity],
+            ["attack", c.attack.join(", ")],
+            ["known", c.known ?? ""],
+            ["near", c.near.join(", ")],
+            ["connection", compact ? "" : c.sourceName],
+          ] as const
+        )
+          .filter(([, value]) => value)
+          .map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-[10px] text-muted-foreground">{t(`field.${label}`)}</dt>
+              <dd className="break-words">{value}</dd>
+            </div>
+          ))}
+      </dl>
+      {timeline === undefined && <Skeleton className="h-16 w-full" />}
+      {timeline === "error" && <p className="text-destructive">{t("timelineFailed")}</p>}
+      {Array.isArray(timeline) && (
+        <div className="grid grid-cols-1 gap-1">
+          <p className="text-[10px] text-muted-foreground">
+            {timeline.length < c.n ? t("timelineClipped", { shown: timeline.length, total: c.n }) : t("timeline")}
+          </p>
+          <ol className="grid grid-cols-1 gap-0.5">
+            {timeline.map((e, index) => (
+              <li
+                key={`${e.t}:${e.rule}:${index}`}
+                className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 rounded bg-muted/40 px-1.5 py-1"
+              >
+                <span className="font-mono text-[10px] text-muted-foreground tabular-nums">{stamp(e.t)}</span>
+                <span className="min-w-0">
+                  <span className="break-words">{e.desc}</span>
+                  <span className="block break-all font-mono text-[10px] text-muted-foreground">
+                    {[e.host, `rule ${e.rule}`, `L${e.level}`, e.actor !== "-" && e.actor, e.src !== "-" && e.src]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                  {e.object && <span className="block break-all font-mono text-[10px]">{e.object}</span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface CaseListProps {
   readonly cases: ListedCase[];
@@ -52,58 +190,24 @@ interface CaseListProps {
 }
 
 // Case candidates, most urgent first as the server orders them. A row
-// expands to its verdict and evidence; the timeline is fetched on first
-// expansion.
+// expands to its detail.
 export function CaseList({ cases, compact = false, onJudged }: CaseListProps) {
   const t = useTranslations("protectedAssets.cases");
   const [open, setOpen] = React.useState<string | null>(null);
-  const [timelines, setTimelines] = React.useState<Record<string, SiemCaseEvent[] | "error">>({});
-  const [judging, setJudging] = React.useState<string | null>(null);
-  const [judgeError, setJudgeError] = React.useState<Record<string, string>>({});
   // Verdicts stored during this view, shown until the owner's reload arrives.
   const [fresh, setFresh] = React.useState<Record<string, CaseVerdict>>({});
-
-  const toggle = (c: ListedCase) => {
-    const key = `${c.sourceId}/${c.id}`;
-    if (open === key) {
-      setOpen(null);
-      return;
-    }
-    setOpen(key);
-    if (timelines[key]) return;
-    wazuhApi
-      .caseDetail(c.sourceId, c.id)
-      .then((full) => setTimelines((prev) => ({ ...prev, [key]: full.timeline ?? [] })))
-      .catch(() => setTimelines((prev) => ({ ...prev, [key]: "error" })));
-  };
-
-  const judge = async (c: ListedCase) => {
-    const key = `${c.sourceId}/${c.id}`;
-    setJudging(key);
-    setJudgeError((prev) => ({ ...prev, [key]: "" }));
-    try {
-      const verdict = await wazuhApi.judgeCase(c.sourceId, c.id);
-      setFresh((prev) => ({ ...prev, [key]: verdict }));
-      onJudged?.();
-    } catch (e) {
-      setJudgeError((prev) => ({ ...prev, [key]: e instanceof Error ? e.message : t("judgeFailed") }));
-    } finally {
-      setJudging(null);
-    }
-  };
 
   return (
     <ul className="grid grid-cols-1 gap-1.5">
       {cases.map((c) => {
         const key = `${c.sourceId}/${c.id}`;
         const expanded = open === key;
-        const timeline = timelines[key];
         const verdict = fresh[key] ?? c.verdict;
         return (
           <li key={key} className={cn("rounded-lg border text-xs", isCleared({ ...c, verdict }) && "opacity-70")}>
             <button
               type="button"
-              onClick={() => toggle(c)}
+              onClick={() => setOpen(expanded ? null : key)}
               aria-expanded={expanded}
               className="flex w-full items-start gap-2 px-2.5 py-2 text-left hover:bg-muted/60"
             >
@@ -151,108 +255,16 @@ export function CaseList({ cases, compact = false, onJudged }: CaseListProps) {
               </span>
             </button>
             {expanded && (
-              <div className="grid grid-cols-1 gap-2 border-t px-2.5 py-2">
-                {verdict && (
-                  <div className="grid grid-cols-1 gap-1.5 rounded-md bg-muted/40 p-2">
-                    {verdict.stale && <p className="text-amber-600 dark:text-amber-400">{t("verdictStale")}</p>}
-                    <ul className="grid grid-cols-1 gap-0.5">
-                      {verdict.evidence.map((line, index) => (
-                        <li key={`${index}:${line}`} className="break-all font-mono text-[11px]">
-                          {line}
-                        </li>
-                      ))}
-                    </ul>
-                    {verdict.adjust && (
-                      <p>{t("verdictAdjust", { severity: verdict.severity, reason: verdict.adjust })}</p>
-                    )}
-                    {(verdict.response?.length ?? 0) > 0 && (
-                      <div>
-                        <p className="text-[10px] text-muted-foreground">{t("verdictResponse")}</p>
-                        <ul className="list-disc pl-4">
-                          {verdict.response?.map((action) => (
-                            <li key={action} className="break-words">
-                              {action}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-muted-foreground">
-                      {t("verdictBy", {
-                        model: verdict.model || "LLM",
-                        when: new Date(verdict.judged_at).toLocaleString(),
-                      })}
-                    </p>
-                  </div>
-                )}
-                {!c.known && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button size="xs" variant="outline" onClick={() => void judge(c)} disabled={judging !== null}>
-                      {judging === key ? <Spinner /> : <SparklesIcon />}
-                      {verdict ? t("judgeAgain") : t("judge")}
-                    </Button>
-                    {judgeError[key] && <span className="break-words text-destructive">{judgeError[key]}</span>}
-                  </div>
-                )}
-                <dl className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
-                  {(
-                    [
-                      ["summary", verdict ? c.summary : ""],
-                      ["actor", c.actor],
-                      ["hosts", c.hosts.join(", ")],
-                      ["period", `${stamp(c.first)} ~ ${stamp(c.last)}`],
-                      ["basis", c.sev_basis],
-                      ["entity", c.entity],
-                      ["attack", c.attack.join(", ")],
-                      ["known", c.known ?? ""],
-                      ["near", c.near.join(", ")],
-                      ["connection", compact ? "" : c.sourceName],
-                    ] as const
-                  )
-                    .filter(([, value]) => value)
-                    .map(([label, value]) => (
-                      <div key={label} className="min-w-0">
-                        <dt className="text-[10px] text-muted-foreground">{t(`field.${label}`)}</dt>
-                        <dd className="break-words">{value}</dd>
-                      </div>
-                    ))}
-                </dl>
-                {timeline === undefined && <Skeleton className="h-16 w-full" />}
-                {timeline === "error" && <p className="text-destructive">{t("timelineFailed")}</p>}
-                {Array.isArray(timeline) && (
-                  <div className="grid grid-cols-1 gap-1">
-                    <p className="text-[10px] text-muted-foreground">
-                      {timeline.length < c.n
-                        ? t("timelineClipped", { shown: timeline.length, total: c.n })
-                        : t("timeline")}
-                    </p>
-                    <ol className="grid grid-cols-1 gap-0.5">
-                      {timeline.map((e, index) => (
-                        <li
-                          key={`${e.t}:${e.rule}:${index}`}
-                          className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 rounded bg-muted/40 px-1.5 py-1"
-                        >
-                          <span className="font-mono text-[10px] text-muted-foreground tabular-nums">{stamp(e.t)}</span>
-                          <span className="min-w-0">
-                            <span className="break-words">{e.desc}</span>
-                            <span className="block break-all font-mono text-[10px] text-muted-foreground">
-                              {[
-                                e.host,
-                                `rule ${e.rule}`,
-                                `L${e.level}`,
-                                e.actor !== "-" && e.actor,
-                                e.src !== "-" && e.src,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </span>
-                            {e.object && <span className="block break-all font-mono text-[10px]">{e.object}</span>}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
+              <div className="border-t px-2.5 py-2">
+                <CaseDetail
+                  c={c}
+                  verdict={verdict}
+                  compact={compact}
+                  onVerdict={(v) => {
+                    setFresh((prev) => ({ ...prev, [key]: v }));
+                    onJudged?.();
+                  }}
+                />
               </div>
             )}
           </li>

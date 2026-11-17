@@ -43,7 +43,8 @@ type AssetNodeData = {
   h?: number;
 };
 type TierData = { label: string };
-type AssetRFNode = RFNode<AssetNodeData, "asset" | "cluster"> | RFNode<TierData, "tier">;
+type FrameData = { label: string; w: number; h: number };
+type AssetRFNode = RFNode<AssetNodeData, "asset" | "cluster"> | RFNode<TierData, "tier"> | RFNode<FrameData, "frame">;
 type HostRFNode = RFNode<AssetNodeData, "asset" | "cluster">;
 
 // grouped: clusters as boxes, physical hosts underneath (the original map).
@@ -192,7 +193,22 @@ function TierLabel({ data }: NodeProps<RFNode<TierData, "tier">>) {
   );
 }
 
-const nodeTypes = { asset: AssetNodeCard, cluster: ClusterBox, tier: TierLabel };
+// Outline around the bastions of one tier; decoration, not an asset.
+function GroupFrame({ data }: NodeProps<RFNode<FrameData, "frame">>) {
+  return (
+    <div
+      className="rounded-xl border border-sky-500/50 border-dashed bg-sky-500/5"
+      style={{ width: data.w, height: data.h }}
+    >
+      <div className="flex h-10 items-center gap-2 px-3.5">
+        <DoorOpenIcon className="size-4 shrink-0 text-sky-700 dark:text-sky-300" />
+        <span className="truncate font-medium text-xs">{data.label}</span>
+      </div>
+    </div>
+  );
+}
+
+const nodeTypes = { asset: AssetNodeCard, cluster: ClusterBox, tier: TierLabel, frame: GroupFrame };
 
 interface AssetGraphProps {
   readonly nodes: AssetNode[];
@@ -242,12 +258,12 @@ function AssetGraphInner({
     }
   }, []);
 
-  const { positions, tiers } = React.useMemo(() => {
+  const { positions, tiers, frames } = React.useMemo(() => {
     if (mode === "depth") {
       const laid = layoutByDepth(nodes, edges);
-      return { positions: laid.pos, tiers: laid.tiers };
+      return { positions: laid.pos, tiers: laid.tiers, frames: laid.frames };
     }
-    return { positions: layoutAssets(nodes, edges), tiers: [] };
+    return { positions: layoutAssets(nodes, edges), tiers: [], frames: [] };
   }, [nodes, edges, mode]);
 
   const related = React.useMemo(() => {
@@ -304,6 +320,17 @@ function AssetGraphInner({
           },
         }),
       ),
+      ...frames.map(
+        (frame): AssetRFNode => ({
+          id: `frame:${frame.id}`,
+          type: "frame",
+          position: { x: frame.x, y: frame.y },
+          draggable: false,
+          selectable: false,
+          zIndex: -1,
+          data: { label: t("layout.gateways", { count: frame.count }), w: frame.w, h: frame.h },
+        }),
+      ),
       ...// React Flow needs a parent listed before its children.
       [...nodes]
         .sort((a, b) => Number(b.kind === "k8s_cluster") - Number(a.kind === "k8s_cluster"))
@@ -336,7 +363,7 @@ function AssetGraphInner({
           } satisfies AssetRFNode;
         }),
     ],
-    [nodes, positions, tiers, boxOf, gateways, related, selectedId, t],
+    [nodes, positions, tiers, frames, boxOf, gateways, related, selectedId, t],
   );
 
   const kindOf = React.useMemo(() => new Map(nodes.map((n) => [n.id, n.kind])), [nodes]);
@@ -423,8 +450,11 @@ function AssetGraphInner({
     } catch {
       /* not remembered */
     }
-    // Refit once the new positions have been rendered.
-    window.setTimeout(() => void flow.fitView({ padding: 0.15, duration: 300 }), 60);
+    // Refit once the new positions have been rendered and measured; a single
+    // short delay can fire before React Flow has the new node sizes.
+    for (const delay of [80, 400]) {
+      window.setTimeout(() => void flow.fitView({ padding: 0.15, duration: 300 }), delay);
+    }
   };
 
   return (
@@ -434,10 +464,12 @@ function AssetGraphInner({
       onNodesChange={onNodesChange}
       onNodeDragStop={(_, node) => moved.current.add(node.id)}
       nodeTypes={nodeTypes}
-      onNodeClick={(_, node) => node.type !== "tier" && onSelect(node.id === selectedId ? null : node.id)}
+      onNodeClick={(_, node) =>
+        node.type !== "tier" && node.type !== "frame" && onSelect(node.id === selectedId ? null : node.id)
+      }
       onPaneClick={() => onSelect(null)}
       onNodeContextMenu={(event, node) => {
-        const target = node.type === "tier" ? undefined : nodes.find((n) => n.id === node.id);
+        const target = node.type === "tier" || node.type === "frame" ? undefined : nodes.find((n) => n.id === node.id);
         if (target) openMenu(event, target);
         else event.preventDefault();
       }}

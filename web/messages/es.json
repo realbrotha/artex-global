@@ -203,8 +203,13 @@
       "protected-assets": "Activos protegidos",
       "connections": "Conexiones",
       "activity": "Actividad",
-      "analysis": "Análisis",
-      "config": "Configuración"
+      "config": "Configuración",
+      "pentest": "Pentest",
+      "attack-surface": "Superficie de ataque",
+      "infra": "Infraestructura",
+      "detections": "Detección de eventos",
+      "posture": "Comprobaciones",
+      "siem-history": "Historial de análisis"
     }
   },
   "notFound": {
@@ -2316,7 +2321,7 @@
     "moreErrors": "… {count} errores en total"
   },
   "assets": {
-    "title": "Activos",
+    "title": "Superficie de ataque",
     "totalAssets": "<n>{count}</n> en total",
     "deleteSelected": "Eliminar seleccionados ({count})",
     "refresh": "Actualizar",
@@ -3959,7 +3964,7 @@
     "refresh": "Actualizar"
   },
   "protectedAssets": {
-    "title": "Activos",
+    "title": "Infraestructura",
     "refresh": "Actualizar",
     "manageConnections": "Gestionar conexiones",
     "loadFailed": "No se pudieron cargar los activos protegidos.",
@@ -3969,8 +3974,6 @@
     "emptyDescription": "Conecta un manager de Wazuh para traer los equipos con agente y sus relaciones.",
     "addConnection": "Añadir conexión de Wazuh",
     "searchPlaceholder": "Buscar nombre de host, IP o rol",
-    "tabGraph": "Mapa de infraestructura",
-    "tabList": "Equipos",
     "noMatch": "Ningún equipo coincide.",
     "close": "Cerrar",
     "memberCount": "{count} equipos",
@@ -4167,9 +4170,16 @@
         "attempt": "Intento",
         "normal": "Normal",
         "false_positive": "Falso positivo"
-      }
+      },
+      "unjudged": "{count} sin veredicto",
+      "caseCount": "{count, plural, one {# caso} other {# casos}}",
+      "sort": {
+        "risk": "Riesgo",
+        "count": "Más casos",
+        "name": "Nombre"
+      },
+      "generatedShort": "{alerts, number} alertas, últimos {days} días · analizado {when}"
     },
-    "tabDiscovered": "Activos descubiertos",
     "host": {
       "tabOverview": "Resumen",
       "detail": "Ver detalles",
@@ -4180,7 +4190,8 @@
       "grouped": "Por grupo",
       "depth": "Por nivel",
       "tier": "Nivel {depth} · {count} equipos",
-      "tierGroups": "Grupos de servicio · {count}"
+      "tierGroups": "Grupos de servicio · {count}",
+      "gateways": "Bastiones · {count}"
     },
     "analysis": {
       "title": "Análisis de registros SIEM",
@@ -4225,7 +4236,233 @@
         "P8": "Ráfaga de errores",
         "P9": "Regla única de alto riesgo"
       },
-      "all": "Analizar todos los registros SIEM"
+      "all": "Analizar todos los registros SIEM",
+      "fact": {
+        "target": "Objetivo",
+        "alerts": "Alertas",
+        "span": "Rango",
+        "posture": "Postura",
+        "rules": "Reglas",
+        "severity": "Gravedad",
+        "hosts": "Equipos",
+        "thisRun": "Esta vez",
+        "reused": "Anteriores",
+        "unjudged": "Sin juzgar"
+      },
+      "target": "{count, plural, =0 {todos los equipos} one {# equipo} other {# equipos}}",
+      "alertSpan": "{hosts} equipos · {from} – {to}",
+      "checked": "{count} equipos aplicados (ajusta la gravedad)",
+      "topRules": "Reglas más activadas",
+      "caseHosts": "{count}",
+      "seenNote": "Primeros inicios de sesión no usados: {note}",
+      "judgeStats": "Esta ejecución: {done} hechos · {failed} fallidos · {sec}s de media",
+      "summaryPending": "Antes de juzgar: {pending} de {count} casos sin veredicto",
+      "summaryFlagged": "{count} casos requieren revisión",
+      "summaryTime": "Tiempo: recogida {collect}s · extracción {extract}s · veredicto {judge}s",
+      "showAll": "Ver los {count}",
+      "showLess": "Ver menos",
+      "byHost": "Alertas por equipo",
+      "judgedRun": "{done} juzgados · {failed} fallidos",
+      "judgeNotRun": "No se ejecutó el veredicto del LLM",
+      "caseCount": "{count}",
+      "stepNote": {
+        "waiting": "espera su confirmación",
+        "skipped": "no ejecutado",
+        "partial": "quedan {count} sin juzgar"
+      }
+    },
+    "view": {
+      "map": "Mapa",
+      "table": "Tabla"
+    },
+    "detections": {
+      "title": "Detección de eventos",
+      "subtitle": "Casos candidatos extraídos de las alertas, con veredictos del LLM",
+      "searchPlaceholder": "Buscar sujeto, equipo, criterio, resumen",
+      "noConnection": "No hay ningún Wazuh conectado. Añada uno en Configuración > Conexiones para ver aquí los casos candidatos.",
+      "tile": {
+        "open": "Casos abiertos",
+        "severe": "Critical · High",
+        "unjudged": "Sin veredicto",
+        "hosts": "Equipos afectados",
+        "hostsOf": "/ {total}"
+      },
+      "noCluster": "Sin clúster",
+      "rules": {
+        "title": "Criterios con más casos",
+        "count": "{cases} casos · {hosts} equipos"
+      },
+      "group": {
+        "rule": "Por criterio",
+        "host": "Por equipo",
+        "cluster": "Por clúster"
+      },
+      "col": {
+        "severity": "Gravedad",
+        "name": {
+          "rule": "Criterio",
+          "host": "Equipo",
+          "cluster": "Clúster"
+        },
+        "hosts": "Equipos",
+        "cases": "Casos",
+        "events": "Alertas",
+        "state": "Veredicto",
+        "last": "Último"
+      },
+      "notJudged": "Sin veredicto",
+      "more": "Mostrar {count} más",
+      "judgeSelected": "Juzgar {count} de los grupos seleccionados",
+      "groupCount": "{groups} grupos · {cases} casos",
+      "closeDetail": "Cerrar detalle",
+      "selectAll": "Seleccionar todos los grupos visibles",
+      "selectGroup": "Seleccionar {name}",
+      "time": {
+        "bar": "{from} – {to} · {count} casos nuevos",
+        "click": "Pulse para ver solo este tramo"
+      },
+      "clusters": {
+        "title": "Casos por clúster",
+        "count": "{count}"
+      },
+      "empty": "No hay casos que mostrar."
+    },
+    "posture": {
+      "title": "Comprobaciones de configuración",
+      "subtitle": "Comprobaciones de configuración KISA y CIS en {hosts, plural, one {# equipo} other {# equipos}}",
+      "itemCount": "{count, plural, one {# comprobación} other {# comprobaciones}}",
+      "hostCount": "{count, plural, one {# equipo} other {# equipos}}",
+      "searchChecks": "Buscar código, título, equipo",
+      "empty": "Aún no hay resultados. Aparecen cuando config-check se ejecuta en un equipo.",
+      "view": {
+        "check": "Por comprobación",
+        "host": "Por equipo"
+      },
+      "sevTitle": "Comprobaciones por grado",
+      "stdTitle": "Comprobaciones por estándar",
+      "hostsTitle": "Equipos con más comprobaciones: {result}",
+      "noSev": "Sin grado",
+      "itemShort": "{count}",
+      "sort": {
+        "impact": "Más equipos",
+        "severity": "Grado",
+        "code": "Código"
+      },
+      "col": {
+        "sev": "Grado",
+        "code": "Código",
+        "title": "Comprobación",
+        "std": "Estándar"
+      },
+      "more": "Mostrar {count} más",
+      "closeDetail": "Cerrar detalle",
+      "detailHint": "Pulse un equipo para abrir sus resultados y evidencias."
+    },
+    "history": {
+      "title": "Historial de análisis",
+      "subtitle": "Ejecuciones de análisis de logs SIEM y veredictos del LLM, con lo enviado al modelo y su respuesta",
+      "view": {
+        "runs": "Ejecuciones",
+        "judgements": "Veredictos"
+      },
+      "col": {
+        "when": "Fecha",
+        "label": "Objetivo",
+        "source": "Conexión",
+        "state": "Estado",
+        "alerts": "Alertas",
+        "cases": "Casos",
+        "judged": "Juzgados",
+        "model": "Modelo",
+        "case": "Caso",
+        "hosts": "Equipos",
+        "verdict": "Veredicto",
+        "tries": "Peticiones",
+        "ms": "Tiempo",
+        "origin": "Origen",
+        "pattern": "Patrón",
+        "severity": "Gravedad"
+      },
+      "state": {
+        "collecting": "Recogiendo",
+        "extracting": "Extrayendo",
+        "ready": "Sin juzgar",
+        "judging": "Juzgando",
+        "done": "Hecho",
+        "failed": "Fallido",
+        "stopped": "Detenido"
+      },
+      "emptyRuns": "Aún no hay ejecuciones. Ejecute un análisis de logs SIEM desde el mapa o desde Detección de eventos.",
+      "emptyJudgements": "Aún no hay veredictos. Aparecen al ejecutar un veredicto del LLM.",
+      "back": "Volver a la lista",
+      "originRun": "Ejecución",
+      "originDirect": "Veredicto individual",
+      "failed": "Fallido",
+      "sec": "{sec}s",
+      "tries": "{count}",
+      "detail": {
+        "case": "Caso juzgado",
+        "basis": "Base de la gravedad",
+        "period": "Periodo",
+        "events": "{count} alertas",
+        "outcome": "Veredicto",
+        "evidence": "Evidencia",
+        "response": "Acciones recomendadas",
+        "adjust": "Gravedad ajustada → {severity}: {reason}",
+        "error": "Fallo",
+        "sent": "Lo enviado al LLM y su respuesta",
+        "system": "Prompt del sistema (reglas)",
+        "request": "Petición {n}",
+        "answer": "Respuesta {n}",
+        "retry": "Se volvió a pedir porque la respuesta anterior incumplía las reglas",
+        "noAnswer": "Sin respuesta",
+        "loadFailed": "No se pudo cargar el veredicto.",
+        "chars": "{count} caracteres"
+      },
+      "runCases": "{count} casos candidatos",
+      "noCases": "Esta ejecución no produjo casos.",
+      "origin": {
+        "inRun": "Juzgado en esta ejecución",
+        "earlier": "Juzgado en otro momento",
+        "none": "Sin veredicto",
+        "known": "Actividad conocida"
+      },
+      "noRecord": "Este veredicto es anterior al registro de veredictos, por lo que no hay registro del prompt. Vuelva a juzgarlo para obtenerlo.",
+      "earlierNote": "Este veredicto se registró en otro momento ({when}), no en esta ejecución.",
+      "timeline": "Cronología de alertas ({count})",
+      "timelineClipped": "Cronología de alertas (primeras y últimas {shown} de {total})",
+      "noTimeline": "No se guardó la cronología de alertas con esta ejecución.",
+      "caseInfo": "Caso",
+      "judgement": "Veredicto del LLM",
+      "notJudged": "Este caso no tiene veredicto del LLM.",
+      "knownNote": "Coincide con el registro de actividad conocida: {reason}",
+      "runSummary": "{when} · {source} · {alerts, number} alertas · {cases} casos · {judged} juzgados en esta ejecución",
+      "alerts": {
+        "tab": "{count, number} alertas recogidas",
+        "allRules": "Todas las reglas",
+        "allHosts": "Todos los equipos",
+        "search": "Busque descripción, actor, origen o log y pulse Enter",
+        "none": "No se guardaron alertas con esta ejecución. Es anterior al registro de alertas o más antigua que las 20 ejecuciones más recientes.",
+        "storing": "Las alertas aún se están guardando. Actualice en un momento.",
+        "capped": "Solo se guardaron las últimas {max, number} alertas ({total, number} recogidas).",
+        "page": "{from, number}–{to, number} de {total, number}",
+        "prev": "Anterior",
+        "next": "Siguiente",
+        "noMatch": "Ninguna alerta coincide.",
+        "loadFailed": "No se pudieron cargar las alertas.",
+        "col": {
+          "time": "Hora",
+          "host": "Equipo",
+          "rule": "Regla",
+          "level": "Nivel",
+          "desc": "Descripción",
+          "actor": "Actor",
+          "src": "Origen"
+        },
+        "object": "Objeto",
+        "fullLog": "Log original",
+        "noLog": "Esta alerta no tiene log original."
+      }
     }
   },
   "connections": {

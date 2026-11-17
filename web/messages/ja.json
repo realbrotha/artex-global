@@ -203,8 +203,13 @@
       "protected-assets": "保護資産",
       "connections": "接続",
       "activity": "実行記録",
-      "analysis": "分析",
-      "config": "設定"
+      "config": "設定",
+      "pentest": "診断",
+      "attack-surface": "攻撃対象領域",
+      "infra": "インフラ",
+      "detections": "イベント検知",
+      "posture": "設定点検",
+      "siem-history": "分析履歴"
     }
   },
   "notFound": {
@@ -2316,7 +2321,7 @@
     "moreErrors": "… エラー合計 {count} 件"
   },
   "assets": {
-    "title": "資産",
+    "title": "攻撃対象領域",
     "totalAssets": "合計 <n>{count}</n> 件",
     "deleteSelected": "選択を削除 ({count})",
     "refresh": "更新",
@@ -3959,7 +3964,7 @@
     "refresh": "更新"
   },
   "protectedAssets": {
-    "title": "資産",
+    "title": "インフラ",
     "refresh": "更新",
     "manageConnections": "接続を管理",
     "loadFailed": "保護資産を読み込めませんでした。",
@@ -3969,8 +3974,6 @@
     "emptyDescription": "Wazuh manager を接続すると、agent が入っている機器とその関係を取り込みます。",
     "addConnection": "Wazuh 接続を追加",
     "searchPlaceholder": "ホスト名・IP・ロールを検索",
-    "tabGraph": "インフラマップ",
-    "tabList": "機器一覧",
     "noMatch": "条件に合う機器がありません。",
     "close": "閉じる",
     "memberCount": "機器 {count} 台",
@@ -4167,9 +4170,16 @@
         "attempt": "試行",
         "normal": "正常",
         "false_positive": "誤検知"
-      }
+      },
+      "unjudged": "未判定 {count}",
+      "caseCount": "事件 {count} 件",
+      "sort": {
+        "risk": "リスク順",
+        "count": "事件の多い順",
+        "name": "名前順"
+      },
+      "generatedShort": "直近 {days} 日のアラート {alerts, number} 件 · {when} 分析"
     },
-    "tabDiscovered": "発見資産",
     "host": {
       "tabOverview": "概要",
       "detail": "詳細を見る",
@@ -4180,7 +4190,8 @@
       "grouped": "グループ別",
       "depth": "階層別",
       "tier": "{depth} 階層 · {count} 台",
-      "tierGroups": "サービスグループ · {count}"
+      "tierGroups": "サービスグループ · {count}",
+      "gateways": "Bastion · {count} 台"
     },
     "analysis": {
       "title": "SIEM ログ分析",
@@ -4225,7 +4236,233 @@
         "P8": "エラー急増",
         "P9": "高リスク単一ルール"
       },
-      "all": "全体の SIEM ログ分析"
+      "all": "全体の SIEM ログ分析",
+      "fact": {
+        "target": "対象",
+        "alerts": "アラート",
+        "span": "範囲",
+        "posture": "点検結果",
+        "rules": "ルール",
+        "severity": "重大度",
+        "hosts": "関連ホスト",
+        "thisRun": "この実行",
+        "reused": "既存の判定",
+        "unjudged": "未判定"
+      },
+      "target": "{count, plural, =0 {全ホスト} other {ホスト #台}}",
+      "alertSpan": "ホスト {hosts}台 · {from} ~ {to}",
+      "checked": "{count}台を反映 (重大度の補正用)",
+      "topRules": "多く発生したルール",
+      "caseHosts": "{count}台",
+      "seenNote": "初回ログイン判別は未適用: {note}",
+      "judgeStats": "今回の実行: 完了 {done} · 失敗 {failed} · 平均 {sec}秒",
+      "summaryPending": "判定前: 事案候補 {count}件のうち未判定 {pending}件",
+      "summaryFlagged": "確認が必要な事案 {count}件",
+      "summaryTime": "所要時間: 収集 {collect}秒 · 抽出 {extract}秒 · 判定 {judge}秒",
+      "showAll": "全 {count}件を表示",
+      "showLess": "閉じる",
+      "byHost": "ホスト別アラート",
+      "judgedRun": "{done}件判定完了 · 失敗 {failed}件",
+      "judgeNotRun": "LLM 判定は実行していません",
+      "caseCount": "{count}件",
+      "stepNote": {
+        "waiting": "ボタンを押すと進行",
+        "skipped": "未実行",
+        "partial": "未判定 {count}件残り"
+      }
+    },
+    "view": {
+      "map": "マップ",
+      "table": "表"
+    },
+    "detections": {
+      "title": "イベント検知",
+      "subtitle": "アラートから抽出した事件候補と LLM 判定",
+      "searchPlaceholder": "対象、機器、検知基準、要約を検索",
+      "noConnection": "接続された Wazuh がありません。設定 > 接続で追加すると事件候補がここに表示されます。",
+      "tile": {
+        "open": "未解決の事案",
+        "severe": "Critical · High",
+        "unjudged": "未判定",
+        "hosts": "影響ホスト",
+        "hostsOf": "/ {total}台"
+      },
+      "noCluster": "クラスターなし",
+      "rules": {
+        "title": "事案の多い検知基準",
+        "count": "{cases}件 · ホスト {hosts}台"
+      },
+      "group": {
+        "rule": "基準別",
+        "host": "ホスト別",
+        "cluster": "クラスター別"
+      },
+      "col": {
+        "severity": "重大度",
+        "name": {
+          "rule": "検知基準",
+          "host": "ホスト",
+          "cluster": "クラスター"
+        },
+        "hosts": "ホスト",
+        "cases": "事案",
+        "events": "アラート",
+        "state": "判定",
+        "last": "最新"
+      },
+      "notJudged": "未判定",
+      "more": "さらに {count}件表示",
+      "judgeSelected": "選択したグループの {count}件を判定",
+      "groupCount": "{groups}グループ · 事案 {cases}件",
+      "closeDetail": "詳細を閉じる",
+      "selectAll": "表示中のグループをすべて選択",
+      "selectGroup": "{name} を選択",
+      "time": {
+        "bar": "{from} ~ {to} · 新規事案 {count}件",
+        "click": "押すとこの時間帯のみ表示"
+      },
+      "clusters": {
+        "title": "クラスター別の事案",
+        "count": "{count}件"
+      },
+      "empty": "表示する事案がありません。"
+    },
+    "posture": {
+      "title": "設定点検",
+      "subtitle": "機器 {hosts} 台の KISA・CIS 設定点検結果",
+      "itemCount": "項目 {count} 個",
+      "hostCount": "機器 {count} 台",
+      "searchChecks": "コード、タイトル、機器を検索",
+      "empty": "点検結果がありません。機器で config-check が実行されると表示されます。",
+      "view": {
+        "check": "項目別",
+        "host": "機器別"
+      },
+      "sevTitle": "等級別の項目",
+      "stdTitle": "基準別の項目",
+      "hostsTitle": "{result} 項目の多いホスト",
+      "noSev": "未分類",
+      "itemShort": "{count}件",
+      "sort": {
+        "impact": "ホスト数順",
+        "severity": "等級順",
+        "code": "コード順"
+      },
+      "col": {
+        "sev": "等級",
+        "code": "コード",
+        "title": "点検項目",
+        "std": "基準"
+      },
+      "more": "さらに {count}件表示",
+      "closeDetail": "詳細を閉じる",
+      "detailHint": "ホストを押すとそのホストの点検結果と根拠に移動します。"
+    },
+    "history": {
+      "title": "分析履歴",
+      "subtitle": "SIEM ログ分析の実行と LLM 判定の記録。モデルに送った内容と応答をそのまま保管",
+      "view": {
+        "runs": "分析実行",
+        "judgements": "判定記録"
+      },
+      "col": {
+        "when": "時刻",
+        "label": "対象",
+        "source": "接続",
+        "state": "状態",
+        "alerts": "アラート",
+        "cases": "事案候補",
+        "judged": "判定",
+        "model": "モデル",
+        "case": "事案",
+        "hosts": "ホスト",
+        "verdict": "判定",
+        "tries": "リクエスト",
+        "ms": "所要",
+        "origin": "出所",
+        "pattern": "パターン",
+        "severity": "重大度"
+      },
+      "state": {
+        "collecting": "収集中",
+        "extracting": "抽出中",
+        "ready": "判定前",
+        "judging": "判定中",
+        "done": "完了",
+        "failed": "失敗",
+        "stopped": "中止"
+      },
+      "emptyRuns": "分析実行の記録がありません。インフラマップの右クリックまたはイベント検知の全体 SIEM ログ分析を実行すると残ります。",
+      "emptyJudgements": "判定記録がありません。LLM 判定を実行すると残ります。",
+      "back": "一覧へ",
+      "originRun": "分析実行",
+      "originDirect": "個別判定",
+      "failed": "失敗",
+      "sec": "{sec}秒",
+      "tries": "{count}回",
+      "detail": {
+        "case": "判定対象",
+        "basis": "重大度の根拠",
+        "period": "期間",
+        "events": "アラート {count}件",
+        "outcome": "判定結果",
+        "evidence": "根拠",
+        "response": "推奨対応",
+        "adjust": "等級調整 → {severity}: {reason}",
+        "error": "失敗理由",
+        "sent": "LLM に送った内容と受け取った応答",
+        "system": "システムプロンプト (判定ルール)",
+        "request": "リクエスト {n}",
+        "answer": "応答 {n}",
+        "retry": "直前の応答が形式ルールに違反したため再要求",
+        "noAnswer": "応答なし",
+        "loadFailed": "判定記録を読み込めませんでした。",
+        "chars": "{count}文字"
+      },
+      "runCases": "事案候補 {count}件",
+      "noCases": "この実行では事案候補が出ませんでした。",
+      "origin": {
+        "inRun": "この実行で判定",
+        "earlier": "別の時点で判定",
+        "none": "未判定",
+        "known": "正常業務"
+      },
+      "noRecord": "この判定は記録機能の追加前に行われたため、プロンプト記録がありません。再判定すると残ります。",
+      "earlierNote": "この実行ではなく別の時点({when})に行われた判定記録です。",
+      "timeline": "アラートタイムライン ({count}件)",
+      "timelineClipped": "アラートタイムライン (最初と最後の {shown}件 / 全 {total}件)",
+      "noTimeline": "この実行にはアラートタイムラインが保存されていません。",
+      "caseInfo": "事案情報",
+      "judgement": "LLM 判定",
+      "notJudged": "この事案は LLM 判定を行っていません。",
+      "knownNote": "正常業務登録簿と一致: {reason}",
+      "runSummary": "{when} · {source} · アラート {alerts, number}件 · 事案候補 {cases}件 · この実行で判定 {judged}件",
+      "alerts": {
+        "tab": "収集したアラート {count, number}件",
+        "allRules": "全ルール",
+        "allHosts": "全ホスト",
+        "search": "説明・行為者・送信元・原文を検索して Enter",
+        "none": "この実行にはアラート原文が保存されていません。記録機能の追加前の実行か、原文の保管上限(直近 20 回)を超えた実行です。",
+        "storing": "アラート原文を保存中です。しばらくしてから更新してください。",
+        "capped": "アラートが多いため直近 {max, number}件のみ保存しました (収集 {total, number}件)。",
+        "page": "{from, number}–{to, number} / {total, number}",
+        "prev": "前へ",
+        "next": "次へ",
+        "noMatch": "条件に合うアラートがありません。",
+        "loadFailed": "アラートを読み込めませんでした。",
+        "col": {
+          "time": "時刻",
+          "host": "ホスト",
+          "rule": "ルール",
+          "level": "レベル",
+          "desc": "説明",
+          "actor": "行為者",
+          "src": "送信元"
+        },
+        "object": "対象",
+        "fullLog": "原文ログ",
+        "noLog": "原文ログのないアラートです。"
+      }
     }
   },
   "connections": {

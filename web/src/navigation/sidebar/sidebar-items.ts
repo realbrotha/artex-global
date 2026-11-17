@@ -8,6 +8,7 @@ import {
   Cable,
   ClipboardList,
   FolderOpen,
+  History,
   LayoutDashboard,
   type LucideIcon,
   MessageSquare,
@@ -18,6 +19,8 @@ import {
   ScrollText,
   Settings2,
   ShieldAlert,
+  ShieldCheck,
+  Siren,
   Sparkles,
   Target,
   Terminal,
@@ -64,26 +67,31 @@ export interface NavGroup {
   items: NavMainItem[];
 }
 
-// 사이드바는 제목 없는 한 묶음, 여섯 줄이다. 매일 여는 화면(대시보드·자산·대화)만
-// 바로 보이고, 나머지는 분석·활동 기록·설정 세 개의 접이식 메뉴 안에 둔다.
+// 사이드바는 제목 없는 한 묶음, 여덟 줄이다. 매일 여는 화면(대시보드·인프라·탐지·설정 점검·대화)만
+// 바로 보이고, 나머지는 진단·활동 기록·설정 세 개의 접이식 메뉴 안에 둔다.
+// 인프라·탐지·설정 점검은 내부 관점(Wazuh), 진단은 외부 관점(침투 테스트)이다.
+// 자율 헌팅(/defensive/hunting)은 쓰지 않아 메뉴에서 뺐다. 화면과 주소는 남아 있다.
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
     key: "main",
     items: [
       { id: "dashboard", title: "仪表盘", url: "/dashboard", icon: LayoutDashboard },
-      // 자산: Wazuh 장비(인프라 맵·사건 후보)와 진단이 찾아낸 자산을 한 화면의 탭으로 본다.
-      { id: "assets", title: "资产", url: "/defensive/assets", icon: Network },
+      // 내부 관점 세 화면: 무엇이 있나(인프라) · 무슨 일이 났나(탐지) · 설정이 안전한가(설정 점검).
+      { id: "infra", title: "基础设施", url: "/defensive/assets", icon: Network },
+      { id: "detections", title: "检测", url: "/defensive/detections", icon: Siren },
+      { id: "posture", title: "配置检查", url: "/defensive/posture", icon: ShieldCheck },
       { id: "chat", title: "对话", url: "/chat", icon: MessageSquare },
       {
-        id: "analysis",
-        title: "分析",
+        // 외부(블랙박스) 관점의 침투 테스트: 작업 → 공격 표면 → 취약점 → 트래픽.
+        id: "pentest",
+        title: "渗透",
         icon: Target,
         subItems: [
           { id: "tasks", title: "任务", url: "/function/tasks", icon: Target },
+          { id: "attack-surface", title: "攻击面", url: "/function/assets", icon: Radar },
           { id: "findings", title: "发现", url: "/function/findings", icon: Bug },
           { id: "traffic", title: "流量", url: "/function/traffic", icon: Activity },
-          { id: "defensive-hunting", title: "自主狩猎", url: "/defensive/hunting", icon: Radar },
         ],
       },
       {
@@ -91,6 +99,7 @@ export const sidebarItems: NavGroup[] = [
         title: "执行记录",
         icon: ScrollText,
         subItems: [
+          { id: "siem-history", title: "分析记录", url: "/defensive/history", icon: History },
           { id: "commands", title: "工具执行", url: "/function/commands", icon: Terminal },
           { id: "llm-records", title: "LLM 录制", url: "/function/llm-records", icon: Radio },
           { id: "workspace", title: "工作空间", url: "/function/workspace", icon: FolderOpen },
