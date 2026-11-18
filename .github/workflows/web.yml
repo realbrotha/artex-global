@@ -48,6 +48,8 @@ jobs:
       - name: i18n 로케일 키 정합성 (머지 게이트 · ko 기준 en 일치)
         # ko.json 을 기준으로 en 의 키 집합이 완전히 같은지 검사한다(누락·추가 모두 실패).
         run: npm run check:i18n
+      - name: UI 규칙 검사 (머지 게이트 · CLAUDE.md 1장)
+        run: npm run check:ui
       - name: build:static (머지 게이트 · 타입 검사 포함)
         run: npm run build:static
       - name: UI 한자 누출 가드 (머지 게이트 · out HTML 에 중국어 0)

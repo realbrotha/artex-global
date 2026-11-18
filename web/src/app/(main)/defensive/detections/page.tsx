@@ -7,6 +7,7 @@ import Link from "next/link";
 import { RefreshCwIcon, ScanSearchIcon, SearchIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { ListEmpty, LoadError, PageHeader } from "@/components/page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -230,15 +231,50 @@ export default function DetectionsPage() {
   const caseErrors = caseSources.filter((s) => s.error);
   const segment = "px-2.5 py-1.5";
   const segmentOn = "bg-primary text-primary-foreground";
-  const sidePanel = "sticky top-4 flex h-[calc(100svh-5.5rem)] shrink-0 overflow-hidden rounded-lg border";
+  const sidePanel = "sticky top-6 flex h-[calc(var(--main-h)-3rem)] shrink-0 overflow-hidden rounded-xl border bg-card";
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => void load()}
+              disabled={loading}
+              aria-label={t("refresh")}
+              title={t("refresh")}
+            >
+              <RefreshCwIcon className={cn(loading && "animate-spin")} />
+            </Button>
+            {allCases.length > 0 && caseSources.length === 1 && (
+              <Button onClick={() => void analyseAll(caseSources[0].id)}>
+                <ScanSearchIcon />
+                {t("analysis.all")}
+              </Button>
+            )}
+            {allCases.length > 0 && caseSources.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <ScanSearchIcon />
+                    {t("analysis.all")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {caseSources.map((src) => (
+                    <DropdownMenuItem key={src.id} onSelect={() => void analyseAll(src.id)}>
+                      {src.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </>
+        }
+      />
+      {error && <LoadError message={error} onRetry={() => void load()} />}
       {caseErrors.map((s) => (
         <Alert key={s.id} variant="destructive">
           <AlertDescription>{t("cases.failed", { name: s.name, error: s.error })}</AlertDescription>
@@ -247,13 +283,15 @@ export default function DetectionsPage() {
 
       {sources === null && <Skeleton className="h-64 w-full" />}
       {sources !== null && allCases.length === 0 && (
-        <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-          {caseSources.length === 0
-            ? t("detections.noConnection")
-            : caseSources.every((s) => !s.cases_at)
-              ? t("cases.pending")
-              : t("cases.empty")}
-        </p>
+        <ListEmpty
+          title={
+            caseSources.length === 0
+              ? t("detections.noConnection")
+              : caseSources.every((s) => !s.cases_at)
+                ? t("cases.pending")
+                : t("cases.empty")
+          }
+        />
       )}
 
       {allCases.length > 0 && (
@@ -264,43 +302,6 @@ export default function DetectionsPage() {
           windowDays={windowDays}
           filter={filter}
           onFilter={setFilter}
-          actions={
-            <>
-              {caseSources.length === 1 && (
-                <Button size="xs" onClick={() => void analyseAll(caseSources[0].id)}>
-                  <ScanSearchIcon />
-                  {t("analysis.all")}
-                </Button>
-              )}
-              {caseSources.length > 1 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="xs">
-                      <ScanSearchIcon />
-                      {t("analysis.all")}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {caseSources.map((src) => (
-                      <DropdownMenuItem key={src.id} onSelect={() => void analyseAll(src.id)}>
-                        {src.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => void load()}
-                disabled={loading}
-                aria-label={t("refresh")}
-                title={t("refresh")}
-              >
-                <RefreshCwIcon className={cn(loading && "animate-spin")} />
-              </Button>
-            </>
-          }
         />
       )}
 
@@ -308,13 +309,13 @@ export default function DetectionsPage() {
         <div className="flex min-h-0 flex-1 items-start gap-4">
           <div className="grid min-w-0 flex-1 grid-cols-1 content-start gap-2">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <div className="relative w-full sm:w-64">
+              <div className="relative w-80 max-w-full">
                 <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t("detections.searchPlaceholder")}
-                  className="h-8 pl-8 text-xs"
+                  className="pl-8"
                 />
               </div>
               <div className="flex overflow-hidden rounded-lg border">
@@ -386,9 +387,7 @@ export default function DetectionsPage() {
             </div>
 
             {groups.length === 0 ? (
-              <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-                {t("cases.empty")}
-              </p>
+              <ListEmpty title={t("cases.empty")} />
             ) : (
               <GroupedCases
                 // Paging and open rows restart when the grouping changes.

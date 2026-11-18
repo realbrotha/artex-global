@@ -6,14 +6,14 @@ import { BanIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, ListEmpty, PageHeader, TableSkeletonRows, useConfirm } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,11 +45,7 @@ function KindBadge({ kind, label }: { kind: AssetInterceptKind; label: string })
     <Badge
       variant="outline"
       className={
-        cidr
-          ? "border-sky-400 text-sky-600"
-          : fuzzy
-            ? "border-amber-400 text-amber-600"
-            : "border-emerald-400 text-emerald-600"
+        cidr ? "border-info/50 text-info" : fuzzy ? "border-warning/50 text-warning" : "border-success/50 text-success"
       }
     >
       {label}
@@ -94,6 +90,7 @@ function frontValidate(form: RuleForm): "contentRequired" | "cidrInvalid" | null
 export default function AssetInterceptPage() {
   const t = useTranslations("assetInterceptPage");
   const tr = useTranslations("assetInterceptRules");
+  const confirm = useConfirm();
   const builtinLabels = useBuiltinLabels();
   const [rules, setRules] = React.useState<AssetInterceptRule[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -158,7 +155,7 @@ export default function AssetInterceptPage() {
   }
 
   async function handleDelete(rule: AssetInterceptRule) {
-    if (!window.confirm(t("deleteConfirm", { pattern: rule.pattern }))) return;
+    if (!(await confirm({ title: t("deleteConfirm", { pattern: rule.pattern }), destructive: true }))) return;
     try {
       await api.deleteAssetInterceptRule(rule.id);
       toast.success(t("toast.ruleDeleted"));
@@ -180,41 +177,44 @@ export default function AssetInterceptPage() {
   const placeholder = KIND_OPTIONS.find((o) => o.value === form.kind)?.placeholder ?? "";
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">{t("intro")}</p>
-        <Button onClick={openNew} size="sm" className="shrink-0">
-          <PlusIcon className="h-4 w-4" />
-          {t("add")}
-        </Button>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button onClick={openNew}>
+            <PlusIcon />
+            {t("add")}
+          </Button>
+        }
+      />
+      <p className="text-xs text-muted-foreground">{t("intro")}</p>
 
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <p className="p-6 text-sm text-muted-foreground">{t("loading")}</p>
-          ) : rules.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-              <BanIcon className="h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">{t("empty")}</p>
-              <Button size="sm" variant="outline" onClick={openNew}>
-                <PlusIcon className="h-4 w-4" />
-                {t("addFirst")}
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[130px]">{t("colType")}</TableHead>
-                  <TableHead>{t("colPattern")}</TableHead>
-                  <TableHead>{t("colNote")}</TableHead>
-                  <TableHead className="w-[64px] text-center">{t("colEnabled")}</TableHead>
-                  <TableHead className="w-[80px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rules.map((rule) => (
+      {!loading && rules.length === 0 ? (
+        <ListEmpty
+          icon={<BanIcon />}
+          title={t("empty")}
+          action={
+            <Button variant="outline" onClick={openNew}>
+              <PlusIcon />
+              {t("addFirst")}
+            </Button>
+          }
+        />
+      ) : (
+        <div className="rounded-xl border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[130px]">{t("colType")}</TableHead>
+                <TableHead>{t("colPattern")}</TableHead>
+                <TableHead>{t("colNote")}</TableHead>
+                <TableHead className="w-[64px] text-center">{t("colEnabled")}</TableHead>
+                <TableHead className="w-[80px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && <TableSkeletonRows columns={5} />}
+              {!loading &&
+                rules.map((rule) => (
                   <TableRow key={rule.id} className={!rule.enabled ? "opacity-40" : ""}>
                     <TableCell>
                       <KindBadge kind={rule.kind} label={tr(`kind.${rule.kind}`)} />
@@ -239,13 +239,18 @@ export default function AssetInterceptPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-0.5">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(rule)}>
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          aria-label={t("editor.editTitle")}
+                          onClick={() => openEdit(rule)}
+                        >
                           <PencilIcon className="h-3.5 w-3.5" />
                         </Button>
                         <Button
-                          size="icon"
+                          size="icon-xs"
                           variant="ghost"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          className="text-danger hover:text-danger"
                           onClick={() => handleDelete(rule)}
                         >
                           <Trash2Icon className="h-3.5 w-3.5" />
@@ -254,21 +259,20 @@ export default function AssetInterceptPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* editor sheet */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="flex flex-col gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="border-b px-6 py-4">
+        <SheetContent side="right" size="sm">
+          <SheetHeader>
             <SheetTitle>{editing ? t("editor.editTitle") : t("editor.newTitle")}</SheetTitle>
             <SheetDescription className="text-xs">{t("editor.desc")}</SheetDescription>
           </SheetHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-4">
             <Field label={t("editor.matchType")}>
               <Select value={form.kind} onValueChange={(v) => set({ kind: v as AssetInterceptKind })}>
                 <SelectTrigger>
@@ -328,14 +332,12 @@ export default function AssetInterceptPage() {
             </div>
           </div>
 
-          <SheetFooter className="border-t px-6 py-4 flex-row justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              {t("editor.cancel")}
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? t("editor.saving") : t("editor.save")}
-            </Button>
-          </SheetFooter>
+          <DrawerFooter
+            onCancel={() => setOpen(false)}
+            confirmLabel={saving ? t("editor.saving") : t("editor.save")}
+            onConfirm={handleSave}
+            pending={saving}
+          />
         </SheetContent>
       </Sheet>
     </div>

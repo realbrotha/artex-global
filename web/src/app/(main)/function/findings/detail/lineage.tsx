@@ -5,6 +5,7 @@ import * as React from "react";
 import { useTranslations } from "next-intl";
 
 import { ExplorationGraph } from "@/components/exploration-graph";
+import { ListEmpty } from "@/components/page";
 import { api } from "@/lib/api";
 import type { Edge, TaskNode } from "@/lib/types";
 
@@ -38,7 +39,7 @@ export function FindingLineageView({ findingId }: { findingId: string }) {
   }, [findingId]);
 
   if (loaded && nodes.length === 0) {
-    return <p className="text-muted-foreground p-6 text-sm">{t("lineage.empty")}</p>;
+    return <ListEmpty title={t("lineage.empty")} />;
   }
 
   return (

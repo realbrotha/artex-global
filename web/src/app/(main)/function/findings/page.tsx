@@ -19,22 +19,17 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { FindingRetestDialog } from "@/components/finding-retest-dialog";
+import { DrawerFooter, ListEmpty, PageHeader } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
-import { TablePagination } from "@/components/table-pagination";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -142,7 +137,6 @@ export default function FindingsPage() {
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [flat, setFlat] = React.useState<FlatFindingsState>(EMPTY_FLAT_STATE);
   const [flatPage, setFlatPage] = React.useState(1);
-  const [flatPageSize, setFlatPageSize] = React.useState(20);
   const [assetTree, setAssetTree] = React.useState<AssetTreeState>(EMPTY_ASSET_TREE);
   const [assetScope, setAssetScope] = React.useState<string | null>(null);
   const [groups, setGroups] = React.useState<FindingGroup[]>([]);
@@ -154,7 +148,6 @@ export default function FindingsPage() {
   const [statsLoaded, setStatsLoaded] = React.useState(false);
   const [preferencesHydrated, setPreferencesHydrated] = React.useState(false);
   const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(10);
   const [deepenFinding, setDeepenFinding] = React.useState<Finding | null>(null);
   const [retestFinding, setRetestFinding] = React.useState<Finding | null>(null);
   const [activeRetests, setActiveRetests] = React.useState<Record<string, ActiveFindingRetest>>({});
@@ -325,7 +318,7 @@ export default function FindingsPage() {
     try {
       const result = await api.findingsPage({
         page: flatPage,
-        pageSize: flatPageSize,
+        pageSize: PAGE_SIZE,
         severity,
         status,
         vulnclass,
@@ -341,7 +334,7 @@ export default function FindingsPage() {
       // Polling keeps the last successful snapshot visible.
       setFlat((current) => ({ ...current, loading: false }));
     }
-  }, [activeAssetScope, filterFingerprint, flatPage, flatPageSize, severity, status, vulnclass, task, query, sort]);
+  }, [activeAssetScope, filterFingerprint, flatPage, severity, status, vulnclass, task, query, sort]);
 
   // loadAssetTree 取整棵资产树。树不随选中节点变化(否则选一下就塌成一条链),
   // 所以这里不带 assetScope。
@@ -375,7 +368,7 @@ export default function FindingsPage() {
     try {
       const result = await api.findingGroups({
         page,
-        pageSize,
+        pageSize: PAGE_SIZE,
         severity,
         status,
         vulnclass,
@@ -390,7 +383,7 @@ export default function FindingsPage() {
     } catch {
       // Polling keeps the last successful snapshot visible.
     }
-  }, [filterFingerprint, page, pageSize, severity, status, vulnclass, task, query, sort]);
+  }, [filterFingerprint, page, severity, status, vulnclass, task, query, sort]);
 
   const loadGroup = React.useCallback(
     async (key: string, groupPage: number, groupPageSize: number) => {
@@ -469,7 +462,7 @@ export default function FindingsPage() {
       setExpandedGroups(next);
       const state = groupFindings[key];
       if (opening && !state?.loaded && !state?.loading) {
-        void loadGroup(key, state?.page ?? 1, state?.pageSize ?? 10);
+        void loadGroup(key, state?.page ?? 1, state?.pageSize ?? PAGE_SIZE);
       }
     },
     [expandedGroups, groupFindings, loadGroup],
@@ -554,15 +547,15 @@ export default function FindingsPage() {
   }, [activeRetestFingerprint, loadFlat, loadGroup, preferencesHydrated, refreshGroups, view]);
 
   React.useEffect(() => {
-    const lastPage = Math.max(1, Math.ceil(groupTotal / pageSize));
+    const lastPage = Math.max(1, Math.ceil(groupTotal / PAGE_SIZE));
     if (page > lastPage) setPage(lastPage);
-  }, [groupTotal, page, pageSize]);
+  }, [groupTotal, page]);
 
   React.useEffect(() => {
     if (!flat.loaded) return;
-    const lastPage = Math.max(1, Math.ceil(flat.total / flatPageSize));
+    const lastPage = Math.max(1, Math.ceil(flat.total / PAGE_SIZE));
     if (flatPage > lastPage) setFlatPage(lastPage);
-  }, [flat.loaded, flat.total, flatPage, flatPageSize]);
+  }, [flat.loaded, flat.total, flatPage]);
 
   // Whole-table aggregates (stat cards + vuln-class options) — independent of the
   // current page, so they stay exact.
@@ -755,11 +748,11 @@ export default function FindingsPage() {
 
   const statCards = [
     { label: t("stat.total"), value: stats.total, icon: BugIcon },
-    { label: t("stat.pending"), value: stats.pending, tone: "text-amber-500", icon: ClockIcon },
-    { label: t("severity.critical"), value: stats.critical, tone: "text-rose-600", icon: ShieldAlertIcon },
-    { label: t("severity.high"), value: stats.high, tone: "text-red-500", icon: TriangleAlertIcon },
-    { label: t("severity.medium"), value: stats.medium, tone: "text-amber-500", icon: TriangleAlertIcon },
-    { label: t("severity.low"), value: stats.low, tone: "text-slate-500", icon: InfoIcon },
+    { label: t("stat.pending"), value: stats.pending, tone: "text-warning", icon: ClockIcon },
+    { label: t("severity.critical"), value: stats.critical, tone: "text-danger", icon: ShieldAlertIcon },
+    { label: t("severity.high"), value: stats.high, tone: "text-danger", icon: TriangleAlertIcon },
+    { label: t("severity.medium"), value: stats.medium, tone: "text-warning", icon: TriangleAlertIcon },
+    { label: t("severity.low"), value: stats.low, tone: "text-muted-foreground", icon: InfoIcon },
   ];
 
   // 导出弹窗里「当前筛选」的条数:两个视图的筛选一致,只是统计口径来源不同。
@@ -790,63 +783,32 @@ export default function FindingsPage() {
 
   // 平铺视图与资产视图右侧是同一张表 + 同一份分页,只是筛选条件不同。
   const flatListCard = (
-    <Card className="gap-0 py-0">
-      <CardContent className="px-0">
-        {flat.loading && !flat.loaded ? (
-          <div className="flex min-h-36 items-center justify-center">
-            <Spinner />
-          </div>
-        ) : (
-          <>
-            <FindingsTable items={flat.items} selectAllLabel={t("selectAllPage")} {...rowProps} />
-            <TablePagination
-              page={flatPage}
-              pageSize={flatPageSize}
-              total={flat.total}
-              onPageChange={setFlatPage}
-              onPageSizeChange={(nextSize) => {
-                setFlatPageSize(nextSize);
-                setFlatPage(1);
-              }}
-              pageSizeOptions={[10, 20, 50, 100]}
-            />
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <div className="flex min-w-0 flex-col">
+      <div className="overflow-x-auto rounded-xl border bg-card">
+        <FindingsTable
+          items={flat.items}
+          loading={flat.loading && !flat.loaded}
+          selectAllLabel={t("selectAllPage")}
+          {...rowProps}
+        />
+      </div>
+      <TablePagination page={flatPage} total={flat.total} onPageChange={setFlatPage} />
+    </div>
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div className="-mb-1 flex flex-wrap items-center gap-3">
-        <Tabs value={view} onValueChange={(v) => setView(v as FindingView)}>
-          <TabsList>
-            <TabsTrigger value="flat">{t("view.flat")}</TabsTrigger>
-            <TabsTrigger value="grouped">{t("view.grouped")}</TabsTrigger>
-            <TabsTrigger value="asset">{t("view.asset")}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-      <div className="flex flex-1 flex-col gap-3">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {statCards.map((stat) => {
-            const StatIcon = stat.icon;
-            return (
-              <Card key={stat.label} className="gap-1 py-4">
-                <CardHeader className="px-4">
-                  <CardDescription>{stat.label}</CardDescription>
-                  <CardTitle className={cn("flex items-center gap-2 text-2xl tabular-nums", stat.tone)}>
-                    <StatIcon className="size-5" aria-hidden="true" />
-                    {stat.value}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <InputGroup className="w-full sm:w-72">
+    <div className="flex flex-col gap-4">
+      <PageHeader />
+      <div className="flex flex-col gap-4">
+        <div className="-mb-2 flex flex-wrap items-center gap-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as FindingView)}>
+            <TabsList>
+              <TabsTrigger value="flat">{t("view.flat")}</TabsTrigger>
+              <TabsTrigger value="grouped">{t("view.grouped")}</TabsTrigger>
+              <TabsTrigger value="asset">{t("view.asset")}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <InputGroup className="w-80">
             <InputGroupInput
               type="search"
               value={search}
@@ -959,15 +921,34 @@ export default function FindingsPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {statCards.map((stat) => {
+            const StatIcon = stat.icon;
+            return (
+              <Card key={stat.label} className="gap-1 py-3">
+                <CardHeader className="px-4">
+                  <CardDescription>{stat.label}</CardDescription>
+                  <CardTitle className={cn("flex items-center gap-2 text-xl tabular-nums", stat.tone)}>
+                    <StatIcon className="size-5" aria-hidden="true" />
+                    {stat.value}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            );
+          })}
+        </div>
+
         {view === "flat" && flatListCard}
 
         {view === "asset" && (
           <div className="grid min-h-0 items-start gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]">
-            <Card className="gap-0 py-3 lg:sticky lg:top-4">
-              <CardContent className="flex flex-col px-3">
+            <Card className="gap-0 py-3 lg:sticky lg:top-6 lg:h-[calc(var(--main-h)-3rem)]">
+              <CardContent className="flex min-h-0 flex-1 flex-col px-3">
                 {assetTree.loading && !assetTree.loaded ? (
-                  <div className="flex min-h-36 items-center justify-center">
-                    <Spinner />
+                  <div className="flex flex-col gap-2">
+                    {[0, 1, 2].map((i) => (
+                      <Skeleton key={i} className="h-6 w-full" />
+                    ))}
                   </div>
                 ) : (
                   <AssetTree
@@ -1026,7 +1007,7 @@ export default function FindingsPage() {
                 items: [],
                 total: group.count,
                 page: 1,
-                pageSize: 10,
+                pageSize: PAGE_SIZE,
                 loaded: false,
                 loading: false,
               };
@@ -1088,44 +1069,30 @@ export default function FindingsPage() {
                     </div>
                   </CardHeader>
                   {groupOpen && (
-                    <CardContent className="px-0">
-                      {state.loading && !state.loaded ? (
-                        <div className="flex min-h-36 items-center justify-center">
-                          <Spinner />
-                        </div>
-                      ) : (
-                        <>
-                          <FindingsTable items={state.items} selectAllLabel={t("selectAllGroup")} {...rowProps} />
-                          <TablePagination
-                            page={state.page}
-                            pageSize={state.pageSize}
-                            total={state.total}
-                            onPageChange={(nextPage) => void loadGroup(key, nextPage, state.pageSize)}
-                            onPageSizeChange={(nextSize) => void loadGroup(key, 1, nextSize)}
-                          />
-                        </>
-                      )}
+                    <CardContent className="px-0 pb-3">
+                      <div className="overflow-x-auto border-t">
+                        <FindingsTable
+                          items={state.items}
+                          loading={state.loading && !state.loaded}
+                          selectAllLabel={t("selectAllGroup")}
+                          {...rowProps}
+                        />
+                      </div>
+                      <div className="px-3">
+                        <TablePagination
+                          page={state.page}
+                          pageSize={state.pageSize}
+                          total={state.total}
+                          onPageChange={(nextPage) => void loadGroup(key, nextPage, state.pageSize)}
+                        />
+                      </div>
                     </CardContent>
                   )}
                 </Card>
               );
             })}
-            {groups.length === 0 && (
-              <Card>
-                <CardContent className="py-12 text-center text-sm text-muted-foreground">{t("empty")}</CardContent>
-              </Card>
-            )}
-            <TablePagination
-              page={page}
-              pageSize={pageSize}
-              total={groupTotal}
-              onPageChange={setPage}
-              onPageSizeChange={(nextPageSize) => {
-                setPageSize(nextPageSize);
-                setPage(1);
-              }}
-              pageSizeOptions={[5, 10, 20]}
-            />
+            {groups.length === 0 && <ListEmpty title={t("empty")} />}
+            <TablePagination page={page} total={groupTotal} onPageChange={setPage} />
           </div>
         )}
       </div>
@@ -1151,7 +1118,7 @@ export default function FindingsPage() {
         />
       ) : null}
 
-      <Dialog
+      <Sheet
         open={deepenFinding !== null}
         onOpenChange={(open) => {
           if (open || deepening) return;
@@ -1159,60 +1126,61 @@ export default function FindingsPage() {
           setDeepenDescription("");
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("deepen.title")}</DialogTitle>
-            <DialogDescription className="break-words">
+        <SheetContent size="sm" className="gap-0">
+          <SheetHeader className="border-b">
+            <SheetTitle>{t("deepen.title")}</SheetTitle>
+            <SheetDescription className="break-words">
               {t("deepen.description", {
                 id: deepenFinding?.task_id ?? "",
                 name: deepenFinding?.name || deepenFinding?.vulnclass || deepenFinding?.summary || "",
               })}
-            </DialogDescription>
-          </DialogHeader>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="finding-deepen-description">{t("deepen.label")}</FieldLabel>
-              <Textarea
-                id="finding-deepen-description"
-                value={deepenDescription}
-                onChange={(event) => setDeepenDescription(event.target.value)}
-                maxLength={4000}
-                placeholder={t("deepen.placeholder")}
-                disabled={deepening}
-              />
-              <FieldDescription className="flex justify-between gap-3">
-                <span>{t("deepen.hint")}</span>
-                <span className="shrink-0 tabular-nums">{deepenDescription.length} / 4000</span>
-              </FieldDescription>
-            </Field>
-          </FieldGroup>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeepenFinding(null);
-                setDeepenDescription("");
-              }}
-              disabled={deepening}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={submitDeepen} disabled={deepening || !deepenDescription.trim()}>
-              {deepening && <Spinner data-icon="inline-start" />}
-              {t("deepen.submit")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="finding-deepen-description">{t("deepen.label")}</FieldLabel>
+                <Textarea
+                  id="finding-deepen-description"
+                  value={deepenDescription}
+                  onChange={(event) => setDeepenDescription(event.target.value)}
+                  maxLength={4000}
+                  placeholder={t("deepen.placeholder")}
+                  disabled={deepening}
+                />
+                <FieldDescription className="flex justify-between gap-3">
+                  <span>{t("deepen.hint")}</span>
+                  <span className="shrink-0 tabular-nums">{deepenDescription.length} / 4000</span>
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+          </div>
+          <DrawerFooter
+            onCancel={() => {
+              setDeepenFinding(null);
+              setDeepenDescription("");
+            }}
+            onConfirm={() => void submitDeepen()}
+            confirmDisabled={!deepenDescription.trim()}
+            pending={deepening}
+            confirmLabel={
+              <>
+                {deepening && <Spinner data-icon="inline-start" />}
+                {t("deepen.submit")}
+              </>
+            }
+          />
+        </SheetContent>
+      </Sheet>
 
-      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("exportDialog.title")}</DialogTitle>
-            <DialogDescription>{t("exportDialog.description")}</DialogDescription>
-          </DialogHeader>
+      <Sheet open={exportOpen} onOpenChange={setExportOpen}>
+        <SheetContent size="sm" className="gap-0">
+          <SheetHeader className="border-b">
+            <SheetTitle>{t("exportDialog.title")}</SheetTitle>
+            <SheetDescription>{t("exportDialog.description")}</SheetDescription>
+          </SheetHeader>
 
-          <div className="flex flex-col gap-5 py-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-4">
             <div className="flex flex-col gap-2">
               <span className="text-xs text-muted-foreground">{t("exportDialog.scopeLabel")}</span>
               <RadioGroup value={exportScope} onValueChange={(v) => setExportScope(v as typeof exportScope)}>
@@ -1252,16 +1220,19 @@ export default function FindingsPage() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setExportOpen(false)} disabled={exporting}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={doExport} disabled={exporting || (exportScope === "selected" && selectedIds.size === 0)}>
-              <DownloadIcon /> {exporting ? t("exportDialog.exporting") : t("exportDialog.submit")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <DrawerFooter
+            onCancel={() => setExportOpen(false)}
+            onConfirm={() => void doExport()}
+            confirmDisabled={exportScope === "selected" && selectedIds.size === 0}
+            pending={exporting}
+            confirmLabel={
+              <>
+                <DownloadIcon /> {exporting ? t("exportDialog.exporting") : t("exportDialog.submit")}
+              </>
+            }
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

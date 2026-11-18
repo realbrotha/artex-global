@@ -7,15 +7,15 @@ import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem } from "@/components/ui/pagination";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// 목록 한 쪽의 행 수 (CLAUDE.md 1.7). 행 수 선택은 두지 않는다.
+export const PAGE_SIZE = 12;
 
 interface TablePaginationProps {
   page: number; // 1-based
-  pageSize: number;
+  pageSize?: number;
   total: number; // total (after filtering)
   onPageChange: (p: number) => void;
-  onPageSizeChange: (s: number) => void;
-  pageSizeOptions?: number[];
 }
 
 // pageWindows returns the sequence of page numbers / ellipsis to render.
@@ -31,14 +31,7 @@ function pageWindows(page: number, total: number): (number | "...")[] {
   return out;
 }
 
-export function TablePagination({
-  page,
-  pageSize,
-  total,
-  onPageChange,
-  onPageSizeChange,
-  pageSizeOptions = [10, 20, 50],
-}: TablePaginationProps) {
+export function TablePagination({ page, pageSize = PAGE_SIZE, total, onPageChange }: TablePaginationProps) {
   const t = useTranslations("pagination");
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -52,27 +45,11 @@ export function TablePagination({
   }, [page, safePage]);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2 lg:px-6">
-      <div className="text-muted-foreground flex items-center gap-2 text-xs">
-        <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-          <SelectTrigger size="sm" className="h-7 w-16">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {pageSizeOptions.map((s) => (
-              <SelectItem key={s} value={String(s)}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span>{t("perPage")}</span>
-        {total > 0 ? (
-          <span className="tabular-nums">{t("range", { from, to, total })}</span>
-        ) : (
-          <span>{t("empty")}</span>
-        )}
-      </div>
+    // 목록 아래 오른쪽: 건수 문구 + 쪽 번호 (neocloud CountedPagination 과 같은 배치).
+    <div className="flex flex-wrap items-center justify-end gap-3 pt-3">
+      <span className="text-muted-foreground text-sm tabular-nums">
+        {total > 0 ? t("range", { from, to, total }) : t("empty")}
+      </span>
 
       {totalPages > 1 && (
         <Pagination className="mx-0 w-auto justify-end">

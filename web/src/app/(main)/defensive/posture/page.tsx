@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ListIcon, RefreshCwIcon, SearchIcon, ServerIcon, ShieldCheckIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ListEmpty, LoadError, PageHeader } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,23 +44,23 @@ const PAGE = 50;
 const COLUMNS = "grid grid-cols-[3rem_6rem_minmax(0,1fr)_4.5rem_3.5rem_3.5rem_3.5rem_3.5rem] items-center gap-x-3";
 
 const resultTone: Record<Result, string> = {
-  fail: "text-red-600 dark:text-red-400",
-  review: "text-sky-600 dark:text-sky-400",
-  error: "text-amber-600 dark:text-amber-400",
-  accepted: "text-violet-600 dark:text-violet-400",
+  fail: "text-danger",
+  review: "text-info",
+  error: "text-warning",
+  accepted: "text-primary",
 };
 const resultBar: Record<Result, string> = {
-  fail: "bg-red-500",
-  review: "bg-sky-500",
-  error: "bg-amber-500",
-  accepted: "bg-violet-500",
+  fail: "bg-danger",
+  review: "bg-info",
+  error: "bg-warning",
+  accepted: "bg-primary",
 };
 // Grades as config-check reports them; "" = not graded.
-const sevBar: Record<string, string> = { 상: "bg-red-600", 중: "bg-orange-500", 하: "bg-sky-500" };
+const sevBar: Record<string, string> = { 상: "bg-danger", 중: "bg-caution", 하: "bg-info" };
 const sevBadge: Record<string, string> = {
-  상: "border-red-600/50 bg-red-600/15 text-red-700 dark:text-red-300",
-  중: "border-orange-500/50 bg-orange-500/15 text-orange-700 dark:text-orange-300",
-  하: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  상: "border-danger/50 bg-danger/15 text-danger",
+  중: "border-caution/50 bg-caution/15 text-caution",
+  하: "border-info/40 bg-info/10 text-info",
 };
 
 type HostRow = AssetNode & { sourceId: string };
@@ -199,18 +199,30 @@ export default function PosturePage() {
   const segmentOn = "bg-primary text-primary-foreground";
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => void load()}
+              disabled={loading}
+              aria-label={t("refresh")}
+              title={t("refresh")}
+            >
+              <RefreshCwIcon className={cn(loading && "animate-spin")} />
+            </Button>
+            <Button variant="outline" onClick={() => setRisksOpen(true)}>
+              <ShieldCheckIcon />
+              {t("acceptedRisks.open")}
+            </Button>
+          </>
+        }
+      />
+      {error && <LoadError message={error} onRetry={() => void load()} />}
       {sources === null && !error && <Skeleton className="h-64 w-full" />}
-      {sources !== null && rows.length === 0 && (
-        <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-          {t("posture.empty")}
-        </p>
-      )}
+      {sources !== null && rows.length === 0 && <ListEmpty title={t("posture.empty")} />}
 
       {rows.length > 0 && (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
@@ -232,22 +244,6 @@ export default function PosturePage() {
                   }}
                 />
               ))}
-              <span className="ml-auto flex items-center gap-1">
-                <Button variant="outline" size="xs" onClick={() => setRisksOpen(true)}>
-                  <ShieldCheckIcon />
-                  {t("acceptedRisks.open")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => void load()}
-                  disabled={loading}
-                  aria-label={t("refresh")}
-                  title={t("refresh")}
-                >
-                  <RefreshCwIcon className={cn(loading && "animate-spin")} />
-                </Button>
-              </span>
             </div>
             <p className="text-[11px] text-muted-foreground">{t("posture.sevTitle")}</p>
             <div className="flex h-6 gap-px overflow-hidden rounded-md">
@@ -347,13 +343,13 @@ export default function PosturePage() {
                   ))}
                 </TabsList>
               </Tabs>
-              <div className="relative w-full sm:w-64">
+              <div className="relative w-80 max-w-full">
                 <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t(view === "check" ? "posture.searchChecks" : "searchPlaceholder")}
-                  className="h-8 pl-8 text-xs"
+                  className="pl-8"
                 />
               </div>
               {view === "check" && (
@@ -408,13 +404,9 @@ export default function PosturePage() {
               </span>
             </div>
 
-            {view === "check" && listed.length === 0 && (
-              <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-                {t("checks.noMatch")}
-              </p>
-            )}
+            {view === "check" && listed.length === 0 && <ListEmpty title={t("checks.noMatch")} />}
             {view === "check" && listed.length > 0 && (
-              <div className="@container overflow-x-auto rounded-lg border text-xs">
+              <div className="overflow-x-auto rounded-xl border bg-card text-xs">
                 <div className="min-w-[44rem]">
                   <div className={cn(COLUMNS, "border-b bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground")}>
                     <span>{t("posture.col.sev")}</span>
@@ -482,7 +474,7 @@ export default function PosturePage() {
             )}
 
             {view === "host" && (
-              <div className="overflow-x-auto rounded-lg border">
+              <div className="overflow-x-auto rounded-xl border bg-card">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -538,7 +530,7 @@ export default function PosturePage() {
           </div>
 
           {view === "check" && selectedRow && (
-            <aside className="sticky top-4 flex h-[calc(100svh-5.5rem)] w-[24rem] shrink-0 flex-col overflow-hidden rounded-lg border">
+            <aside className="sticky top-6 flex h-[calc(var(--main-h)-3rem)] w-[24rem] shrink-0 flex-col overflow-hidden rounded-xl border bg-card">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-1.5 border-b p-3">
                 <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
                   <span

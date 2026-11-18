@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { useTranslations } from "next-intl";
 
+import { ListEmpty, PageHeader } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sseUrl } from "@/lib/api";
@@ -59,13 +60,13 @@ const MOCK_LOGS: LogLine[] = [
 
 const levelTone: Record<LogLine["level"], string> = {
   info: "text-foreground/80",
-  warn: "text-amber-600 dark:text-amber-400",
-  error: "text-red-600 dark:text-red-400",
+  warn: "text-warning",
+  error: "text-danger",
 };
 const levelDot: Record<LogLine["level"], string> = {
   info: "bg-muted-foreground/40",
-  warn: "bg-amber-500",
-  error: "bg-red-500",
+  warn: "bg-warning",
+  error: "bg-danger",
 };
 
 function fmtTime(ts: string) {
@@ -181,44 +182,34 @@ export default function LogsPage() {
   }, [lines]);
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div className="flex flex-1 flex-col gap-3">
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader />
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <Input
             placeholder={t("filterPlaceholder")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="h-8 max-w-xs"
+            className="w-80"
           />
           <div className="flex gap-1">
             {(["all", "info", "warn", "error"] as const).map((lv) => (
-              <Button
-                key={lv}
-                size="sm"
-                variant={level === lv ? "default" : "outline"}
-                className="h-8"
-                onClick={() => setLevel(lv)}
-              >
+              <Button key={lv} size="sm" variant={level === lv ? "default" : "outline"} onClick={() => setLevel(lv)}>
                 {lv === "all" ? t("all") : lv}
               </Button>
             ))}
           </div>
-          <Button
-            size="sm"
-            variant={paused ? "default" : "outline"}
-            className="h-8"
-            onClick={() => setPaused((p) => !p)}
-          >
-            {paused ? t("paused") : t("pause")}
-          </Button>
-          <Button size="sm" variant="outline" className="h-8" onClick={() => setLines([])}>
-            {t("clear")}
-          </Button>
           <span className="ml-auto text-xs text-muted-foreground">
             {t("totalLines", { count: counts.total })} ·{" "}
-            <span className="text-amber-600 dark:text-amber-400">{t("warnCount", { count: counts.warn })}</span> ·{" "}
-            <span className="text-red-600 dark:text-red-400">{t("errorCount", { count: counts.error })}</span>
+            <span className="text-warning">{t("warnCount", { count: counts.warn })}</span> ·{" "}
+            <span className="text-danger">{t("errorCount", { count: counts.error })}</span>
           </span>
+          <Button size="sm" variant={paused ? "default" : "outline"} onClick={() => setPaused((p) => !p)}>
+            {paused ? t("paused") : t("pause")}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setLines([])}>
+            {t("clear")}
+          </Button>
         </div>
 
         <div
@@ -226,23 +217,17 @@ export default function LogsPage() {
             const el = e.currentTarget;
             stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
           }}
-          className="h-[calc(100vh-9rem)] overflow-auto rounded-lg border bg-card p-2 font-mono text-xs leading-relaxed"
+          className="min-h-0 flex-1 overflow-auto rounded-xl border bg-card p-2 font-mono text-xs leading-relaxed"
         >
           {hasMore && (
             <div className="flex justify-center py-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                disabled={loadingHistory}
-                onClick={loadOlderHistory}
-              >
+              <Button size="xs" variant="outline" disabled={loadingHistory} onClick={loadOlderHistory}>
                 {loadingHistory ? t("loading") : t("loadOlder")}
               </Button>
             </div>
           )}
           {filtered.length === 0 ? (
-            <p className="py-10 text-center text-muted-foreground">{t("empty")}</p>
+            <ListEmpty title={t("empty")} className="border-0 font-sans" />
           ) : (
             filtered.map((l) => {
               const body =

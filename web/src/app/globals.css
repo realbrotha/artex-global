@@ -2,11 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Theme preset styles: these override CSS variables based on the selected data-theme-preset */
-@import "../styles/presets/brutalist.css";
-@import "../styles/presets/soft-pop.css";
-@import "../styles/presets/tangerine.css";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -48,83 +43,169 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* 상태 색. 색은 상태·심각도 표시에만 쓴다 (CLAUDE.md 1.1). */
+  --color-danger: var(--danger);
+  --color-caution: var(--caution);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-content: var(--content);
+  --color-stage: var(--stage);
+  --color-canvas: var(--canvas);
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
-/* Default theme styles (used when no data-theme-preset is set or when 'default' is selected).
-These serve as the fallback; there is no separate default.css file. */
-:root {
-  --radius: 0.625rem;
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+/* 글꼴. 영문 Mona Sans v2.0.27, 한글 Pretendard v1.3.9 (둘 다 OFL-1.1, public/fonts).
+   neocloud 와 같이 한글만 굵기 +50 보정. */
+@font-face {
+  font-family: "Mona Sans";
+  src: url("/fonts/MonaSans.woff2") format("woff2-variations");
+  font-weight: 200 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Thaki Sans";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 200 900;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+0370-03FF, U+2000-206F, U+20A0-20BF, U+2100-214F;
+}
+@font-face {
+  font-family: "Thaki Sans";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 400;
+  font-variation-settings: "wght" 450;
+  font-display: swap;
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF;
+}
+@font-face {
+  font-family: "Thaki Sans";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 500;
+  font-variation-settings: "wght" 550;
+  font-display: swap;
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF;
+}
+@font-face {
+  font-family: "Thaki Sans";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 600;
+  font-variation-settings: "wght" 650;
+  font-display: swap;
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF;
+}
+@font-face {
+  font-family: "Thaki Sans";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 700;
+  font-variation-settings: "wght" 750;
+  font-display: swap;
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF;
+}
 
-  /* fonts */
-  --font-sans: var(--font-geist);
-  --font-mono: var(--font-geist-mono);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+/* 색 토큰. 원본: ThakiCloud/neocloud frontend/apps/neocloud/src/app/neocloud-theme.css.
+   화면 코드는 이 토큰만 쓴다. 색 값을 직접 쓰지 않는다 (CLAUDE.md 1.1). */
+:root {
+  --radius: 0.5rem;
+  --font-sans: "Mona Sans", "Thaki Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: Menlo, Monaco, "Courier New", monospace;
+
+  /* 바탕: 본문은 옅은 회색, 카드·사이드바는 흰색이라 카드가 떠 보인다. */
+  --content: #f7f7f7;
+  /* 지도·그래프 바탕. 카드(노드)가 떠 보이도록 본문보다 한 단계 짙다. */
+  --canvas: #f0f2f7;
+  /* 로그인 바탕. 두 테마 모두 어둡다. */
+  --stage: #0f0f12;
+  --background: #ffffff;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+
+  /* 대표 색: 보라 */
+  --primary: #6c5cf2;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #606f85;
+  --accent: #f2f3ff;
+  --accent-foreground: #4a38c9;
+  --destructive: #dc2626;
+  --border: #e4e4e7;
+  --input: #d4d4d8;
+  --ring: #6c5cf2;
+
+  /* 상태 */
+  --danger: #dc2626;
+  --caution: #ea580c;
+  --warning: #d97706;
+  --success: #16a34a;
+  --info: #2563eb;
+
+  /* 차트 계열 색. 범례와 숫자를 함께 표시한다. */
+  --chart-1: #6c5cf2;
+  --chart-2: #2563eb;
+  --chart-3: #16a34a;
+  --chart-4: #d97706;
+  --chart-5: #dc2626;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #6c5cf2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, #6c5cf2 16%, #ffffff);
+  --sidebar-accent-foreground: #4a38c9;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #6c5cf2;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --content: #0f0f12;
+  --canvas: #0b0b0e;
+  --background: #18181b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --popover: #242428;
+  --popover-foreground: #fafafa;
+
+  --primary: #6c5cf2;
+  --primary-foreground: #ffffff;
+  --secondary: #242428;
+  --secondary-foreground: #fafafa;
+  --muted: #242428;
+  --muted-foreground: #a1a1aa;
+  --accent: #171635;
+  --accent-foreground: #9392ff;
+  --destructive: #f87171;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.14);
+  --ring: #9392ff;
+
+  --danger: #f87171;
+  --caution: #fb923c;
+  --warning: #fbbf24;
+  --success: #4ade80;
+  --info: #60a5fa;
+
+  --chart-1: #9b8cfb;
+  --chart-2: #60a5fa;
+  --chart-3: #4ade80;
+  --chart-4: #fbbf24;
+  --chart-5: #f87171;
+
+  --sidebar: #1e1e22;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #6c5cf2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, #6c5cf2 20%, transparent);
+  --sidebar-accent-foreground: #9392ff;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #9392ff;
 }
 
 @layer base {
@@ -133,100 +214,13 @@ These serve as the fallback; there is no separate default.css file. */
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-sans), system-ui, sans-serif;
+    @apply bg-content text-foreground;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
   html {
     @apply font-sans;
-  }
-}
-
-@layer utilities {
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xs {
-    box-shadow: var(--shadow-2xs);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xs {
-    box-shadow: var(--shadow-xs);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-sm {
-    box-shadow: var(--shadow-sm);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow {
-    box-shadow: var(--shadow);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-md {
-    box-shadow: var(--shadow-md);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-lg {
-    box-shadow: var(--shadow-lg);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xl {
-    box-shadow: var(--shadow-xl);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xl {
-    box-shadow: var(--shadow-2xl);
-  }
-
-  html[data-font="inter"] body {
-    --font-sans: var(--font-inter);
-  }
-  html[data-font="notoSans"] body {
-    --font-sans: var(--font-noto-sans);
-  }
-  html[data-font="nunitoSans"] body {
-    --font-sans: var(--font-nunito-sans);
-  }
-  html[data-font="figtree"] body {
-    --font-sans: var(--font-figtree);
-  }
-  html[data-font="roboto"] body {
-    --font-sans: var(--font-roboto);
-  }
-  html[data-font="geist"] body {
-    --font-sans: var(--font-geist);
-  }
-  html[data-font="raleway"] body {
-    --font-sans: var(--font-raleway);
-  }
-  html[data-font="dmSans"] body {
-    --font-sans: var(--font-dm-sans);
-  }
-  html[data-font="publicSans"] body {
-    --font-sans: var(--font-public-sans);
-  }
-  html[data-font="outfit"] body {
-    --font-sans: var(--font-outfit);
-  }
-  html[data-font="geistMono"] body {
-    --font-sans: var(--font-geist-mono);
-  }
-  html[data-font="geistPixelSquare"] body {
-    --font-sans: var(--font-geist-pixel-square);
-  }
-  html[data-font="jetBrainsMono"] body {
-    --font-sans: var(--font-jetbrains-mono);
-  }
-  html[data-font="notoSerif"] body {
-    --font-sans: var(--font-noto-serif);
-  }
-  html[data-font="robotoSlab"] body {
-    --font-sans: var(--font-roboto-slab);
-  }
-  html[data-font="merriweather"] body {
-    --font-sans: var(--font-merriweather);
-  }
-  html[data-font="lora"] body {
-    --font-sans: var(--font-lora);
-  }
-  html[data-font="playfairDisplay"] body {
-    --font-sans: var(--font-playfair-display);
   }
 }
 
@@ -281,4 +275,14 @@ html {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+}
+
+/* 다크 테마의 보라 글자는 대비가 부족해 한 단계 밝은 값을 쓴다 (neocloud 와 같음). */
+.dark .text-primary {
+  color: #9b8cfb;
+}
+
+/* 본문 영역 높이 (상단 바 44px 제외). 고정 옆 패널: sticky top-6 h-[calc(var(--main-h)-3rem)] */
+:root {
+  --main-h: calc(100svh - 2.75rem);
 }

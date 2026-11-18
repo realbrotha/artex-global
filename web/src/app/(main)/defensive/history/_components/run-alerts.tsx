@@ -5,6 +5,7 @@ import * as React from "react";
 import { ChevronRightIcon, SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { ListEmpty } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +17,7 @@ const PAGE = 100;
 const STORED_MAX = 50000;
 const COLUMNS =
   "grid grid-cols-[1rem_8rem_minmax(0,9rem)_4rem_2.5rem_minmax(0,2fr)_minmax(0,1fr)_minmax(0,7rem)] items-center gap-x-3";
-const select = "h-8 max-w-64 rounded-md border bg-background px-2 text-xs";
+const select = "h-9 max-w-64 rounded-md border border-input bg-background px-2 text-sm";
 
 const stampSeconds = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -57,10 +58,8 @@ export function RunAlerts({ runId, detail }: RunAlertsProps) {
   }, [runId, rule, host, query, offset]);
 
   const stored = detail.alerts_stored;
-  if (stored === -1) return <p className="rounded-lg border border-dashed p-8 text-center text-sm">{t("storing")}</p>;
-  if (!stored) {
-    return <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">{t("none")}</p>;
-  }
+  if (stored === -1) return <ListEmpty title={t("storing")} />;
+  if (!stored) return <ListEmpty title={t("none")} />;
 
   const narrow = (apply: () => void) => {
     apply();
@@ -72,7 +71,7 @@ export function RunAlerts({ runId, detail }: RunAlertsProps) {
   return (
     <div className="grid grid-cols-1 gap-2 text-xs">
       {detail.alerts > STORED_MAX && (
-        <p className="text-amber-600 dark:text-amber-400">{t("capped", { max: STORED_MAX, total: detail.alerts })}</p>
+        <p className="text-warning">{t("capped", { max: STORED_MAX, total: detail.alerts })}</p>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <select
@@ -102,19 +101,14 @@ export function RunAlerts({ runId, detail }: RunAlertsProps) {
           ))}
         </select>
         <form
-          className="relative w-full sm:w-72"
+          className="relative w-80 max-w-full"
           onSubmit={(e) => {
             e.preventDefault();
             narrow(() => setQuery(typed.trim()));
           }}
         >
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            placeholder={t("search")}
-            className="h-8 pl-8 text-xs"
-          />
+          <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={t("search")} className="pl-8" />
         </form>
         <span className="ml-auto flex items-center gap-2 text-muted-foreground tabular-nums">
           {total > 0 && t("page", { from: offset + 1, to: Math.min(offset + PAGE, total), total })}
@@ -134,11 +128,9 @@ export function RunAlerts({ runId, detail }: RunAlertsProps) {
 
       {page === null && <Skeleton className="h-64 w-full" />}
       {page === "error" && <p className="text-destructive">{t("loadFailed")}</p>}
-      {page && page !== "error" && page.alerts.length === 0 && (
-        <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">{t("noMatch")}</p>
-      )}
+      {page && page !== "error" && page.alerts.length === 0 && <ListEmpty title={t("noMatch")} />}
       {page && page !== "error" && page.alerts.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="overflow-x-auto rounded-xl border bg-card">
           <div className="min-w-[54rem]">
             <div className={cn(COLUMNS, "border-b bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground")}>
               <span />
@@ -170,9 +162,7 @@ export function RunAlerts({ runId, detail }: RunAlertsProps) {
                       {a.host}
                     </span>
                     <span className="font-mono text-[11px]">{a.rule}</span>
-                    <span className={cn("tabular-nums", a.level >= 10 && "font-medium text-red-600 dark:text-red-400")}>
-                      {a.level}
-                    </span>
+                    <span className={cn("tabular-nums", a.level >= 10 && "font-medium text-danger")}>{a.level}</span>
                     <span className="truncate" title={a.desc}>
                       {a.desc}
                     </span>

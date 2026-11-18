@@ -122,7 +122,7 @@ export function ApprovalExecutionFocus({
       role="status"
       className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-2 text-xs"
     >
-      <span className={error ? "text-destructive" : "text-muted-foreground"}>
+      <span className={error ? "text-danger" : "text-muted-foreground"}>
         {error
           ? t("locateFail", { error })
           : history.ready
@@ -131,11 +131,11 @@ export function ApprovalExecutionFocus({
       </span>
       <div className="flex gap-2">
         {error ? (
-          <Button size="sm" variant="outline" onClick={focus.retry}>
+          <Button size="xs" variant="outline" onClick={focus.retry}>
             {t("retry")}
           </Button>
         ) : null}
-        <Button size="sm" variant="ghost" onClick={focus.close}>
+        <Button size="xs" variant="ghost" onClick={focus.close}>
           {t("cancel")}
         </Button>
       </div>

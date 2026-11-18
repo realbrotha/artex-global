@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { ArrowLeftIcon, ArrowUpRightIcon, ShieldAlertIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowUpRightIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -13,15 +13,14 @@ import { CopyButton } from "@/components/copy-button";
 import { FindingRetestPanel } from "@/components/finding-retest-panel";
 import { FindingTrafficPanel } from "@/components/finding-traffic-panel";
 import { Markdown } from "@/components/markdown";
+import { DetailHeader, ListEmpty } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getDateLocale } from "@/i18n/datetime";
 import { api } from "@/lib/api";
 import { useBuiltinLabels } from "@/lib/builtin-i18n";
@@ -66,6 +65,7 @@ function FindingDetailInner() {
   const [tab, setTab] = React.useState("overview");
   const t = useTranslations("findings");
   const tStatus = useTranslations("status");
+  const tn = useTranslations("nav");
 
   const load = React.useCallback(() => {
     if (!id) {
@@ -118,14 +118,21 @@ function FindingDetailInner() {
 
   if (!finding) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
-        <p className="text-muted-foreground">{loaded ? t("detail.notFound", { id }) : t("common.loading")}</p>
-        {loaded && (
-          <Button asChild variant="outline">
-            <Link href="/function/findings">
-              <ArrowLeftIcon /> {t("detail.back")}
-            </Link>
-          </Button>
+      <div className="flex flex-col gap-4">
+        <DetailHeader parent={{ label: tn("item.findings"), href: "/function/findings" }} title={`#${id}`} />
+        {loaded ? (
+          <ListEmpty
+            title={t("detail.notFound", { id })}
+            action={
+              <Button asChild variant="outline">
+                <Link href="/function/findings">
+                  <ArrowLeftIcon /> {t("detail.back")}
+                </Link>
+              </Button>
+            }
+          />
+        ) : (
+          <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
         )}
       </div>
     );
@@ -134,39 +141,32 @@ function FindingDetailInner() {
   const title = finding.name || finding.vulnclass || t("table.unclassified");
 
   return (
-    <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col gap-0">
-      {/* Sticky header */}
-      <header className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-background/95 px-3 py-2.5 backdrop-blur">
-        <div className="flex flex-wrap items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Button asChild variant="ghost" size="icon" className="size-7">
-            <Link href="/function/findings">
-              <ArrowLeftIcon />
-            </Link>
-          </Button>
-          <ShieldAlertIcon className="size-4 text-muted-foreground" />
-          <h1 className="max-w-md truncate text-sm font-semibold" title={title}>
-            {title}
-          </h1>
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">#{finding.id}</code>
-          <Separator orientation="vertical" className="mx-1 h-4" />
-          <StatusBadge domain="severity" value={finding.severity} dot />
-          <StatusBadge domain="finding" value={finding.status} dot />
-          {finding.inherited && finding.source_task_id && (
-            <Badge variant="outline">{t("detail.sourceTask", { id: finding.source_task_id })}</Badge>
-          )}
-        </div>
+    <div className="flex flex-col gap-4">
+      <DetailHeader
+        parent={{ label: tn("item.findings"), href: "/function/findings" }}
+        title={<span title={title}>{title}</span>}
+        badges={
+          <>
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
+              #{finding.id}
+            </code>
+            <StatusBadge domain="severity" value={finding.severity} dot />
+            <StatusBadge domain="finding" value={finding.status} dot />
+            {finding.inherited && finding.source_task_id && (
+              <Badge variant="outline">{t("detail.sourceTask", { id: finding.source_task_id })}</Badge>
+            )}
+          </>
+        }
+      />
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview">{t("detail.tab.overview")}</TabsTrigger>
           <TabsTrigger value="lineage">{t("detail.tab.lineage")}</TabsTrigger>
         </TabsList>
-      </header>
 
-      {/* Tab content */}
-      <div className="flex-1 p-3">
         {/* 概览：左（摘要 + 证据）/ 右（状态区） */}
-        <TabsContent value="overview" className="mt-0">
-          <div className="grid gap-4 lg:grid-cols-3">
+        {tab === "overview" && (
+          <div className="grid items-start gap-4 lg:grid-cols-3">
             {/* 左栏 */}
             <div className="flex flex-col gap-4 lg:col-span-2">
               <Card>
@@ -223,7 +223,7 @@ function FindingDetailInner() {
             </div>
 
             {/* 右栏：状态区 */}
-            <Card className="h-fit lg:sticky lg:top-24">
+            <Card className="h-fit lg:sticky lg:top-6">
               <CardHeader>
                 <CardTitle className="text-sm">{t("detail.statusTitle")}</CardTitle>
               </CardHeader>
@@ -241,7 +241,7 @@ function FindingDetailInner() {
                     <StatusBadge domain="severity" value={finding.severity} dot />
                   ) : (
                     <Select value={finding.severity} onValueChange={(v) => changeSeverity(v as Severity)}>
-                      <SelectTrigger size="sm" className="h-7 w-auto border-none px-1 shadow-none focus-visible:ring-0">
+                      <SelectTrigger size="sm" className="w-auto border-none px-1 shadow-none focus-visible:ring-0">
                         <StatusBadge domain="severity" value={finding.severity} dot />
                       </SelectTrigger>
                       <SelectContent position="popper" align="end">
@@ -263,7 +263,7 @@ function FindingDetailInner() {
                     <StatusBadge domain="finding" value={finding.status} dot />
                   ) : (
                     <Select value={finding.status} onValueChange={(v) => changeStatus(v as FindingStatus)}>
-                      <SelectTrigger size="sm" className="h-7 w-auto border-none px-1 shadow-none focus-visible:ring-0">
+                      <SelectTrigger size="sm" className="w-auto border-none px-1 shadow-none focus-visible:ring-0">
                         <StatusBadge domain="finding" value={finding.status} dot />
                       </SelectTrigger>
                       <SelectContent position="popper" align="end">
@@ -330,14 +330,12 @@ function FindingDetailInner() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        )}
 
         {/* 链路图：从任务初始节点回溯到本漏洞节点的攻击链路 */}
-        <TabsContent value="lineage" className="mt-0">
-          <FindingLineageView findingId={finding.id} />
-        </TabsContent>
-      </div>
-    </Tabs>
+        {tab === "lineage" && <FindingLineageView findingId={finding.id} />}
+      </Tabs>
+    </div>
   );
 }
 

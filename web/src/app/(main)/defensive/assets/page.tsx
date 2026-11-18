@@ -20,12 +20,14 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { ListEmpty, LoadError, PageHeader } from "@/components/page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   type Analysis,
@@ -61,10 +63,10 @@ const matchesFilter = (node: AssetNode, filter: Filter) =>
   filter === "all" || (filter === "issues" ? failCount(node) > 0 : assetStatusGroup(node) === filter);
 
 const statusText: Record<string, string> = {
-  ok: "text-emerald-600 dark:text-emerald-400",
-  down: "text-red-600 dark:text-red-400",
-  missing: "text-amber-600 dark:text-amber-400",
-  issues: "text-red-600 dark:text-red-400",
+  ok: "text-success",
+  down: "text-danger",
+  missing: "text-warning",
+  issues: "text-danger",
 };
 
 // Node ids are only unique within one connection, so they are namespaced by
@@ -281,13 +283,23 @@ export default function ProtectedAssetsPage() {
   ];
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="flex flex-1 flex-col gap-3">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => void load()}
+            disabled={loading}
+            aria-label={t("refresh")}
+            title={t("refresh")}
+          >
+            <RefreshCwIcon className={cn(loading && "animate-spin")} />
+          </Button>
+        }
+      />
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {error && <LoadError message={error} onRetry={() => void load()} />}
         {failing.map((s) => (
           <Alert key={s.id} variant="destructive">
             <AlertDescription>{t("syncFailed", { name: s.name, error: s.sync_error })}</AlertDescription>
@@ -299,9 +311,28 @@ export default function ProtectedAssetsPage() {
           </Alert>
         )}
 
-        <div className="flex flex-1 flex-col gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
           {assets !== null && assets.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
+              <Tabs value={view} onValueChange={(v) => selectView(v as View)}>
+                <TabsList>
+                  {VIEWS.map((v) => (
+                    <TabsTrigger key={v} value={v}>
+                      {v === "map" ? <NetworkIcon /> : <Table2Icon />}
+                      {t(`view.${v}`)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              <div className="relative w-80 max-w-full">
+                <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t("searchPlaceholder")}
+                  className="pl-8"
+                />
+              </div>
               {filters.map((f) => (
                 <button
                   key={f.key}
@@ -316,56 +347,29 @@ export default function ProtectedAssetsPage() {
                   <span className={cn("font-semibold tabular-nums", statusText[f.key])}>{f.count}</span>
                 </button>
               ))}
-              <div className="relative ml-auto w-full sm:w-64">
-                <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("searchPlaceholder")}
-                  className="pl-8"
-                />
-              </div>
-              <div className="flex overflow-hidden rounded-lg border text-xs">
-                {VIEWS.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => selectView(v)}
-                    aria-pressed={view === v}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-2 [&_svg]:size-3.5",
-                      view === v ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-                    )}
-                  >
-                    {v === "map" ? <NetworkIcon /> : <Table2Icon />}
-                    {t(`view.${v}`)}
-                  </button>
-                ))}
-              </div>
-              <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-                <RefreshCwIcon className={cn(loading && "animate-spin")} />
-                {t("refresh")}
-              </Button>
             </div>
           )}
 
           {assets === null && <Skeleton className="h-96 w-full" />}
           {assets?.length === 0 && (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
-              <NetworkIcon className="size-8 text-muted-foreground" />
-              <p className="font-medium">{t("emptyTitle")}</p>
-              <p className="max-w-md text-muted-foreground text-sm">{t("emptyDescription")}</p>
-              <Button asChild>
-                <Link href={CONNECTIONS_URL}>
-                  <CableIcon />
-                  {t("addConnection")}
-                </Link>
-              </Button>
-            </div>
+            <ListEmpty
+              className="flex-1"
+              icon={<NetworkIcon />}
+              title={t("emptyTitle")}
+              description={t("emptyDescription")}
+              action={
+                <Button asChild>
+                  <Link href={CONNECTIONS_URL}>
+                    <CableIcon />
+                    {t("addConnection")}
+                  </Link>
+                </Button>
+              }
+            />
           )}
           {assets !== null && assets.length > 0 && (
             <>
-              <div className="flex h-[calc(100svh-7.5rem)] min-h-[520px] overflow-hidden rounded-lg border">
+              <div className="flex min-h-[520px] flex-1 overflow-hidden rounded-xl border bg-card">
                 {view === "map" ? (
                   <div className="min-w-0 flex-1">
                     <AssetGraph
@@ -421,9 +425,7 @@ export default function ProtectedAssetsPage() {
                             <TableCell className="whitespace-nowrap tabular-nums">
                               {h.checks ? (
                                 <>
-                                  <span
-                                    className={cn(h.checks.fail > 0 && "font-medium text-red-600 dark:text-red-400")}
-                                  >
+                                  <span className={cn(h.checks.fail > 0 && "font-medium text-danger")}>
                                     {t("checks.failCount", { count: h.checks.fail })}
                                   </span>
                                   <span className="text-muted-foreground">
@@ -440,7 +442,7 @@ export default function ProtectedAssetsPage() {
                             <TableCell className="font-mono text-xs">
                               {h.ip}
                               {h.public_ip && h.public_ip !== h.ip && (
-                                <span className="block text-sky-700 dark:text-sky-300">{h.public_ip}</span>
+                                <span className="block text-info">{h.public_ip}</span>
                               )}
                             </TableCell>
                             <TableCell>{h.os}</TableCell>

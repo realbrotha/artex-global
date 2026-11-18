@@ -89,7 +89,7 @@ export function AssetInterceptRulesEditor({
               type="button"
               size="icon"
               variant="ghost"
-              className="text-destructive hover:text-destructive size-8 shrink-0"
+              className="shrink-0 text-danger hover:text-danger"
               onClick={() => remove(i)}
             >
               <Trash2Icon className="size-4" />

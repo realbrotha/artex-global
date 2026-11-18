@@ -10,10 +10,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn, copyText } from "@/lib/utils";
 
 function statusTone(status: number) {
-  if (status >= 500) return "text-red-500";
-  if (status >= 400) return "text-amber-500";
-  if (status >= 300) return "text-blue-500";
-  if (status >= 200) return "text-emerald-500";
+  if (status >= 500) return "text-danger";
+  if (status >= 400) return "text-warning";
+  if (status >= 300) return "text-info";
+  if (status >= 200) return "text-success";
   return "text-muted-foreground";
 }
 
@@ -184,7 +184,7 @@ export function HttpCodeBlock({ raw }: { raw: string }) {
         aria-multiline="true"
         aria-readonly="true"
         tabIndex={0}
-        className="max-h-[calc(100vh-15rem)] min-w-0 overflow-auto bg-background py-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="max-h-[calc(var(--main-h)-12rem)] min-w-0 overflow-auto bg-background py-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         onKeyDown={(event) => {
           if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "a") return;
           event.preventDefault();

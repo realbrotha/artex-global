@@ -2,15 +2,16 @@
 
 import * as React from "react";
 
-import { BarChart3Icon, ChevronLeftIcon, ChevronRightIcon, Loader2Icon, SearchIcon } from "lucide-react";
+import { BarChart3Icon, Loader2Icon, SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { ListEmpty, PageHeader, TableSkeletonRows } from "@/components/page";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getDateLocale } from "@/i18n/datetime";
@@ -48,21 +49,19 @@ function truncate(s: string, maxLen: number): string {
   return first.slice(0, maxLen) + "…";
 }
 
-const PAGE_SIZES = [25, 50, 100];
 const CMD_MAX_LEN = 80;
 
 export default function CommandsPage() {
   const t = useTranslations("commands");
-  const tp = useTranslations("pagination");
   const [page, setPage] = React.useState(0);
-  const [size, setSize] = React.useState(50);
+  const size = PAGE_SIZE;
   const [query, setQuery] = React.useState("");
   const [queryQ, setQueryQ] = React.useState("");
   const [taskFilter, setTaskFilter] = React.useState("");
 
   const [commands, setCommands] = React.useState<CommandRecord[]>([]);
   const [total, setTotal] = React.useState(0);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   // 도구별 호출 횟수. 팝업을 열 때만 가져온다(집계 질의가 한 번 더 들어가므로 페이지를 넘길 때마다 부담하지 않는다).
   const [statsOpen, setStatsOpen] = React.useState(false);
@@ -82,7 +81,7 @@ export default function CommandsPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: every filter change intentionally resets pagination.
   React.useEffect(() => {
     setPage(0);
-  }, [queryQ, taskFilter, size]);
+  }, [queryQ, taskFilter]);
 
   // Load data.
   React.useEffect(() => {
@@ -104,7 +103,7 @@ export default function CommandsPage() {
     return () => {
       alive = false;
     };
-  }, [page, size, queryQ, taskFilter]);
+  }, [page, queryQ, taskFilter]);
 
   // 통계는 필터 조건을 따라가며, 표가 보여 주는 것과 같은 기록 묶음을 대상으로 한다(단 페이지는 나누지 않는다).
   React.useEffect(() => {
@@ -124,150 +123,101 @@ export default function CommandsPage() {
   const statsTotal = stats.reduce((n, s) => n + s.total, 0);
   const statsErrors = stats.reduce((n, s) => n + s.errors, 0);
   const statsMax = stats.reduce((n, s) => Math.max(n, s.total), 0);
-  const totalPages = Math.max(1, Math.ceil(total / size));
-  const rangeStart = total === 0 ? 0 : page * size + 1;
-  const rangeEnd = page * size + commands.length;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      {/* Toolbar: the total sits at its end instead of on a row of its own. */}
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader />
+      {/* 도구 줄: 검색 · 작업 필터 · 끝에 통계 버튼. 건수는 표 아래 쪽 번호에 표시 */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative max-w-sm flex-1">
+        <div className="relative w-80">
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-8 pl-8"
+            className="pl-8"
           />
         </div>
         <Input
           placeholder={t("taskIdPlaceholder")}
-          className="h-8 w-28"
+          className="w-28"
           value={taskFilter}
           onChange={(e) => setTaskFilter(e.target.value.replace(/\D/g, ""))}
         />
-        <Select value={String(size)} onValueChange={(v) => setSize(Number(v))}>
-          <SelectTrigger size="sm" className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZES.map((n) => (
-              <SelectItem key={n} value={String(n)}>
-                {n}
-                {tp("perPage")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setStatsOpen(true)}>
-          <BarChart3Icon className="size-4" />
+        <Button variant="outline" className="ml-auto" onClick={() => setStatsOpen(true)}>
+          <BarChart3Icon />
           {t("stats")}
         </Button>
-
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">
-            {rangeStart}–{rangeEnd} / {total}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page <= 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <span className="tabular-nums">
-            {page + 1} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page + 1 >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-          >
-            <ChevronRightIcon />
-          </Button>
-        </div>
-        <span className="ml-auto text-muted-foreground text-xs tabular-nums">{t("totalCount", { count: total })}</span>
       </div>
 
       {/* History table */}
-      <div className="flex h-[calc(100vh-10rem)] min-h-0 flex-col">
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
-          <div className="min-h-0 flex-1 overflow-auto">
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-card">
-                <TableRow>
-                  <TableHead className="w-[130px]">{t("colTime")}</TableHead>
-                  <TableHead className="w-[60px]">{t("colTask")}</TableHead>
-                  <TableHead className="w-[90px]">Worker</TableHead>
-                  <TableHead className="w-[110px]">{t("colTool")}</TableHead>
-                  <TableHead>{t("colInput")}</TableHead>
-                  <TableHead className="w-[60px]">{t("colStatus")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading && commands.length === 0 ? (
+      {!loading && commands.length === 0 ? (
+        <ListEmpty title={t("empty")} />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <TableCell colSpan={6} className="py-12 text-center">
-                      <Loader2Icon className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                    </TableCell>
+                    <TableHead className="w-[130px]">{t("colTime")}</TableHead>
+                    <TableHead className="w-[60px]">{t("colTask")}</TableHead>
+                    <TableHead className="w-[90px]">Worker</TableHead>
+                    <TableHead className="w-[110px]">{t("colTool")}</TableHead>
+                    <TableHead>{t("colInput")}</TableHead>
+                    <TableHead className="w-[60px]">{t("colStatus")}</TableHead>
                   </TableRow>
-                ) : commands.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
-                      {t("empty")}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  commands.map((cmd) => (
-                    <TableRow
-                      key={cmd.id}
-                      className={cn("cursor-pointer", selected?.id === cmd.id && "bg-accent hover:bg-accent")}
-                      onClick={() => setSelected(cmd)}
-                    >
-                      <TableCell className="text-xs text-muted-foreground tabular-nums">
-                        {fmtTime(cmd.created_at)}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">#{cmd.exploration_id}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {cmd.worker || "-"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-xs font-mono">
-                          {cmd.tool || "-"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-0">
-                        <code className="block truncate font-mono text-xs">
-                          {truncate(toolInput(cmd.command), CMD_MAX_LEN)}
-                        </code>
-                      </TableCell>
-                      <TableCell>
-                        {cmd.is_error ? (
-                          <Badge variant="destructive" className="text-xs">
-                            {t("failed")}
+                </TableHeader>
+                <TableBody>
+                  {loading && commands.length === 0 ? (
+                    <TableSkeletonRows columns={6} />
+                  ) : (
+                    commands.map((cmd) => (
+                      <TableRow
+                        key={cmd.id}
+                        className={cn("cursor-pointer", selected?.id === cmd.id && "bg-accent hover:bg-accent")}
+                        onClick={() => setSelected(cmd)}
+                      >
+                        <TableCell className="text-xs text-muted-foreground tabular-nums">
+                          {fmtTime(cmd.created_at)}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono text-muted-foreground">#{cmd.exploration_id}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs font-mono">
+                            {cmd.worker || "-"}
                           </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs text-emerald-600">
-                            {t("success")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs font-mono">
+                            {cmd.tool || "-"}
                           </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      </div>
+                        </TableCell>
+                        <TableCell className="max-w-0">
+                          <code className="block truncate font-mono text-xs">
+                            {truncate(toolInput(cmd.command), CMD_MAX_LEN)}
+                          </code>
+                        </TableCell>
+                        <TableCell>
+                          {cmd.is_error ? (
+                            <Badge variant="destructive" className="text-xs">
+                              {t("failed")}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs text-success">
+                              {t("success")}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+          <TablePagination page={page + 1} total={total} onPageChange={(p) => setPage(p - 1)} />
+        </div>
+      )}
 
       {/* 도구 호출 통계: 표와 같은 기록 묶음(같은 필터, 페이지 나눔 없음) */}
       <Dialog open={statsOpen} onOpenChange={setStatsOpen}>
@@ -285,7 +235,7 @@ export default function CommandsPage() {
                   {statsErrors > 0 && (
                     <>
                       {" · "}
-                      {t("failed")} <span className="tabular-nums text-red-600 dark:text-red-400">{statsErrors}</span>
+                      {t("failed")} <span className="tabular-nums text-danger">{statsErrors}</span>
                     </>
                   )}
                 </>
@@ -307,7 +257,7 @@ export default function CommandsPage() {
                     <div className="flex items-center gap-2">
                       <span className="truncate font-mono text-xs font-medium">{s.tool}</span>
                       {s.errors > 0 && (
-                        <span className="text-[11px] tabular-nums text-red-600 dark:text-red-400">
+                        <span className="text-[11px] tabular-nums text-danger">
                           {t("failed")} {s.errors}
                         </span>
                       )}
@@ -333,10 +283,10 @@ export default function CommandsPage() {
       </Dialog>
 
       <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <SheetContent className="w-full! max-w-none! gap-0 p-0 sm:w-[46rem]! sm:max-w-[46rem]!">
+        <SheetContent size="md" className="gap-0">
           {selected && (
             <>
-              <SheetHeader className="border-b px-5 py-4">
+              <SheetHeader className="border-b">
                 <SheetTitle className="pr-8">{t("detailTitle")}</SheetTitle>
                 <SheetDescription>{fmtTime(selected.created_at)}</SheetDescription>
                 <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -354,7 +304,7 @@ export default function CommandsPage() {
                       {t("failed")}
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs text-emerald-600">
+                    <Badge variant="secondary" className="text-xs text-success">
                       {t("success")}
                     </Badge>
                   )}
@@ -375,7 +325,7 @@ export default function CommandsPage() {
                     <pre
                       className={cn(
                         "p-5 font-mono text-xs break-all whitespace-pre-wrap",
-                        selected.is_error && "text-red-600 dark:text-red-400",
+                        selected.is_error && "text-danger",
                       )}
                     >
                       {selected.output || t("emptyOutput")}

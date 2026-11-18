@@ -16,12 +16,12 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { TablePagination } from "@/components/table-pagination";
+import { ListEmpty, LoadError, TableSkeletonRows } from "@/components/page";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -682,7 +682,6 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
   const [rows, setRows] = React.useState<InterceptApprovalRow[]>([]);
   const [pendingRows, setPendingRows] = React.useState<InterceptPending[]>([]);
   const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(20);
   const [total, setTotal] = React.useState(0);
   const [filter, setFilter] = React.useState<InterceptApprovalFilter>({});
   const [loading, setLoading] = React.useState(true);
@@ -713,8 +712,8 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
         // fill the page or a filter would hide them.
         const [history, pending] = await Promise.allSettled([
           taskId
-            ? api.interceptTaskPage(taskId, page, pageSize, filter)
-            : api.interceptHistoryPage(page, pageSize, filter),
+            ? api.interceptTaskPage(taskId, page, PAGE_SIZE, filter)
+            : api.interceptHistoryPage(page, PAGE_SIZE, filter),
           api.interceptPending(),
         ]);
         if (id !== request.current) return;
@@ -741,7 +740,7 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
         }
       }
     },
-    [taskId, page, pageSize, filter, t],
+    [taskId, page, filter, t],
   );
   const latestLoad = React.useRef(load);
   latestLoad.current = load;
@@ -754,11 +753,6 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
       clearInterval(timer);
     };
   }, [load]);
-
-  const changePageSize = (next: number) => {
-    setPageSize(next);
-    setPage(1);
-  };
 
   const changeFilter = (next: InterceptApprovalFilter) => {
     // An in-flight response for the old filter must not repopulate the table.
@@ -869,7 +863,7 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
           </Select>
         </Field>
         {filtered ? (
-          <Button variant="ghost" size="sm" onClick={() => changeFilter({})}>
+          <Button variant="ghost" onClick={() => changeFilter({})}>
             {t("filter.clear")}
           </Button>
         ) : null}
@@ -887,18 +881,12 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
           </Button>
         </span>
       </FieldGroup>
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{t("recordLoadError", { error })}</AlertDescription>
-        </Alert>
-      ) : null}
+      {error ? <LoadError message={t("recordLoadError", { error })} onRetry={() => void load(true)} /> : null}
       {pendingError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{t("pendingLoadError", { error: pendingError })}</AlertDescription>
-        </Alert>
+        <LoadError message={t("pendingLoadError", { error: pendingError })} onRetry={() => void load(true)} />
       ) : null}
       {pending.length ? (
-        <section className="overflow-hidden rounded-xl border">
+        <section className="overflow-hidden rounded-xl border bg-card">
           <div className="flex items-center gap-2 border-b bg-muted/40 px-4 py-3 font-medium text-sm">
             <ShieldAlertIcon className="size-4" />
             {t("pendingSection", { count: pending.length })}{" "}
@@ -913,27 +901,24 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
           />
         </section>
       ) : null}
-      <section className="overflow-hidden rounded-xl border">
+      <section className="overflow-hidden rounded-xl border bg-card">
         <div className="border-b px-4 py-3 font-medium text-sm">
           {filtered ? t("filteredResults") : t("allRecords")} ({total})
         </div>
         {loading ? (
-          <div className="flex flex-col gap-3 p-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
+          <Table>
+            <TableBody>
+              <TableSkeletonRows columns={4} />
+            </TableBody>
+          </Table>
         ) : null}
         {!loading && !rows.length && !error ? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ClipboardListIcon />
-              </EmptyMedia>
-              <EmptyTitle>{filtered ? t("emptyFiltered") : t("emptyTitle")}</EmptyTitle>
-              <EmptyDescription>{filtered ? t("emptyFilteredDesc") : t("emptyDesc")}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <ListEmpty
+            className="rounded-none border-0"
+            icon={<ClipboardListIcon />}
+            title={filtered ? t("emptyFiltered") : t("emptyTitle")}
+            description={filtered ? t("emptyFilteredDesc") : t("emptyDesc")}
+          />
         ) : null}
         {rows.length ? (
           <ApprovalTable
@@ -944,17 +929,8 @@ export function ApprovalRecords({ taskId }: { taskId?: string }) {
             label={t("historyTableLabel")}
           />
         ) : null}
-        {!loading && !error ? (
-          <TablePagination
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={setPage}
-            onPageSizeChange={changePageSize}
-            pageSizeOptions={[10, 20, 50]}
-          />
-        ) : null}
       </section>
+      {!loading && !error ? <TablePagination page={page} total={total} onPageChange={setPage} /> : null}
     </div>
   );
 }

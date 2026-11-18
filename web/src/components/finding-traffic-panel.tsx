@@ -6,23 +6,17 @@ import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter } from "@/components/page";
 import { TrafficEvidenceViewer } from "@/components/traffic-evidence-viewer";
 import { TrafficPickerDialog } from "@/components/traffic-picker-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { getDateLocale } from "@/i18n/datetime";
@@ -229,58 +223,56 @@ export function FindingTrafficPanel({
         contextTask={contextTask}
         onClose={() => setPreview(null)}
       />
-      <Dialog
+      <Sheet
         open={editing !== null}
         onOpenChange={(open) => {
           if (!open && !busy) setEditing(null);
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("traffic.editTitle")}</DialogTitle>
-            <DialogDescription>{t("traffic.editDescription")}</DialogDescription>
-          </DialogHeader>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="evidence-role">{t("traffic.roleLabel")}</FieldLabel>
-              <Select value={role} onValueChange={(v) => setRole(v as TrafficEvidenceRole)}>
-                <SelectTrigger id="evidence-role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {ROLE_VALUES.map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {t(`traffic.role.${value}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="evidence-note">{t("traffic.noteLabel")}</FieldLabel>
-              <Textarea id="evidence-note" value={note} onChange={(e) => setNote(e.target.value)} />
-            </Field>
-          </FieldGroup>
-          <DialogFooter>
-            <Button variant="outline" disabled={busy} onClick={() => setEditing(null)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              disabled={busy || !editing || !data}
-              onClick={() => {
-                if (editing && data)
-                  void mutate(() =>
-                    api.editFindingTraffic(findingId, editing.id, data.version, { role, note }, contextTask),
-                  );
-              }}
-            >
-              {t("traffic.saveNote")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <SheetContent size="sm" className="gap-0">
+          <SheetHeader className="border-b">
+            <SheetTitle>{t("traffic.editTitle")}</SheetTitle>
+            <SheetDescription>{t("traffic.editDescription")}</SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="evidence-role">{t("traffic.roleLabel")}</FieldLabel>
+                <Select value={role} onValueChange={(v) => setRole(v as TrafficEvidenceRole)}>
+                  <SelectTrigger id="evidence-role" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {ROLE_VALUES.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {t(`traffic.role.${value}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="evidence-note">{t("traffic.noteLabel")}</FieldLabel>
+                <Textarea id="evidence-note" value={note} onChange={(e) => setNote(e.target.value)} />
+              </Field>
+            </FieldGroup>
+          </div>
+          <DrawerFooter
+            onCancel={() => setEditing(null)}
+            confirmLabel={t("traffic.saveNote")}
+            confirmDisabled={!editing || !data}
+            pending={busy}
+            onConfirm={() => {
+              if (editing && data)
+                void mutate(() =>
+                  api.editFindingTraffic(findingId, editing.id, data.version, { role, note }, contextTask),
+                );
+            }}
+          />
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

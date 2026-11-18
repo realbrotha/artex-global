@@ -6,6 +6,7 @@ import { AlertCircleIcon, CheckCircle2Icon, DownloadIcon, PlugZapIcon, RefreshCw
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { ListEmpty, PageHeader, TableSkeletonRows } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,9 +32,9 @@ type Dimension = "project" | "task";
 const ASSET_TYPES: string[] = ["subdomain", "service", "app"];
 
 export default function AssetSyncPage() {
-  const t = useTranslations("assetSync");
   return (
-    <div>
+    <div className="flex flex-col gap-4">
+      <PageHeader />
       <Tabs defaultValue="scopesentry">
         <TabsList>
           <TabsTrigger value="scopesentry">ScopeSentry</TabsTrigger>
@@ -67,7 +68,7 @@ function ScopeSentryPanel() {
   const ready = !!status && status.exists && status.configured && status.enabled;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <DataSourceCard status={status} loading={loadingStatus} onChanged={loadStatus} />
       {ready ? (
         <SyncWorkbench />
@@ -135,8 +136,15 @@ function DataSourceCard({
           <PlugZapIcon className="size-4" /> {t("dsTitle")}
           <StatusBadge status={status} loading={loading} />
         </CardTitle>
-        <Button variant="ghost" size="sm" onClick={onChanged} disabled={loading}>
-          <RefreshCwIcon className={loading ? "size-4 animate-spin" : "size-4"} /> {t("refresh")}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onChanged}
+          disabled={loading}
+          aria-label={t("refresh")}
+          title={t("refresh")}
+        >
+          <RefreshCwIcon className={loading ? "animate-spin" : undefined} />
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -149,10 +157,8 @@ function DataSourceCard({
           </div>
         ) : (
           <>
-            {!status.configured && <p className="text-amber-600 text-sm dark:text-amber-500">{t("notConfigured")}</p>}
-            {status.configured && !status.enabled && (
-              <p className="text-amber-600 text-sm dark:text-amber-500">{t("notEnabled")}</p>
-            )}
+            {!status.configured && <p className="text-warning text-sm">{t("notConfigured")}</p>}
+            {status.configured && !status.enabled && <p className="text-warning text-sm">{t("notEnabled")}</p>}
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>{t("mcpUrl")}</Label>
@@ -191,7 +197,7 @@ function StatusBadge({ status, loading }: { status: SSStatus | null; loading: bo
   if (!status.enabled) return <Badge variant="outline">{t("badgeNotEnabled")}</Badge>;
   if (status.reachable)
     return (
-      <Badge className="bg-emerald-600 hover:bg-emerald-600">
+      <Badge className="bg-success hover:bg-success">
         <CheckCircle2Icon className="mr-1 size-3" /> {t("badgeConnected")}
       </Badge>
     );
@@ -217,7 +223,7 @@ function SyncWorkbench() {
 
   const [projects, setProjects] = React.useState<SSProject[]>([]);
   const [tasks, setTasks] = React.useState<SSTask[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
@@ -279,24 +285,7 @@ function SyncWorkbench() {
   };
 
   const renderRows = () => {
-    if (loading) {
-      return (
-        <TableRow>
-          <TableCell colSpan={4} className="py-8 text-center text-muted-foreground text-sm">
-            {t("loading")}
-          </TableCell>
-        </TableRow>
-      );
-    }
-    if (rows.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={4} className="py-8 text-center text-muted-foreground text-sm">
-            {t("noData")}
-          </TableCell>
-        </TableRow>
-      );
-    }
+    if (loading) return <TableSkeletonRows columns={4} />;
     if (dimension === "project") {
       return projects.map((p) => (
         <TableRow key={p.id} className="cursor-pointer" onClick={() => toggle(p.id)}>
@@ -368,7 +357,7 @@ function SyncWorkbench() {
 
         {/* 검색 + 동작 */}
         <div className="flex items-center gap-2">
-          <div className="relative max-w-xs flex-1">
+          <div className="relative w-80">
             <SearchIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-8"
@@ -383,41 +372,51 @@ function SyncWorkbench() {
               }}
             />
           </div>
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCwIcon className={loading ? "size-4 animate-spin" : "size-4"} />
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={load}
+            disabled={loading}
+            aria-label={t("refresh")}
+            title={t("refresh")}
+          >
+            <RefreshCwIcon className={loading ? "animate-spin" : undefined} />
           </Button>
-          <div className="flex-1" />
-          <span className="text-muted-foreground text-xs">{t("selectedCount", { count: selected.size })}</span>
+          <span className="ml-auto text-muted-foreground text-xs">{t("selectedCount", { count: selected.size })}</span>
           <Button onClick={runSync} disabled={syncing || selected.size === 0}>
             <DownloadIcon className={syncing ? "size-4 animate-pulse" : "size-4"} /> {t("syncSelected")}
           </Button>
         </div>
 
         {/* 목록 */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox checked={rows.length > 0 && selected.size === rows.length} onCheckedChange={toggleAll} />
-                </TableHead>
-                <TableHead>{dimension === "project" ? t("colProjectName") : t("colTaskName")}</TableHead>
-                {dimension === "project" ? (
-                  <>
-                    <TableHead>{t("colTag")}</TableHead>
-                    <TableHead className="text-right">{t("colAssetCount")}</TableHead>
-                  </>
-                ) : (
-                  <>
-                    <TableHead>{t("colStatus")}</TableHead>
-                    <TableHead>{t("colTime")}</TableHead>
-                  </>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>{renderRows()}</TableBody>
-          </Table>
-        </div>
+        {!loading && rows.length === 0 ? (
+          <ListEmpty title={t("noData")} />
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox checked={rows.length > 0 && selected.size === rows.length} onCheckedChange={toggleAll} />
+                  </TableHead>
+                  <TableHead>{dimension === "project" ? t("colProjectName") : t("colTaskName")}</TableHead>
+                  {dimension === "project" ? (
+                    <>
+                      <TableHead>{t("colTag")}</TableHead>
+                      <TableHead className="text-right">{t("colAssetCount")}</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead>{t("colStatus")}</TableHead>
+                      <TableHead>{t("colTime")}</TableHead>
+                    </>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>{renderRows()}</TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* 페이지 나눔 */}
         <div className="flex items-center justify-end gap-2">
@@ -458,7 +457,7 @@ function SyncResult({ result }: { result: Awaited<ReturnType<typeof api.ssSync>>
         <p className="text-muted-foreground">{t("resultCompanies", { names: result.companies.join(", ") })}</p>
       )}
       {result.warnings && result.warnings.length > 0 && (
-        <ul className="list-inside list-disc text-amber-600 dark:text-amber-500">
+        <ul className="list-inside list-disc text-warning">
           {result.warnings.map((wm) => (
             <li key={wm}>{wm}</li>
           ))}

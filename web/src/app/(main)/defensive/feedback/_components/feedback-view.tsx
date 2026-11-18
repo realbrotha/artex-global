@@ -7,7 +7,7 @@ import Link from "next/link";
 import { RefreshCwIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ListEmpty, LoadError } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -21,23 +21,24 @@ const COLUMNS = "grid grid-cols-[minmax(0,1.6fr)_3.5rem_minmax(0,2fr)_4rem_4rem_
 
 // Solid fills: the light verdict badges are too faint as bar segments.
 const verdictBar: Record<CaseVerdict["verdict"], string> = {
-  breach: "bg-red-600",
-  suspicious: "bg-orange-500",
-  attempt: "bg-amber-400",
-  normal: "bg-emerald-500",
-  false_positive: "bg-slate-400",
+  breach: "bg-danger",
+  suspicious: "bg-caution",
+  attempt: "bg-warning/40",
+  normal: "bg-success",
+  false_positive: "bg-muted-foreground",
 };
 
 const signalTone: Record<string, string> = {
-  corrected: "border-violet-500/50 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-  false_positive_heavy: "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  unstable: "border-orange-500/50 bg-orange-500/10 text-orange-700 dark:text-orange-300",
-  normal_repeat: "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  corrected: "border-primary/50 bg-primary/10 text-primary",
+  false_positive_heavy: "border-warning/50 bg-warning/10 text-warning",
+  unstable: "border-caution/50 bg-caution/10 text-caution",
+  normal_repeat: "border-success/50 bg-success/10 text-success",
 };
 
 // Judging feedback: how the automatic judging has been doing per detection
 // criterion, what people corrected, and what that suggests changing.
-export function FeedbackView({ embedded = false }: { readonly embedded?: boolean }) {
+// header 를 주면 새로고침 아이콘 버튼을 넘겨 페이지 머리에 붙인다. 품질 화면의 탭에서는 생략.
+export function FeedbackView({ header }: { readonly header?: (refresh: React.ReactNode) => React.ReactNode }) {
   const t = useTranslations("siemFeedback");
   const tc = useTranslations("protectedAssets.cases");
   const [data, setData] = React.useState<{ sources: FeedbackSource[]; window_days: number } | null>(null);
@@ -61,23 +62,23 @@ export function FeedbackView({ embedded = false }: { readonly embedded?: boolean
   }, [load]);
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div className={cn("flex flex-wrap items-start justify-end gap-3", embedded && "hidden")}>
-        <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+    <div className="flex flex-col gap-4">
+      {header?.(
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => void load()}
+          disabled={loading}
+          aria-label={t("refresh")}
+          title={t("refresh")}
+        >
           <RefreshCwIcon className={cn(loading && "animate-spin")} />
-          {t("refresh")}
-        </Button>
-      </div>
+        </Button>,
+      )}
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <LoadError message={error} onRetry={() => void load()} />}
       {data === null && !error && <Skeleton className="h-96 w-full" />}
-      {data?.sources.length === 0 && (
-        <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">{t("empty")}</p>
-      )}
+      {data?.sources.length === 0 && <ListEmpty title={t("empty")} />}
 
       {data?.sources.map((source) => {
         const total = Object.values(source.methods).reduce((n, v) => n + v, 0);
@@ -89,7 +90,7 @@ export function FeedbackView({ embedded = false }: { readonly embedded?: boolean
               {METHODS.map((m) => (
                 <div key={m} className="rounded-xl border bg-card px-4 py-3">
                   <p className="text-[11px] text-muted-foreground">{t(`method.${m}`)}</p>
-                  <p className="font-semibold text-2xl tabular-nums">{(source.methods[m] ?? 0).toLocaleString()}</p>
+                  <p className="font-semibold text-xl tabular-nums">{(source.methods[m] ?? 0).toLocaleString()}</p>
                   <p className="text-[11px] text-muted-foreground">
                     {total > 0 ? `${Math.round(((source.methods[m] ?? 0) / total) * 100)}%` : "—"} ·{" "}
                     {t(`methodHint.${m}`)}
@@ -139,7 +140,7 @@ export function FeedbackView({ embedded = false }: { readonly embedded?: boolean
 
             <section className="grid grid-cols-1 gap-2">
               <h3 className="font-medium text-sm">{t("criteria", { count: source.criteria.length })}</h3>
-              <div className="overflow-x-auto rounded-lg border text-xs">
+              <div className="overflow-x-auto rounded-xl border bg-card text-xs">
                 <div className="min-w-[48rem]">
                   <div className={cn(COLUMNS, "border-b bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground")}>
                     <span>{t("col.criterion")}</span>
@@ -168,28 +169,13 @@ export function FeedbackView({ embedded = false }: { readonly embedded?: boolean
                         ))}
                       </span>
                       <span className="text-right tabular-nums">{r.judgements}</span>
-                      <span
-                        className={cn(
-                          "text-right tabular-nums",
-                          r.debated > 0 && "text-orange-600 dark:text-orange-400",
-                        )}
-                      >
+                      <span className={cn("text-right tabular-nums", r.debated > 0 && "text-caution")}>
                         {r.debated}
                       </span>
-                      <span
-                        className={cn(
-                          "text-right tabular-nums",
-                          r.fallback > 0 && "text-orange-600 dark:text-orange-400",
-                        )}
-                      >
+                      <span className={cn("text-right tabular-nums", r.fallback > 0 && "text-caution")}>
                         {r.fallback}
                       </span>
-                      <span
-                        className={cn(
-                          "text-right tabular-nums",
-                          r.corrected > 0 && "text-violet-600 dark:text-violet-400",
-                        )}
-                      >
+                      <span className={cn("text-right tabular-nums", r.corrected > 0 && "text-primary")}>
                         {r.corrected}
                       </span>
                     </div>

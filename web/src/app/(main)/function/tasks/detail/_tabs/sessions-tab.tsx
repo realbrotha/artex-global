@@ -168,19 +168,19 @@ function mergeBySeq(current: Activity[], incoming: Activity[]): Activity[] {
 function statusIcon(status: SessionStatus) {
   switch (status) {
     case "running": // 执行中
-      return <Loader2Icon className="size-3.5 animate-spin text-blue-500" />;
+      return <Loader2Icon className="size-3.5 animate-spin text-info" />;
     case "paused":
-      return <PauseIcon className="size-3.5 text-amber-500" />;
+      return <PauseIcon className="size-3.5 text-warning" />;
     case "pending": // 待领取(open intent)
       return <ClockIcon className="size-3.5 text-muted-foreground" />;
     case "done": // 完成
-      return <CircleCheckIcon className="size-3.5 text-emerald-500" />;
+      return <CircleCheckIcon className="size-3.5 text-success" />;
     case "stopped": // 取消/停止(被 planner 终止)
-      return <CircleSlashIcon className="size-3.5 text-amber-500" />;
+      return <CircleSlashIcon className="size-3.5 text-warning" />;
     case "blocked": // 出错
-      return <CircleXIcon className="size-3.5 text-red-500" />;
+      return <CircleXIcon className="size-3.5 text-danger" />;
     case "exhausted": // 步数耗尽(撞 max_turns)
-      return <ZapOffIcon className="size-3.5 text-violet-500" />;
+      return <ZapOffIcon className="size-3.5 text-primary" />;
     case "deleted": // 用户假删除
       return <CircleSlashIcon className="size-3.5 text-muted-foreground" />;
   }
@@ -371,7 +371,7 @@ function SessionItem({
   ) : s.role === "worker" ? (
     statusIcon(s.status)
   ) : s.live ? (
-    <Loader2Icon className="size-3.5 animate-spin text-blue-500" />
+    <Loader2Icon className="size-3.5 animate-spin text-info" />
   ) : null;
 
   const cancellable =
@@ -413,15 +413,15 @@ function SessionItem({
             {t("item.deleted")}
           </Badge>
         )}
-        {hasPending && <ShieldAlertIcon className="size-3.5 shrink-0 text-amber-500" />}
+        {hasPending && <ShieldAlertIcon className="size-3.5 shrink-0 text-warning" />}
         {!active && unread ? (
-          <span className="inline-flex min-w-4 items-center justify-center rounded-full bg-blue-500/15 px-1 text-[10px] font-medium tabular-nums text-blue-600 dark:text-blue-400">
+          <span className="inline-flex min-w-4 items-center justify-center rounded-full bg-info/15 px-1 text-[10px] font-medium tabular-nums text-info">
             {unread > 99 ? "99+" : unread}
           </span>
         ) : null}
         {s.live && (
-          <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-            <span className="size-1 animate-pulse rounded-full bg-blue-500" />
+          <span className="inline-flex items-center gap-1 rounded bg-info/15 px-1.5 py-0.5 text-[10px] font-medium text-info">
+            <span className="size-1 animate-pulse rounded-full bg-info" />
             {t("item.live")}
           </span>
         )}
@@ -1621,18 +1621,16 @@ export function SessionsTab({ taskId }: { taskId: string }) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      {/* 高度预留：页面头部（标题行 + 目标 + Tabs ≈ 7.5rem）+ 内容内边距。手机端 p-4、
-        桌面端 lg:p-6，且桌面还要留出滚动余量，所以两档分别预留 10rem / 13rem —— 手机端
-        沿用 13rem 会白白吃掉 3rem 的记录高度。 */}
+      {/* 높이: 상세 화면이 data-page-fill 이므로 남은 높이를 flex-1 로 채운다. */}
       <div
         className={cn(
-          "grid h-[calc(100svh-10rem)] min-h-0 grid-cols-1 gap-4",
+          "grid min-h-0 flex-1 grid-cols-1 gap-4",
           listOpen ? "grid-rows-[minmax(0,40svh)_minmax(0,1fr)]" : "grid-rows-[auto_minmax(0,1fr)]",
-          "lg:h-[calc(100svh-13rem)] lg:grid-cols-[18rem_1fr] lg:grid-rows-[minmax(0,1fr)]",
+          "lg:grid-cols-[18rem_1fr] lg:grid-rows-[minmax(0,1fr)]",
         )}
       >
         {/* Left: session list */}
-        <div className="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
           <div className="border-b px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <button
@@ -1652,7 +1650,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                       · {activeDisplayTitle}
                     </span>
                     {hiddenUnread > 0 && (
-                      <span className="inline-flex min-w-4 shrink-0 items-center justify-center rounded-full bg-blue-500/15 px-1 text-[10px] font-medium tabular-nums text-blue-600 lg:hidden dark:text-blue-400">
+                      <span className="inline-flex min-w-4 shrink-0 items-center justify-center rounded-full bg-info/15 px-1 text-[10px] font-medium tabular-nums text-info lg:hidden">
                         {hiddenUnread > 99 ? "99+" : hiddenUnread}
                       </span>
                     )}
@@ -1663,13 +1661,13 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 text-[10px]",
-                    sseLive ? "text-emerald-500" : "text-amber-500",
+                    sseLive ? "text-success" : "text-warning",
                   )}
                   title={sseLive ? t("sse.titleLive") : t("sse.titleDown")}
                 >
                   {sseLive ? (
                     <>
-                      <span className="size-1 animate-pulse rounded-full bg-emerald-500" />
+                      <span className="size-1 animate-pulse rounded-full bg-success" />
                       {t("sse.live")}
                     </>
                   ) : (
@@ -1796,8 +1794,8 @@ export function SessionsTab({ taskId }: { taskId: string }) {
           side={side}
           label={active.role === "worker" ? `Worker #${active.intent_id} · ${activeDisplayTitle}` : activeDisplayTitle}
         >
-          <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-lg border bg-card">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2 sm:px-4 sm:py-2.5">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2">
               {(() => {
                 const isWorker = active.role === "worker";
                 const meta = isWorker ? sessionMeta.get(active.id) : undefined;
@@ -1852,8 +1850,8 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                 <Badge variant="outline">{t("header.sourceTask", { id: active.source_task_id })}</Badge>
               )}
               {active.live && (
-                <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-                  <span className="size-1 animate-pulse rounded-full bg-blue-500" />
+                <span className="inline-flex items-center gap-1 rounded bg-info/15 px-1.5 py-0.5 text-[10px] font-medium text-info">
+                  <span className="size-1 animate-pulse rounded-full bg-info" />
                   {t("sse.live")}
                 </span>
               )}
@@ -1950,15 +1948,10 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                     {t("transcript.loadingActivity")}
                   </div>
                 ) : activeState?.error ? (
-                  <div className="flex items-center gap-2 pl-9 text-xs text-red-500">
+                  <div className="flex items-center gap-2 pl-9 text-xs text-danger">
                     <CircleXIcon className="size-3.5" />
                     {t("transcript.loadError", { error: activeState.error })}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-xs"
-                      onClick={() => loadSession(activeKey)}
-                    >
+                    <Button size="xs" variant="ghost" className="px-2 text-xs" onClick={() => loadSession(activeKey)}>
                       {t("transcript.retry")}
                     </Button>
                   </div>

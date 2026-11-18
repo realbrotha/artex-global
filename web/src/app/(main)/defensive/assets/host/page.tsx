@@ -2,12 +2,10 @@
 
 import * as React from "react";
 
-import Link from "next/link";
-
-import { ArrowLeftIcon, RefreshCwIcon } from "lucide-react";
+import { RefreshCwIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DetailHeader, ListEmpty, LoadError } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,9 +29,9 @@ const TABS = ["overview", "checks", "cases"] as const;
 type Tab = (typeof TABS)[number];
 
 const statusText: Record<string, string> = {
-  ok: "text-emerald-600 dark:text-emerald-400",
-  down: "text-red-600 dark:text-red-400",
-  missing: "text-amber-600 dark:text-amber-400",
+  ok: "text-success",
+  down: "text-danger",
+  missing: "text-warning",
 };
 
 interface Loaded {
@@ -123,43 +121,34 @@ export default function HostDetailPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button asChild variant="ghost" size="sm" className="-ml-2">
-          <Link href={ASSETS_URL}>
-            <ArrowLeftIcon />
-            {t("title")}
-          </Link>
-        </Button>
-        {node && (
-          <>
-            <h1 className="font-semibold">{node.name}</h1>
-            <span className="text-muted-foreground text-sm">
-              {[t(`kind.${node.kind}`), node.ip].filter(Boolean).join(" · ")}
-            </span>
-            {group !== "none" && <span className={cn("text-sm", statusText[group])}>{t(`status.${group}`)}</span>}
-          </>
-        )}
-        <Button variant="outline" size="sm" className="ml-auto" onClick={() => void load()} disabled={loading}>
-          <RefreshCwIcon className={cn(loading && "animate-spin")} />
-          {t("refresh")}
-        </Button>
-      </div>
+    <div className="flex flex-col gap-4">
+      <DetailHeader
+        parent={{ label: t("title"), href: ASSETS_URL }}
+        title={node?.name ?? target?.node ?? ""}
+        badges={
+          node && (
+            <>
+              <span className="text-muted-foreground text-sm">
+                {[t(`kind.${node.kind}`), node.ip].filter(Boolean).join(" · ")}
+              </span>
+              {group !== "none" && <span className={cn("text-sm", statusText[group])}>{t(`status.${group}`)}</span>}
+            </>
+          )
+        }
+        actions={
+          <Button variant="outline" size="xs" onClick={() => void load()} disabled={loading}>
+            <RefreshCwIcon className={cn(loading && "animate-spin")} />
+            {t("refresh")}
+          </Button>
+        }
+      />
 
-      <div className="flex flex-1 flex-col gap-3">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+      <div className="flex flex-col gap-3">
+        {error && <LoadError message={error} onRetry={() => void load()} />}
         {data === null && !error && <Skeleton className="h-96 w-full" />}
-        {data !== null && (!node || !isHostNode(node)) && (
-          <p className="rounded-lg border border-dashed p-10 text-center text-muted-foreground text-sm">
-            {t("host.notFound")}
-          </p>
-        )}
+        {data !== null && (!node || !isHostNode(node)) && <ListEmpty title={t("host.notFound")} />}
         {node && isHostNode(node) && target && (
-          <Tabs value={tab} onValueChange={selectTab} className="flex flex-1 flex-col">
+          <Tabs value={tab} onValueChange={selectTab} className="flex flex-col">
             <TabsList>
               <TabsTrigger value="overview">{t("host.tabOverview")}</TabsTrigger>
               <TabsTrigger value="checks">
@@ -169,7 +158,7 @@ export default function HostDetailPage() {
               <TabsTrigger value="cases">
                 {t("cases.tab")}
                 {liveCases.length > 0 && (
-                  <span className="ml-1 rounded-full bg-red-500/15 px-1.5 text-[10px] text-red-700 tabular-nums dark:text-red-300">
+                  <span className="ml-1 rounded-full bg-danger/15 px-1.5 text-[10px] text-danger tabular-nums">
                     {liveCases.length}
                   </span>
                 )}
@@ -177,7 +166,7 @@ export default function HostDetailPage() {
             </TabsList>
 
             <TabsContent value="overview" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <section className="grid grid-cols-1 content-start gap-3 rounded-lg border p-4 text-sm">
+              <section className="grid grid-cols-1 content-start gap-3 rounded-xl border bg-card p-4 text-sm">
                 <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
                   {(
                     [
@@ -236,7 +225,7 @@ export default function HostDetailPage() {
               </section>
 
               <div className="grid grid-cols-1 content-start gap-4">
-                <section className="grid grid-cols-1 gap-2 rounded-lg border p-4 text-sm">
+                <section className="grid grid-cols-1 gap-2 rounded-xl border bg-card p-4 text-sm">
                   <div className="flex items-center justify-between">
                     <h2 className="font-medium">{t("checks.title")}</h2>
                     {checks && (
@@ -251,7 +240,7 @@ export default function HostDetailPage() {
                     <p className="text-muted-foreground">{t("checks.none")}</p>
                   )}
                 </section>
-                <section className="grid grid-cols-1 gap-2 rounded-lg border p-4 text-sm">
+                <section className="grid grid-cols-1 gap-2 rounded-xl border bg-card p-4 text-sm">
                   <div className="flex items-center justify-between">
                     <h2 className="font-medium">{t("cases.hostTitle", { count: liveCases.length })}</h2>
                     {liveCases.length > 0 && (
@@ -270,7 +259,7 @@ export default function HostDetailPage() {
                   </ul>
                 </section>
                 {relations.length > 0 && (
-                  <section className="grid grid-cols-1 gap-2 rounded-lg border p-4 text-sm">
+                  <section className="grid grid-cols-1 gap-2 rounded-xl border bg-card p-4 text-sm">
                     <h2 className="font-medium">{t("field.relations")}</h2>
                     <ul className="grid grid-cols-1 gap-1">
                       {relations.map((r) => (
@@ -295,9 +284,7 @@ export default function HostDetailPage() {
               {checks ? (
                 <HostChecks sourceId={target.source} nodeId={target.node} checks={checks} />
               ) : (
-                <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-                  {t("checks.none")}
-                </p>
+                <ListEmpty title={t("checks.none")} />
               )}
             </TabsContent>
 
@@ -309,9 +296,7 @@ export default function HostDetailPage() {
                 </label>
               )}
               {(showCleared ? (data?.cases ?? []) : liveCases).length === 0 ? (
-                <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-                  {t("cases.empty")}
-                </p>
+                <ListEmpty title={t("cases.empty")} />
               ) : (
                 <CaseList cases={showCleared ? (data?.cases ?? []) : liveCases} onCorrected={() => void load()} />
               )}

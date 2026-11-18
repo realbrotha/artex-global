@@ -6,6 +6,7 @@ import { UploadIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { ListEmpty } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,12 +62,12 @@ export function AcceptedRisksSheet({ open, onOpenChange, onChanged }: AcceptedRi
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-xl">
+      <SheetContent size="md" className="gap-0">
         <SheetHeader>
           <SheetTitle>{t("title")}</SheetTitle>
           <SheetDescription>{t("description")}</SheetDescription>
         </SheetHeader>
-        <div className="grid gap-3 px-4 pb-6">
+        <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto px-4 pb-6">
           <div className="flex flex-wrap items-center gap-2">
             <input
               ref={fileRef}
@@ -86,7 +87,7 @@ export function AcceptedRisksSheet({ open, onOpenChange, onChanged }: AcceptedRi
           </div>
           {error && <p className="whitespace-pre-wrap text-destructive text-xs">{error}</p>}
           {risks === null && !error && <Skeleton className="h-32 w-full" />}
-          {risks?.length === 0 && <p className="text-muted-foreground text-sm">{t("empty")}</p>}
+          {risks?.length === 0 && <ListEmpty title={t("empty")} />}
           {risks && risks.length > 0 && (
             <ul className="grid grid-cols-1 gap-1.5">
               {risks.map((risk) => {

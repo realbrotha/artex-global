@@ -343,7 +343,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                       value={llmProfileId || "__follow__"}
                       onValueChange={(v) => setLlmProfileId(v === "__follow__" ? "" : v)}
                     >
-                      <SelectTrigger id="llm-profile" className="h-8 w-72">
+                      <SelectTrigger id="llm-profile" className="w-72">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -370,7 +370,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                         id="max-turns"
                         type="number"
                         min={0}
-                        className="h-8 w-32"
+                        className="w-32"
                         value={maxTurns}
                         onChange={(e) => setMaxTurns(e.target.value)}
                       />
@@ -383,7 +383,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                         id="run-seconds"
                         type="number"
                         min={0}
-                        className="h-8 w-32"
+                        className="w-32"
                         value={runSecs}
                         onChange={(e) => setRunSecs(e.target.value)}
                       />
@@ -604,12 +604,8 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                 </DialogTitle>
                 <DialogDescription>
                   <span className="inline-flex items-center gap-3 text-xs">
-                    <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-red-600 dark:text-red-400">
-                      {tr("diff.removed")}
-                    </span>
-                    <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-green-600 dark:text-green-400">
-                      {tr("diff.added")}
-                    </span>
+                    <span className="rounded bg-danger/15 px-1.5 py-0.5 text-danger">{tr("diff.removed")}</span>
+                    <span className="rounded bg-success/15 px-1.5 py-0.5 text-success">{tr("diff.added")}</span>
                   </span>
                 </DialogDescription>
               </DialogHeader>
@@ -652,7 +648,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
               id="wrapup-turns"
               type="number"
               min={0}
-              className="h-8 w-32"
+              className="w-32"
               value={wrapupTurns}
               onChange={(e) => setWrapupTurns(e.target.value)}
             />
@@ -710,7 +706,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                   id="tt-turns"
                   type="number"
                   min={0}
-                  className="h-8 w-32"
+                  className="w-32"
                   value={ttTurns}
                   onChange={(e) => setTtTurns(e.target.value)}
                 />
@@ -861,8 +857,8 @@ function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
           key={idx}
           className={cn(
             "whitespace-pre-wrap px-1",
-            l.type === "del" && "bg-red-500/15 text-red-700 dark:text-red-400",
-            l.type === "add" && "bg-green-500/15 text-green-700 dark:text-green-400",
+            l.type === "del" && "bg-danger/15 text-danger",
+            l.type === "add" && "bg-success/15 text-success",
             l.type === "same" && "text-muted-foreground",
           )}
         >
@@ -1087,7 +1083,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
                 void saveBehavior({ trigger_run_mode: rm });
               }}
             >
-              <SelectTrigger size="sm" className="h-8 w-40">
+              <SelectTrigger size="sm" className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -1108,7 +1104,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
                 void saveBehavior({ trigger_merge_mode: mm });
               }}
             >
-              <SelectTrigger size="sm" className="h-8 w-44">
+              <SelectTrigger size="sm" className="w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -1128,7 +1124,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
                 id="tr-maxpar"
                 type="number"
                 min={0}
-                className="h-8 w-28"
+                className="w-28"
                 value={maxParallel}
                 onChange={(e) => setMaxParallel(e.target.value)}
                 onBlur={() => {
@@ -1172,7 +1168,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
                   id="tr-interval"
                   type="number"
                   min={1}
-                  className="h-8 w-24"
+                  className="w-24"
                   value={intervalSec}
                   onChange={(e) => setIntervalSec(e.target.value)}
                 />

@@ -12,18 +12,18 @@ import { type CaseVerdict, type SiemCase, type SiemCaseEvent, wazuhApi } from "@
 export type ListedCase = SiemCase & { sourceId: string; sourceName: string };
 
 export const severityTone: Record<string, string> = {
-  Critical: "border-red-600/50 bg-red-600/15 text-red-700 dark:text-red-300",
-  High: "border-orange-500/50 bg-orange-500/15 text-orange-700 dark:text-orange-300",
-  Medium: "border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  Low: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  Critical: "border-danger/50 bg-danger/15 text-danger",
+  High: "border-caution/50 bg-caution/15 text-caution",
+  Medium: "border-warning/50 bg-warning/15 text-warning",
+  Low: "border-info/40 bg-info/10 text-info",
   Info: "border-border bg-muted text-muted-foreground",
 };
 
 export const verdictTone: Record<CaseVerdict["verdict"], string> = {
-  breach: "border-red-600 bg-red-600 text-white",
-  suspicious: "border-orange-500/60 bg-orange-500/15 text-orange-700 dark:text-orange-300",
-  attempt: "border-amber-500/60 bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  normal: "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  breach: "border-danger bg-danger text-white",
+  suspicious: "border-caution/60 bg-caution/15 text-caution",
+  attempt: "border-warning/60 bg-warning/15 text-warning",
+  normal: "border-success/50 bg-success/10 text-success",
   false_positive: "border-border bg-muted text-muted-foreground",
 };
 
@@ -162,7 +162,7 @@ export function CaseDetail({ c, verdict, compact = false, onCorrected }: CaseDet
     <div className="grid grid-cols-1 gap-2 text-xs">
       {verdict && (
         <div className="grid grid-cols-1 gap-1.5 rounded-md bg-muted/40 p-2">
-          {verdict.stale && <p className="text-amber-600 dark:text-amber-400">{t("verdictStale")}</p>}
+          {verdict.stale && <p className="text-warning">{t("verdictStale")}</p>}
           <ul className="grid grid-cols-1 gap-0.5">
             {verdict.evidence.map((line, index) => (
               <li key={`${index}:${line}`} className="break-all font-mono text-[11px]">

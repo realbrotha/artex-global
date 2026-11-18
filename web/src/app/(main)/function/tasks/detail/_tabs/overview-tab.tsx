@@ -82,7 +82,7 @@ function StatCard({
         <CardDescription className="flex items-center gap-1.5">
           <Icon className="size-3.5" /> {label}
         </CardDescription>
-        <CardTitle className="text-2xl tabular-nums">{value}</CardTitle>
+        <CardTitle className="text-xl tabular-nums">{value}</CardTitle>
       </CardHeader>
       {sub && <CardContent className="text-xs text-muted-foreground">{sub}</CardContent>}
     </Card>
@@ -453,7 +453,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
           {/* 추가 폼 */}
           <div className="flex flex-wrap items-center gap-2">
             <Input
-              className="h-7 min-w-56 flex-1 text-sm"
+              className="min-w-56 flex-1 text-sm"
               placeholder={t("goals.addPlaceholder")}
               value={goalText}
               onChange={(e) => setGoalText(e.target.value)}
@@ -463,7 +463,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
               disabled={goalBusy}
             />
             <Input
-              className="h-7 w-32 text-sm"
+              className="w-32 text-sm"
               placeholder={t("goals.vulnPlaceholder")}
               value={goalVuln}
               onChange={(e) => setGoalVuln(e.target.value)}
@@ -475,7 +475,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
             <Button size="sm" variant="outline" disabled={goalBusy || !goalText.trim()} onClick={() => void addGoal()}>
               <PlusIcon className="size-3.5" /> {t("add")}
             </Button>
-            {goalErr && <span className="text-xs text-red-500">{goalErr}</span>}
+            {goalErr && <span className="text-xs text-danger">{goalErr}</span>}
           </div>
           {/* 목표 목록 */}
           {goals.length > 0 ? (
@@ -484,7 +484,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                 editingGoalId === g.id ? (
                   <div key={g.id} className="flex flex-wrap items-center gap-2 rounded-md border px-2.5 py-1.5">
                     <Input
-                      className="h-7 min-w-56 flex-1 text-sm"
+                      className="min-w-56 flex-1 text-sm"
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
                       onKeyDown={(e) => {
@@ -495,7 +495,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                       autoFocus
                     />
                     <Input
-                      className="h-7 w-32 text-sm"
+                      className="w-32 text-sm"
                       placeholder={t("goals.vulnPlaceholder")}
                       value={editVuln}
                       onChange={(e) => setEditVuln(e.target.value)}
@@ -506,18 +506,18 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                       disabled={goalBusy}
                     />
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={goalBusy || !editText.trim()}
                       onClick={() => void saveEditGoal(g)}
                     >
-                      <CheckIcon className="size-3.5 text-emerald-500" />
+                      <CheckIcon className="size-3.5 text-success" />
                     </Button>
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={goalBusy}
                       onClick={cancelEditGoal}
                     >
@@ -534,22 +534,22 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                       </span>
                     )}
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={goalBusy}
                       onClick={() => startEditGoal(g)}
                     >
                       <PencilIcon className="size-3.5" />
                     </Button>
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={goalBusy}
                       onClick={() => void removeGoal(g)}
                     >
-                      <Trash2Icon className="size-3.5 text-red-500" />
+                      <Trash2Icon className="size-3.5 text-danger" />
                     </Button>
                   </div>
                 ),
@@ -566,7 +566,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ShieldAlertIcon className="size-4 text-amber-500" /> {t("constraints.title")}
+            <ShieldAlertIcon className="size-4 text-warning" /> {t("constraints.title")}
             <span className="text-muted-foreground text-xs font-normal">
               {t("constraints.hint", { count: constraints.length })}
             </span>
@@ -584,7 +584,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
               <NativeSelectOption value="allow">{t("constraints.allow")}</NativeSelectOption>
             </NativeSelect>
             <Input
-              className="h-7 min-w-56 flex-1 text-sm"
+              className="min-w-56 flex-1 text-sm"
               placeholder={t("constraints.addPlaceholder")}
               value={conText}
               onChange={(e) => setConText(e.target.value)}
@@ -601,7 +601,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
             >
               <PlusIcon className="size-3.5" /> {t("add")}
             </Button>
-            {conErr && <span className="text-xs text-red-500">{conErr}</span>}
+            {conErr && <span className="text-xs text-danger">{conErr}</span>}
           </div>
           {/* 제약 목록 */}
           {constraints.length > 0 ? (
@@ -618,7 +618,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                       <NativeSelectOption value="allow">{t("constraints.allow")}</NativeSelectOption>
                     </NativeSelect>
                     <Input
-                      className="h-7 min-w-56 flex-1 text-sm"
+                      className="min-w-56 flex-1 text-sm"
                       value={editConText}
                       onChange={(e) => setEditConText(e.target.value)}
                       onKeyDown={(e) => {
@@ -629,18 +629,18 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                       autoFocus
                     />
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={conBusy || !editConText.trim()}
                       onClick={() => void saveEditConstraint(c)}
                     >
-                      <CheckIcon className="size-3.5 text-emerald-500" />
+                      <CheckIcon className="size-3.5 text-success" />
                     </Button>
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={conBusy}
                       onClick={cancelEditConstraint}
                     >
@@ -651,31 +651,29 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                   <div key={c.id} className="flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm">
                     <span
                       className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
-                        c.kind === "allow"
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                          : "bg-red-500/15 text-red-600 dark:text-red-400"
+                        c.kind === "allow" ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
                       }`}
                     >
                       {c.kind === "allow" ? t("constraints.allow") : t("constraints.deny")}
                     </span>
                     <span className="min-w-0 flex-1 break-words">{c.text}</span>
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={conBusy}
                       onClick={() => startEditConstraint(c)}
                     >
                       <PencilIcon className="size-3.5" />
                     </Button>
                     <Button
-                      size="sm"
+                      size="xs"
                       variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
+                      className="shrink-0 px-1.5"
                       disabled={conBusy}
                       onClick={() => void removeConstraint(c)}
                     >
-                      <Trash2Icon className="size-3.5 text-red-500" />
+                      <Trash2Icon className="size-3.5 text-danger" />
                     </Button>
                   </div>
                 ),
@@ -691,13 +689,13 @@ export function OverviewTab({ taskId }: { taskId: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <TargetIcon className="size-4 text-emerald-500" /> {t("coverage.title")}
+              <TargetIcon className="size-4 text-success" /> {t("coverage.title")}
               <span className="text-muted-foreground text-xs font-normal">{t("coverage.rough")}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <div className="flex items-baseline gap-3">
-              <span className="text-2xl font-semibold tabular-nums">
+              <span className="text-xl font-semibold tabular-nums">
                 {coverage.pct != null ? Math.round(coverage.pct * 100) + "%" : "—"}
               </span>
               <span className="text-muted-foreground text-sm">
@@ -724,7 +722,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CoinsIcon className="size-4 text-amber-500" /> {t("tokens.title")}
+            <CoinsIcon className="size-4 text-warning" /> {t("tokens.title")}
             <span className="text-muted-foreground text-xs font-normal">
               {t("tokens.hint", { calls: tokenTotals.calls })}
             </span>
@@ -749,7 +747,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                 </span>
                 <span className="tabular-nums">
                   <span className="text-muted-foreground">{t("tokens.cacheHitRate")} </span>
-                  <span className="font-semibold text-emerald-500">
+                  <span className="font-semibold text-success">
                     {cacheHitRate(tokenTotals.cacheRead, tokenTotals.input)}
                   </span>
                 </span>
@@ -777,7 +775,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                         <td className="py-1.5 pr-3 text-right tabular-nums">{fmtTokens(m.input_tokens)}</td>
                         <td className="py-1.5 pr-3 text-right tabular-nums">{fmtTokens(m.output_tokens)}</td>
                         <td className="py-1.5 pr-3 text-right tabular-nums">{fmtTokens(m.cache_read_tokens)}</td>
-                        <td className="py-1.5 text-right tabular-nums text-emerald-500">
+                        <td className="py-1.5 text-right tabular-nums text-success">
                           {cacheHitRate(m.cache_read_tokens, m.input_tokens)}
                         </td>
                       </tr>
@@ -795,7 +793,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ShieldCheckIcon className="size-4 text-emerald-500" /> {t("scope.title")}
+            <ShieldCheckIcon className="size-4 text-success" /> {t("scope.title")}
             <span className="text-muted-foreground text-xs font-normal">
               {t("scope.hint", { count: scope.length })}
             </span>
@@ -818,7 +816,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
               <NativeSelectOption value="company">{t("scope.kind.company")}</NativeSelectOption>
             </NativeSelect>
             <Input
-              className="h-7 w-56 text-sm"
+              className="w-56 text-sm"
               placeholder={
                 scopeKind === "company"
                   ? t("scope.placeholder.company")
@@ -845,7 +843,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
             >
               <PlusIcon className="size-3.5" /> {t("add")}
             </Button>
-            {scopeErr && <span className="text-xs text-red-500">{scopeErr}</span>}
+            {scopeErr && <span className="text-xs text-danger">{scopeErr}</span>}
           </div>
           {/* 범위 목록 */}
           {scope.length > 0 ? (
@@ -860,13 +858,8 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                   </span>
                   <span className="text-muted-foreground shrink-0 text-xs">{t(`scope.source.${row.source}`)}</span>
                   {row.task_id.toString() === taskId ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 shrink-0 px-1.5"
-                      onClick={() => void removeScope(row)}
-                    >
-                      <Trash2Icon className="size-3.5 text-red-500" />
+                    <Button size="xs" variant="ghost" className="shrink-0 px-1.5" onClick={() => void removeScope(row)}>
+                      <Trash2Icon className="size-3.5 text-danger" />
                     </Button>
                   ) : (
                     <span className="text-muted-foreground shrink-0 text-xs">{t("scope.inherited")}</span>
@@ -883,7 +876,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ActivityIcon className="size-4 text-blue-500" /> {t("heartbeat.title")}
+            <ActivityIcon className="size-4 text-info" /> {t("heartbeat.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -947,24 +940,24 @@ export function OverviewTab({ taskId }: { taskId: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <AlertTriangleIcon className="size-4 text-amber-500" /> {t("attention.title")}
+              <AlertTriangleIcon className="size-4 text-warning" /> {t("attention.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <div className="text-2xl font-semibold tabular-nums text-red-600">{taskFindings.length}</div>
+              <div className="text-xl font-semibold tabular-nums text-danger">{taskFindings.length}</div>
               <div className="text-xs text-muted-foreground">{t("attention.confirmedVuln")}</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold tabular-nums text-blue-600">{running.length}</div>
+              <div className="text-xl font-semibold tabular-nums text-info">{running.length}</div>
               <div className="text-xs text-muted-foreground">{t("attention.executing")}</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold tabular-nums">{open.length}</div>
+              <div className="text-xl font-semibold tabular-nums">{open.length}</div>
               <div className="text-xs text-muted-foreground">{t("attention.frontierPending")}</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold tabular-nums text-red-600">{blocked.length}</div>
+              <div className="text-xl font-semibold tabular-nums text-danger">{blocked.length}</div>
               <div className="text-xs text-muted-foreground">{t("attention.blockedIntent")}</div>
             </div>
           </CardContent>
@@ -973,7 +966,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <BugIcon className="size-4 text-red-500" /> {t("recent.title")}
+              <BugIcon className="size-4 text-danger" /> {t("recent.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
@@ -991,10 +984,10 @@ export function OverviewTab({ taskId }: { taskId: string }) {
       {/* Blocked intents — 오류·차단(예: LLM 네트워크 문제)된 의도. 한 번에 재실행할 수 있다: open 으로
           되돌리면 worker 가 다시 가져가 처음부터 실행한다(그래프에 쓴 데이터는 유지). 작업이 종료 상태·일시정지면 자동으로 재개된다. */}
       {blocked.length > 0 && (
-        <Card className="border-red-500/30">
+        <Card className="border-danger/30">
           <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle className="flex items-center gap-2 text-sm">
-              <AlertTriangleIcon className="size-4 text-red-500" /> {t("blocked.title")}
+              <AlertTriangleIcon className="size-4 text-danger" /> {t("blocked.title")}
               <span className="text-xs font-normal text-muted-foreground">
                 {t("blocked.hint", { count: blocked.length })}
               </span>
@@ -1010,9 +1003,9 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                 <StatusBadge domain="intent" value={i.state} />
                 <span className="min-w-0 flex-1 truncate">{i.payload}</span>
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="ghost"
-                  className="h-7 shrink-0 px-2 text-xs"
+                  className="shrink-0 px-2 text-xs"
                   disabled={rerunning.has(i.id)}
                   onClick={() => void rerunOne(i.id)}
                 >
@@ -1153,7 +1146,7 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <ShieldCheckIcon className="size-4 text-sky-500" /> {t("rule.title")}
+          <ShieldCheckIcon className="size-4 text-info" /> {t("rule.title")}
           <span className="text-muted-foreground text-xs font-normal">{t("rule.hint", { count: rules.length })}</span>
         </CardTitle>
       </CardHeader>
@@ -1172,7 +1165,7 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
             ))}
           </NativeSelect>
           <Input
-            className="h-7 min-w-56 flex-1 text-sm"
+            className="min-w-56 flex-1 text-sm"
             placeholder={placeholder}
             value={newPattern}
             onChange={(e) => setNewPattern(e.target.value)}
@@ -1182,7 +1175,7 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
             disabled={busy}
           />
           <Input
-            className="h-7 w-36 text-sm"
+            className="w-36 text-sm"
             placeholder={t("rule.notePlaceholder")}
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
@@ -1191,7 +1184,7 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
           <Button size="sm" variant="outline" disabled={busy || !newPattern.trim()} onClick={() => void add()}>
             <PlusIcon className="size-3.5" /> {t("add")}
           </Button>
-          {err && <span className="text-xs text-red-500">{err}</span>}
+          {err && <span className="text-xs text-danger">{err}</span>}
         </div>
         {/* 규칙 목록 */}
         {rules.length > 0 ? (
@@ -1219,7 +1212,7 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
                     ))}
                   </NativeSelect>
                   <Input
-                    className="h-7 min-w-56 flex-1 text-sm"
+                    className="min-w-56 flex-1 text-sm"
                     value={editPattern}
                     onChange={(e) => setEditPattern(e.target.value)}
                     onKeyDown={(e) => {
@@ -1230,25 +1223,25 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
                     autoFocus
                   />
                   <Input
-                    className="h-7 w-36 text-sm"
+                    className="w-36 text-sm"
                     placeholder={t("rule.notePlaceholder")}
                     value={editNote}
                     onChange={(e) => setEditNote(e.target.value)}
                     disabled={busy}
                   />
                   <Button
-                    size="sm"
+                    size="xs"
                     variant="ghost"
-                    className="h-6 shrink-0 px-1.5"
+                    className="shrink-0 px-1.5"
                     disabled={busy || !editPattern.trim()}
                     onClick={() => void saveEdit(r)}
                   >
-                    <CheckIcon className="size-3.5 text-emerald-500" />
+                    <CheckIcon className="size-3.5 text-success" />
                   </Button>
                   <Button
-                    size="sm"
+                    size="xs"
                     variant="ghost"
-                    className="h-6 shrink-0 px-1.5"
+                    className="shrink-0 px-1.5"
                     disabled={busy}
                     onClick={() => setEditId(null)}
                   >
@@ -1259,9 +1252,7 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
                 <div key={r.id} className="flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm">
                   <span
                     className={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
-                      r.action === "allow"
-                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                        : "bg-red-500/15 text-red-600 dark:text-red-400"
+                      r.action === "allow" ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
                     }`}
                   >
                     {r.action === "allow" ? t("rule.allow") : t("rule.block")}
@@ -1273,22 +1264,22 @@ function TaskInterceptRulesCard({ taskId }: { taskId: string }) {
                   )}
                   <Switch checked={r.enabled} onCheckedChange={() => void toggle(r)} />
                   <Button
-                    size="sm"
+                    size="xs"
                     variant="ghost"
-                    className="h-6 shrink-0 px-1.5"
+                    className="shrink-0 px-1.5"
                     disabled={busy}
                     onClick={() => startEdit(r)}
                   >
                     <PencilIcon className="size-3.5" />
                   </Button>
                   <Button
-                    size="sm"
+                    size="xs"
                     variant="ghost"
-                    className="h-6 shrink-0 px-1.5"
+                    className="shrink-0 px-1.5"
                     disabled={busy}
                     onClick={() => void remove(r)}
                   >
-                    <Trash2Icon className="size-3.5 text-red-500" />
+                    <Trash2Icon className="size-3.5 text-danger" />
                   </Button>
                 </div>
               ),

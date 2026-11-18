@@ -6,16 +6,9 @@ import { RotateCcwIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DrawerFooter } from "@/components/page";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
@@ -28,7 +21,7 @@ interface FindingRetestDialogProps {
   onStarted?: (retest: FindingRetest) => void;
 }
 
-// 仅在打开时挂载，关闭后清空说明；列表与详情共用提交锁及错误处理，启动后留在当前页。
+// 오른쪽 드로어(sm). 仅在打开时挂载，关闭后清空说明；列表与详情共用提交锁及错误处理，启动后留在当前页。
 export function FindingRetestDialog({ findingId, findingName, onClose, onStarted }: FindingRetestDialogProps) {
   const t = useTranslations("retest.dialog");
   const notesId = React.useId();
@@ -54,40 +47,44 @@ export function FindingRetestDialog({ findingId, findingName, onClose, onStarted
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && !submitLock.current && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("title", { id: findingId })}</DialogTitle>
-          <DialogDescription className="break-words">
+    <Sheet open onOpenChange={(open) => !open && !submitLock.current && onClose()}>
+      <SheetContent size="sm" className="gap-0">
+        <SheetHeader className="border-b">
+          <SheetTitle>{t("title", { id: findingId })}</SheetTitle>
+          <SheetDescription className="break-words">
             {findingName ? <span className="mb-2 block">{findingName}</span> : null}
             {t("desc")}
-          </DialogDescription>
-        </DialogHeader>
-        <FieldGroup>
-          <Field data-disabled={submitting}>
-            <FieldLabel htmlFor={notesId}>{t("notesLabel")}</FieldLabel>
-            <Textarea
-              id={notesId}
-              value={notes}
-              maxLength={4000}
-              rows={4}
-              disabled={submitting}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("notesPlaceholder")}
-            />
-            <FieldDescription>{t("notesDesc")}</FieldDescription>
-          </Field>
-        </FieldGroup>
-        <DialogFooter>
-          <Button variant="outline" disabled={submitting} onClick={onClose}>
-            {t("cancel")}
-          </Button>
-          <Button disabled={submitting} onClick={() => void start()}>
-            {submitting ? <Spinner data-icon="inline-start" /> : <RotateCcwIcon data-icon="inline-start" />}
-            {submitting ? t("submitting") : t("submit")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <FieldGroup>
+            <Field data-disabled={submitting}>
+              <FieldLabel htmlFor={notesId}>{t("notesLabel")}</FieldLabel>
+              <Textarea
+                id={notesId}
+                value={notes}
+                maxLength={4000}
+                rows={4}
+                disabled={submitting}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t("notesPlaceholder")}
+              />
+              <FieldDescription>{t("notesDesc")}</FieldDescription>
+            </Field>
+          </FieldGroup>
+        </div>
+        <DrawerFooter
+          onCancel={onClose}
+          onConfirm={() => void start()}
+          pending={submitting}
+          confirmLabel={
+            <>
+              {submitting ? <Spinner data-icon="inline-start" /> : <RotateCcwIcon data-icon="inline-start" />}
+              {submitting ? t("submitting") : t("submit")}
+            </>
+          }
+        />
+      </SheetContent>
+    </Sheet>
   );
 }

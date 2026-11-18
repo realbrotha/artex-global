@@ -6,14 +6,13 @@ import { PlayIcon, PlusIcon, RotateCcwIcon, SaveIcon, SearchIcon, Trash2Icon } f
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, ListEmpty, PageHeader } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -189,7 +188,7 @@ function ToolEditor({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4">
         {trafficGated && (
-          <div className="border-amber-500/40 bg-amber-500/10 text-muted-foreground rounded-md border px-3 py-2 text-xs">
+          <div className="border-warning/40 bg-warning/10 text-muted-foreground rounded-md border px-3 py-2 text-xs">
             {t.rich("trafficGatedNote", { b: (c) => <b>{c}</b> })}
           </div>
         )}
@@ -278,17 +277,25 @@ function ToolEditor({
             </div>
           ))}
         </div>
+
+        {/* 기본값 복원은 저장과 별개인 보조 작업이라 폼 끝에 둔다. */}
+        <div className="pb-4">
+          <Button variant="outline" onClick={reset}>
+            <RotateCcwIcon /> {t("resetDefault")}
+          </Button>
+        </div>
       </div>
 
-      <Separator className="mt-4" />
-      <div className="flex flex-wrap gap-2 p-4">
-        <Button size="sm" onClick={save} disabled={saving}>
-          <SaveIcon /> {t("save")}
-        </Button>
-        <Button size="sm" variant="outline" onClick={reset}>
-          <RotateCcwIcon /> {t("resetDefault")}
-        </Button>
-      </div>
+      <DrawerFooter
+        onCancel={onClose}
+        confirmLabel={
+          <>
+            <SaveIcon /> {t("save")}
+          </>
+        }
+        onConfirm={save}
+        pending={saving}
+      />
     </div>
   );
 }
@@ -301,7 +308,7 @@ function ToolGridCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="hover:border-primary/50 hover:bg-muted/40 focus-visible:ring-ring flex flex-col gap-2 rounded-lg border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+      className="hover:border-primary/50 hover:bg-muted/40 focus-visible:ring-ring flex flex-col gap-2 rounded-xl border bg-card p-4 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm font-medium">{tool.key}</span>
@@ -320,7 +327,7 @@ function ToolGridCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
           </Badge>
         )}
         {!tool.enabled && (
-          <Badge variant="outline" className="text-destructive px-1.5 py-0 text-[10px]">
+          <Badge variant="outline" className="text-danger px-1.5 py-0 text-[10px]">
             {t("badgeDisabled")}
           </Badge>
         )}
@@ -402,7 +409,14 @@ export default function ToolsPage() {
   const openTool = (tool: Tool) => (tool.system ? setSelectedKey(tool.key) : setCustomEdit(tool));
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button onClick={() => setCustomEdit("new")}>
+            <PlusIcon /> {t("newCustom")}
+          </Button>
+        }
+      />
       <Tabs defaultValue="system">
         {/* 탭과 검색을 한 줄에 둔다. */}
         <div className="flex flex-wrap items-center gap-2">
@@ -410,10 +424,10 @@ export default function ToolsPage() {
             <TabsTrigger value="system">{t("tabSystem")}</TabsTrigger>
             <TabsTrigger value="custom">{t("tabCustom")}</TabsTrigger>
           </TabsList>
-          <div className="relative ml-auto w-64">
+          <div className="relative w-80">
             <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
             <Input
-              className="h-8 pl-8 text-sm"
+              className="pl-8"
               placeholder={t("searchPlaceholder")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -421,71 +435,46 @@ export default function ToolsPage() {
           </div>
         </div>
 
-        <TabsContent value="system">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("tabSystem")}</CardTitle>
-              <CardDescription>
-                {query.trim()
-                  ? t("systemMatched", { shown: systemTools.length, total: allSystemCount })
-                  : t("systemTotal", { total: allSystemCount })}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {systemTools.length === 0 ? (
-                <p className="text-muted-foreground py-6 text-center text-sm">
-                  {query.trim() ? t("systemNoMatch") : t("systemEmpty")}
-                </p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {systemTools.map((tool) => (
-                    <ToolGridCard key={tool.key} tool={tool} onClick={() => openTool(tool)} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="system" className="flex flex-col gap-2">
+          <p className="text-muted-foreground text-xs">
+            {query.trim()
+              ? t("systemMatched", { shown: systemTools.length, total: allSystemCount })
+              : t("systemTotal", { total: allSystemCount })}
+          </p>
+          {systemTools.length === 0 ? (
+            <ListEmpty title={query.trim() ? t("systemNoMatch") : t("systemEmpty")} />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {systemTools.map((tool) => (
+                <ToolGridCard key={tool.key} tool={tool} onClick={() => openTool(tool)} />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
-        <TabsContent value="custom">
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <CardTitle>{t("tabCustom")}</CardTitle>
-                  <CardDescription>
-                    {query.trim()
-                      ? t("customMatched", { shown: customTools.length, total: allCustomCount })
-                      : t("customTotal", { total: allCustomCount })}
-                  </CardDescription>
-                </div>
-                <Button size="sm" onClick={() => setCustomEdit("new")}>
-                  <PlusIcon /> {t("newCustom")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {customTools.length === 0 ? (
-                <p className="text-muted-foreground py-6 text-center text-sm">
-                  {query.trim() ? t("customNoMatch") : t("customEmpty")}
-                </p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {customTools.map((tool) => (
-                    <ToolGridCard key={tool.key} tool={tool} onClick={() => openTool(tool)} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="custom" className="flex flex-col gap-2">
+          <p className="text-muted-foreground text-xs">
+            {query.trim()
+              ? t("customMatched", { shown: customTools.length, total: allCustomCount })
+              : t("customTotal", { total: allCustomCount })}
+          </p>
+          {customTools.length === 0 ? (
+            <ListEmpty title={query.trim() ? t("customNoMatch") : t("customEmpty")} />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {customTools.map((tool) => (
+                <ToolGridCard key={tool.key} tool={tool} onClick={() => openTool(tool)} />
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelectedKey(null)}>
-        <SheetContent side="right" className="gap-0 p-0 data-[side=right]:w-[30vw] data-[side=right]:sm:max-w-[30vw]">
+        <SheetContent side="right" size="sm">
           {selected && (
             <>
-              <SheetHeader className="px-4">
+              <SheetHeader>
                 <SheetTitle className="font-mono">{selected.key}</SheetTitle>
                 <SheetDescription>{t("editSheetDesc")}</SheetDescription>
               </SheetHeader>
@@ -738,11 +727,8 @@ function CustomToolDialog({
 
   return (
     <Sheet open={!!edit} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex flex-col gap-0 p-0 data-[side=right]:w-[45vw] data-[side=right]:sm:max-w-[45vw] data-[side=right]:min-w-[480px]"
-      >
-        <SheetHeader className="px-4">
+      <SheetContent side="right" size="md">
+        <SheetHeader>
           <SheetTitle>{sheetTitle}</SheetTitle>
           <SheetDescription>{t("customSheetDesc")}</SheetDescription>
         </SheetHeader>
@@ -934,7 +920,7 @@ function CustomToolDialog({
                 <pre
                   className={
                     "max-h-64 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2 font-mono text-xs " +
-                    (testResult.is_error ? "text-destructive" : "")
+                    (testResult.is_error ? "text-danger" : "")
                   }
                 >
                   {testResult.output || t("noOutput")}
@@ -942,19 +928,26 @@ function CustomToolDialog({
               )}
             </div>
           )}
-        </div>
-
-        <Separator />
-        <div className="flex items-center gap-2 p-4">
-          <Button size="sm" onClick={save} disabled={saving}>
-            <SaveIcon /> {isNew ? t("create") : t("save")}
-          </Button>
+          {/* 삭제는 하단 버튼 줄(취소·저장)과 분리해 폼 끝에 둔다. */}
           {!isNew && (
-            <Button size="sm" variant="outline" className="text-destructive" onClick={del}>
-              <Trash2Icon /> {t("delete")}
-            </Button>
+            <div>
+              <Button variant="outline" className="text-danger" onClick={del}>
+                <Trash2Icon /> {t("delete")}
+              </Button>
+            </div>
           )}
         </div>
+
+        <DrawerFooter
+          onCancel={onClose}
+          confirmLabel={
+            <>
+              <SaveIcon /> {isNew ? t("create") : t("save")}
+            </>
+          }
+          onConfirm={save}
+          pending={saving}
+        />
       </SheetContent>
     </Sheet>
   );

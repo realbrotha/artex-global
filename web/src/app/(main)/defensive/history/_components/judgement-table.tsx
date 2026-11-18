@@ -27,7 +27,7 @@ export function JudgementTable({ judgements, onOpenRun }: JudgementTableProps) {
   const [open, setOpen] = React.useState<number | null>(null);
 
   return (
-    <div className="overflow-x-auto rounded-lg border text-xs">
+    <div className="overflow-x-auto rounded-xl border bg-card text-xs">
       <div className="min-w-[56rem]">
         <div className={cn(COLUMNS, "border-b bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground")}>
           <span />
@@ -75,7 +75,7 @@ export function JudgementTable({ judgements, onOpenRun }: JudgementTableProps) {
                   <span className="truncate text-muted-foreground" title={j.model}>
                     {j.model}
                   </span>
-                  <span className={cn("text-right tabular-nums", j.tries > 1 && "text-amber-600 dark:text-amber-400")}>
+                  <span className={cn("text-right tabular-nums", j.tries > 1 && "text-warning")}>
                     {t("tries", { count: j.tries })}
                   </span>
                   <span className="text-right text-muted-foreground tabular-nums">

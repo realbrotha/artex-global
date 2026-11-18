@@ -26,13 +26,13 @@ type Kind = CoverageGraphNode["kind"];
 type KindMeta = { icon: LucideIcon; iconBg: string; hex: string; size: number };
 
 const kindMeta: Record<Kind, KindMeta> = {
-  company: { icon: Building2, iconBg: "bg-slate-500", hex: "#64748b", size: 46 },
-  root_domain: { icon: Globe, iconBg: "bg-indigo-500", hex: "#6366f1", size: 38 },
-  subdomain: { icon: Waypoints, iconBg: "bg-blue-500", hex: "#3b82f6", size: 30 },
-  ip: { icon: Server, iconBg: "bg-cyan-600", hex: "#0891b2", size: 28 },
-  service: { icon: Radio, iconBg: "bg-amber-500", hex: "#f59e0b", size: 26 },
-  app: { icon: AppWindow, iconBg: "bg-fuchsia-500", hex: "#d946ef", size: 26 },
-  endpoint: { icon: Link2, iconBg: "bg-rose-500", hex: "#f43f5e", size: 20 },
+  company: { icon: Building2, iconBg: "bg-muted-foreground", hex: "#64748b", size: 46 },
+  root_domain: { icon: Globe, iconBg: "bg-info", hex: "#6366f1", size: 38 },
+  subdomain: { icon: Waypoints, iconBg: "bg-info", hex: "#3b82f6", size: 30 },
+  ip: { icon: Server, iconBg: "bg-info", hex: "#0891b2", size: 28 },
+  service: { icon: Radio, iconBg: "bg-warning", hex: "#f59e0b", size: 26 },
+  app: { icon: AppWindow, iconBg: "bg-primary", hex: "#d946ef", size: 26 },
+  endpoint: { icon: Link2, iconBg: "bg-danger", hex: "#f43f5e", size: 20 },
 };
 
 // G6 节点图标用平台一致的 lucide 图标：把 lucide 的 SVG 路径（v1.22）渲染成白色描边的
@@ -234,17 +234,60 @@ function toG6Nodes(
 // 回调形参用 unknown 满足 G6 签名，内部用 nd() 强转回我们的顶层结构。
 const nd = (d: unknown) => d as G6NodeDatum;
 
-// 已测=实色高亮；范围内未测=灰；范围外/折叠=更淡的灰 + 虚线描边。
-function nodeFill(d: G6NodeDatum): string {
-  if (d.fold) return "#f1f5f9";
-  if (!d.inScope) return "#e2e8f0";
+// 그래프 색 (그래프 계열 색 예외, CLAUDE.md 1.1). G6 캔버스는 CSS 클래스를 못 받아 테마별 값을 둔다.
+// 테스트한 자산 = 종류 색, 범위 안 미테스트 = 회색, 범위 밖·접힘 = 더 옅은 회색 + 점선.
+const GRAPH_TONE = {
+  light: {
+    background: "#f0f2f7",
+    fold: "#f1f5f9",
+    outOfScope: "#e2e8f0",
+    untested: "#94a3b8",
+    faintStroke: "#94a3b8",
+    testedStroke: "#0f766e",
+    stroke: "#64748b",
+    label: "#475569",
+    labelBg: "rgba(255,255,255,0.75)",
+    edge: "#cbd5e1",
+  },
+  dark: {
+    background: "#0b0b0e",
+    fold: "#27272a",
+    outOfScope: "#3f3f46",
+    untested: "#52525b",
+    faintStroke: "#71717a",
+    testedStroke: "#2dd4bf",
+    stroke: "#a1a1aa",
+    label: "#d4d4d8",
+    labelBg: "rgba(24,24,27,0.8)",
+    edge: "#3f3f46",
+  },
+} as const;
+type GraphTone = (typeof GRAPH_TONE)[keyof typeof GRAPH_TONE];
+
+function nodeFill(d: G6NodeDatum, tone: GraphTone): string {
+  if (d.fold) return tone.fold;
+  if (!d.inScope) return tone.outOfScope;
   if (d.tested) return kindMeta[d.kind].hex;
-  return "#94a3b8";
+  return tone.untested;
 }
-function nodeStroke(d: G6NodeDatum): string {
-  if (d.fold || !d.inScope) return "#94a3b8";
-  if (d.tested) return "#0f766e";
-  return "#64748b";
+function nodeStroke(d: G6NodeDatum, tone: GraphTone): string {
+  if (d.fold || !d.inScope) return tone.faintStroke;
+  if (d.tested) return tone.testedStroke;
+  return tone.stroke;
+}
+
+// 현재 다크 테마인지. <html> 의 dark 클래스가 바뀌면 다시 그린다.
+function useIsDark(): boolean {
+  const [dark, setDark] = React.useState(false);
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const read = () => setDark(root.classList.contains("dark"));
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
 }
 
 // ---------------------------------------------------------------------------
@@ -323,7 +366,7 @@ function AssetSheet({
   }, [node, taskId]);
   return (
     <Sheet open={node !== null} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 data-[side=right]:sm:max-w-md">
+      <SheetContent side="right" size="sm" className="gap-0 p-0">
         {node && meta && Icon && (
           <>
             <SheetHeader className="border-b p-4">
@@ -349,12 +392,12 @@ function AssetSheet({
                   <DetailRow label={t("sheet.attrTestState")}>
                     {node.in_scope ? (
                       node.tested ? (
-                        <span className="text-emerald-600 dark:text-emerald-400">{t("sheet.tested")}</span>
+                        <span className="text-success">{t("sheet.tested")}</span>
                       ) : (
-                        <span className="text-neutral-500">{t("sheet.untested")}</span>
+                        <span className="text-muted-foreground">{t("sheet.untested")}</span>
                       )
                     ) : (
-                      <span className="text-neutral-400">{t("sheet.outOfScope")}</span>
+                      <span className="text-muted-foreground">{t("sheet.outOfScope")}</span>
                     )}
                   </DetailRow>
                   <DetailRow label={t("sheet.attrDomain")}>{node.domain}</DetailRow>
@@ -412,7 +455,7 @@ function FoldSheet({
   const kindLabel = fold ? t(`kind.${fold.kind}`) : "";
   return (
     <Sheet open={fold !== null} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 data-[side=right]:sm:max-w-md">
+      <SheetContent side="right" size="sm" className="gap-0 p-0">
         {fold && meta && Icon && (
           <>
             <SheetHeader className="border-b p-4">
@@ -433,7 +476,7 @@ function FoldSheet({
                     <span
                       className={cn(
                         "flex size-5 shrink-0 items-center justify-center rounded",
-                        n.tested ? meta.iconBg : "bg-neutral-400 dark:bg-neutral-600",
+                        n.tested ? meta.iconBg : "bg-muted-foreground",
                       )}
                     >
                       <Icon className="size-3 text-white" />
@@ -441,7 +484,7 @@ function FoldSheet({
                     <span className="min-w-0 flex-1 truncate font-mono text-xs" title={n.label}>
                       {n.label}
                     </span>
-                    {n.tested && <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />}
+                    {n.tested && <span className="size-1.5 shrink-0 rounded-full bg-success" />}
                   </button>
                 ))}
               </div>
@@ -544,8 +587,11 @@ function GraphInner({ taskId, coverageEnabled = true }: { taskId: string; covera
     });
   }, []);
 
-  // 建图（一次）。动态 import 避开 SSR/静态导出期的 window 依赖。
+  const dark = useIsDark();
+
+  // 建图. 테마가 바뀌면 다시 만든다. 动态 import 避开 SSR/静态导出期的 window 依赖。
   React.useEffect(() => {
+    const tone = dark ? GRAPH_TONE.dark : GRAPH_TONE.light;
     let destroyed = false;
     let graph: G6Graph | null = null;
     void (async () => {
@@ -555,12 +601,12 @@ function GraphInner({ taskId, coverageEnabled = true }: { taskId: string; covera
         container: containerRef.current,
         autoResize: true,
         autoFit: "view",
-        background: "#f0f2f7",
+        background: tone.background,
         node: {
           style: {
             size: (d: unknown) => nd(d).size,
-            fill: (d: unknown) => nodeFill(nd(d)),
-            stroke: (d: unknown) => nodeStroke(nd(d)),
+            fill: (d: unknown) => nodeFill(nd(d), tone),
+            stroke: (d: unknown) => nodeStroke(nd(d), tone),
             lineWidth: (d: unknown) => (nd(d).fold || !nd(d).inScope ? 1 : 1.5),
             lineDash: (d: unknown) => (nd(d).fold || !nd(d).inScope ? [3, 3] : [0]),
             iconSrc: (d: unknown) => (nd(d).fold ? FOLD_ICON : KIND_ICON[nd(d).kind]),
@@ -569,15 +615,15 @@ function GraphInner({ taskId, coverageEnabled = true }: { taskId: string; covera
             labelText: (d: unknown) => nd(d).lbl,
             labelFontSize: 10,
             labelPlacement: "bottom",
-            labelFill: "#475569",
+            labelFill: tone.label,
             labelBackground: true,
-            labelBackgroundFill: "rgba(255,255,255,0.75)",
+            labelBackgroundFill: tone.labelBg,
             labelBackgroundRadius: 3,
             labelPadding: [1, 3],
           },
         },
         edge: {
-          style: { stroke: "#cbd5e1", lineWidth: 1, endArrow: false },
+          style: { stroke: tone.edge, lineWidth: 1, endArrow: false },
         },
         layout: {
           type: "d3-force",
@@ -620,7 +666,7 @@ function GraphInner({ taskId, coverageEnabled = true }: { taskId: string; covera
       graph?.destroy();
       graphRef.current = null;
     };
-  }, [applyData]);
+  }, [applyData, dark]);
 
   // 可见集合变化 → 重新灌数据 + 布局。sig 只作为重排触发器（applyData 读 gDataRef）。
   // biome-ignore lint/correctness/useExhaustiveDependencies: sig 是刻意的重排触发依赖
@@ -661,8 +707,7 @@ function GraphInner({ taskId, coverageEnabled = true }: { taskId: string; covera
               {coverageEnabled && (
                 <>
                   {" "}
-                  · {t("graph.tested")}{" "}
-                  <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{tested}</span>
+                  · {t("graph.tested")} <span className="font-semibold tabular-nums text-success">{tested}</span>
                 </>
               )}
             </span>
@@ -691,15 +736,15 @@ function GraphInner({ taskId, coverageEnabled = true }: { taskId: string; covera
           {coverageEnabled && (
             <>
               <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-emerald-500" /> {t("graph.legendTested")}
+                <span className="size-3 rounded-full bg-success" /> {t("graph.legendTested")}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-neutral-400" /> {t("graph.legendUntested")}
+                <span className="size-3 rounded-full bg-muted-foreground" /> {t("graph.legendUntested")}
               </span>
             </>
           )}
           <span className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full border border-dashed border-neutral-400 bg-neutral-200" />{" "}
+            <span className="size-3 rounded-full border border-dashed border-border bg-muted" />{" "}
             {t("graph.legendOutOfScope")}
           </span>
         </div>

@@ -7,29 +7,9 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { AgentEditor } from "@/components/agent-editor";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { DrawerFooter, ListEmpty, PageHeader, useConfirm } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -43,7 +23,17 @@ import type { Agent } from "@/lib/types";
 function AgentGridCard({ agent, onOpen, onDeleted }: { agent: Agent; onOpen: () => void; onDeleted: () => void }) {
   const t = useTranslations("agentsPage");
   const labels = useAgentLabels();
+  const confirm = useConfirm();
   async function del() {
+    if (
+      !(await confirm({
+        title: t("deleteTitle", { name: agent.name }),
+        description: t("deleteDesc"),
+        confirmLabel: t("delete"),
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await api.deleteAgent(agent.key);
       toast.success(t("deleted", { name: agent.name }));
@@ -53,32 +43,28 @@ function AgentGridCard({ agent, onOpen, onDeleted }: { agent: Agent; onOpen: () 
     }
   }
   return (
-    <div className="hover:border-primary/50 group relative flex flex-col gap-2 rounded-lg border p-4 transition-colors">
+    <div className="group relative flex flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-primary/50">
       <button type="button" onClick={onOpen} className="flex flex-col gap-2 text-left">
         <div className="flex flex-wrap items-center gap-2">
-          <Bot className="text-muted-foreground size-4" />
-          <span className="text-sm font-medium">{labels.name(agent)}</span>
-          <span className="text-muted-foreground font-mono text-xs">{agent.key}</span>
+          <Bot className="size-4 text-muted-foreground" />
+          <span className="font-medium text-sm">{labels.name(agent)}</span>
+          <span className="font-mono text-muted-foreground text-xs">{agent.key}</span>
           {agent.builtin ? (
-            <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-              {t("badgeBuiltin")}
-            </Badge>
+            <Badge variant="secondary">{t("badgeBuiltin")}</Badge>
           ) : (
-            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-              {t("badgeCustom")}
-            </Badge>
+            <Badge variant="outline">{t("badgeCustom")}</Badge>
           )}
           {!agent.enabled && (
-            <Badge variant="outline" className="text-destructive px-1.5 py-0 text-[10px]">
+            <Badge variant="outline" className="text-danger">
               {t("badgeDisabled")}
             </Badge>
           )}
         </div>
         {/* labels.description 은 string 을 돌려주므로(빈 설명은 "") || 로 폴백 문구를 붙인다. */}
-        <p className="text-muted-foreground line-clamp-2 min-h-8 text-xs">
+        <p className="line-clamp-2 min-h-8 text-muted-foreground text-xs">
           {labels.description(agent) || t("noDescription")}
         </p>
-        <div className="text-muted-foreground flex flex-wrap gap-1.5 text-[10px]">
+        <div className="flex flex-wrap gap-1.5 text-muted-foreground text-xs">
           <span className="rounded border px-1.5 py-0.5">MCP {agent.mcp_count ?? 0}</span>
           <span className="rounded border px-1.5 py-0.5">Skill {agent.skill_count ?? 0}</span>
           <span className="rounded border px-1.5 py-0.5">
@@ -87,35 +73,32 @@ function AgentGridCard({ agent, onOpen, onDeleted }: { agent: Agent; onOpen: () 
         </div>
       </button>
       {!agent.builtin && (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-muted-foreground hover:text-destructive absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100"
-            >
-              <Trash2Icon className="size-3.5" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t("deleteTitle", { name: agent.name })}</AlertDialogTitle>
-              <AlertDialogDescription>{t("deleteDesc")}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-              <AlertDialogAction onClick={del}>{t("delete")}</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={t("delete")}
+          title={t("delete")}
+          onClick={del}
+          className="absolute top-2 right-2 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+        >
+          <Trash2Icon className="size-3.5" />
+        </Button>
       )}
     </div>
   );
 }
 
-function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) {
+// 사용자 정의 에이전트 만들기 드로어.
+function CreateAgentSheet({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: (key: string) => void;
+}) {
   const t = useTranslations("agentsPage");
-  const [open, setOpen] = React.useState(false);
   const [key, setKey] = React.useState("");
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -126,7 +109,7 @@ function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) 
     try {
       const a = await api.createAgent(key.trim(), name.trim(), description.trim());
       toast.success(t("created", { name: a.name }));
-      setOpen(false);
+      onOpenChange(false);
       setKey("");
       setName("");
       setDescription("");
@@ -142,18 +125,13 @@ function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) 
   const canCreate = keyOk && name.trim().length > 0 && !busy;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <PlusIcon /> {t("new")}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("createTitle")}</DialogTitle>
-          <DialogDescription>{t("createDesc")}</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="sm">
+        <SheetHeader>
+          <SheetTitle>{t("createTitle")}</SheetTitle>
+          <SheetDescription>{t("createDesc")}</SheetDescription>
+        </SheetHeader>
+        <div className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto px-4">
           <div className="grid gap-1.5">
             <Label htmlFor="agent-key">Key</Label>
             <Input
@@ -163,7 +141,7 @@ function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) 
               onChange={(e) => setKey(e.target.value)}
               className="font-mono"
             />
-            {key.length > 0 && !keyOk && <span className="text-destructive text-xs">{t("keyError")}</span>}
+            {key.length > 0 && !keyOk && <span className="text-danger text-xs">{t("keyError")}</span>}
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="agent-name">{t("nameLabel")}</Label>
@@ -185,13 +163,15 @@ function CreateAgentDialog({ onCreated }: { onCreated: (key: string) => void }) 
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={create} disabled={!canCreate}>
-            {t("create")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <DrawerFooter
+          onCancel={() => onOpenChange(false)}
+          confirmLabel={t("create")}
+          onConfirm={create}
+          confirmDisabled={!canCreate}
+          pending={busy}
+        />
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -200,6 +180,7 @@ export default function AgentsPage() {
   const labels = useAgentLabels();
   const [agents, setAgents] = React.useState<Agent[]>([]);
   const [editKey, setEditKey] = React.useState<string | null>(null);
+  const [createOpen, setCreateOpen] = React.useState(false);
 
   const reload = React.useCallback(() => {
     api
@@ -214,50 +195,45 @@ export default function AgentsPage() {
   const editing = agents.find((a) => a.key === editKey) ?? null;
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div className="flex items-start justify-end gap-3">
-        <CreateAgentDialog
-          onCreated={(key) => {
-            reload();
-            setEditKey(key);
-          }}
-        />
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <PlusIcon /> {t("new")}
+          </Button>
+        }
+      >
+        <span className="text-muted-foreground text-sm tabular-nums">{t("countTotal", { count: agents.length })}</span>
+      </PageHeader>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("listTitle")}</CardTitle>
-          <CardDescription>{t("countTotal", { count: agents.length })}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {agents.length === 0 ? (
-            <p className="text-muted-foreground py-6 text-center text-sm">{t("empty")}</p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {agents.map((a) => (
-                <AgentGridCard key={a.key} agent={a} onOpen={() => setEditKey(a.key)} onDeleted={reload} />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {agents.length === 0 ? (
+        <ListEmpty title={t("empty")} />
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {agents.map((a) => (
+            <AgentGridCard key={a.key} agent={a} onOpen={() => setEditKey(a.key)} onDeleted={reload} />
+          ))}
+        </div>
+      )}
+
+      <CreateAgentSheet
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={(key) => {
+          reload();
+          setEditKey(key);
+        }}
+      />
 
       <Sheet open={!!editing} onOpenChange={(o) => !o && setEditKey(null)}>
-        <SheetContent
-          side="right"
-          className="flex flex-col gap-0 p-0 data-[side=right]:w-[45vw] data-[side=right]:sm:max-w-[45vw]"
-        >
+        <SheetContent side="right" size="md">
           {editing && (
             <>
               <SheetHeader className="px-4">
                 <SheetTitle className="flex items-center gap-2">
                   {labels.name(editing)}
-                  <span className="text-muted-foreground font-mono text-xs">{editing.key}</span>
-                  {!editing.builtin && (
-                    <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                      {t("badgeCustom")}
-                    </Badge>
-                  )}
+                  <span className="font-mono text-muted-foreground text-xs">{editing.key}</span>
+                  {!editing.builtin && <Badge variant="outline">{t("badgeCustom")}</Badge>}
                 </SheetTitle>
                 <SheetDescription>{labels.description(editing) || t("editorDescFallback")}</SheetDescription>
               </SheetHeader>

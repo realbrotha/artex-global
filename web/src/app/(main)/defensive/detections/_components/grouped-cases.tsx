@@ -51,7 +51,7 @@ export function GroupedCases({ groups, by, selected, onSelect, checked, onCheck 
   const moreButton = "w-full border-t px-3 py-2 text-center text-muted-foreground text-xs hover:bg-muted";
 
   return (
-    <div className="@container overflow-x-auto rounded-lg border text-xs">
+    <div className="overflow-x-auto rounded-xl border bg-card text-xs">
       <div className="min-w-[42rem]">
         <div className={cn(COLUMNS, "border-b bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground")}>
           <input

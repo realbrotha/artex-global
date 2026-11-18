@@ -16,11 +16,12 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, ListEmpty, PageHeader, TableSkeletonRows, useConfirm } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { getDateLocale } from "@/i18n/datetime";
@@ -53,6 +54,7 @@ type EditState = {
 
 export default function WorkspacePage() {
   const t = useTranslations("workspace");
+  const confirm = useConfirm();
   const [path, setPath] = React.useState("");
   const [entries, setEntries] = React.useState<WorkspaceEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -114,8 +116,13 @@ export default function WorkspacePage() {
       });
   };
 
-  const del = (e: WorkspaceEntry) => {
-    if (!window.confirm(t("confirmDelete", { kind: e.dir ? "dir" : "file", name: e.name }))) return;
+  const del = async (e: WorkspaceEntry) => {
+    const ok = await confirm({
+      title: t("confirmDelete", { kind: e.dir ? "dir" : "file", name: e.name }),
+      confirmLabel: t("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
     api
       .workspaceDelete(e.path)
       .then(() => {
@@ -155,9 +162,22 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* 헤더: 경로(브레드크럼) + 동작 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setMkdirOpen(true)}>
+              <FolderPlusIcon /> {t("newFolder")}
+            </Button>
+            <Button onClick={() => uploadRef.current?.click()}>
+              <UploadIcon /> {t("upload")}
+            </Button>
+            <input ref={uploadRef} type="file" multiple className="hidden" onChange={(e) => doUpload(e.target.files)} />
+          </>
+        }
+      />
+      {/* 도구 줄: 경로(브레드크럼) + 새로고침 */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* 폴더 경로. 루트는 아이콘으로만 두어 제목처럼 보이지 않게 한다. */}
         <div className="flex min-w-0 items-center gap-1 text-sm">
           <button
@@ -188,107 +208,117 @@ export default function WorkspacePage() {
             </React.Fragment>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setMkdirOpen(true)}>
-            <FolderPlusIcon /> {t("newFolder")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => uploadRef.current?.click()}>
-            <UploadIcon /> {t("upload")}
-          </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={() => load(path)} title={t("refresh")}>
-            <RefreshCwIcon className={cn("size-4", loading && "animate-spin")} />
-          </Button>
-          <input ref={uploadRef} type="file" multiple className="hidden" onChange={(e) => doUpload(e.target.files)} />
-        </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="ml-auto"
+          onClick={() => load(path)}
+          aria-label={t("refresh")}
+          title={t("refresh")}
+        >
+          <RefreshCwIcon className={cn(loading && "animate-spin")} />
+        </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("colName")}</TableHead>
-                <TableHead className="w-28 text-right">{t("colSize")}</TableHead>
-                <TableHead className="w-40">{t("colMtime")}</TableHead>
-                <TableHead className="w-24 text-right">{t("colActions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entries.length === 0 && (
+      {!loading && entries.length === 0 ? (
+        <ListEmpty title={t("empty")} icon={<FolderIcon />} />
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-muted-foreground py-10 text-center text-sm">
-                    {loading ? t("loading") : t("empty")}
-                  </TableCell>
+                  <TableHead>{t("colName")}</TableHead>
+                  <TableHead className="w-28 text-right">{t("colSize")}</TableHead>
+                  <TableHead className="w-40">{t("colMtime")}</TableHead>
+                  <TableHead className="w-24 text-right">{t("colActions")}</TableHead>
                 </TableRow>
-              )}
-              {entries.map((e) => (
-                <TableRow key={e.path}>
-                  <TableCell>
-                    <button
-                      type="button"
-                      onClick={() => (e.dir ? load(e.path) : openFile(e))}
-                      className="flex items-center gap-2 text-left hover:underline"
-                    >
-                      {e.dir ? (
-                        <FolderIcon className="size-4 shrink-0 text-blue-500" />
-                      ) : (
-                        <FileIcon className="text-muted-foreground size-4 shrink-0" />
-                      )}
-                      <span className="truncate font-mono text-sm">{e.name}</span>
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-right font-mono text-xs">
-                    {e.dir ? "—" : fmtSize(e.size)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{fmtTime(e.mtime)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      {!e.dir && (
+              </TableHeader>
+              <TableBody>
+                {loading && entries.length === 0 && <TableSkeletonRows columns={4} />}
+                {entries.map((e) => (
+                  <TableRow key={e.path}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => (e.dir ? load(e.path) : openFile(e))}
+                        className="flex items-center gap-2 text-left hover:underline"
+                      >
+                        {e.dir ? (
+                          <FolderIcon className="size-4 shrink-0 text-info" />
+                        ) : (
+                          <FileIcon className="text-muted-foreground size-4 shrink-0" />
+                        )}
+                        <span className="truncate font-mono text-sm">{e.name}</span>
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-right font-mono text-xs">
+                      {e.dir ? "—" : fmtSize(e.size)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{fmtTime(e.mtime)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        {!e.dir && (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={t("download")}
+                            title={t("download")}
+                            onClick={() =>
+                              api
+                                .workspaceDownload(e.path)
+                                .catch((err) => toast.error(t("downloadFailed", { msg: (err as Error).message })))
+                            }
+                          >
+                            <DownloadIcon className="size-3.5" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
-                          size="icon"
-                          className="size-7"
-                          title={t("download")}
-                          onClick={() =>
-                            api
-                              .workspaceDownload(e.path)
-                              .catch((err) => toast.error(t("downloadFailed", { msg: (err as Error).message })))
-                          }
+                          size="icon-xs"
+                          className="text-danger"
+                          aria-label={t("delete")}
+                          title={t("delete")}
+                          onClick={() => del(e)}
                         >
-                          <DownloadIcon className="size-3.5" />
+                          <Trash2Icon className="size-3.5" />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive size-7"
-                        title={t("delete")}
-                        onClick={() => del(e)}
-                      >
-                        <Trash2Icon className="size-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 파일 보기 / 편집 */}
       <Sheet open={edit !== null} onOpenChange={(o) => !o && setEdit(null)}>
-        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
+        <SheetContent side="right" size="md" className="gap-0">
           {edit && (
             <>
-              <SheetHeader className="border-b p-4">
+              <SheetHeader className="border-b">
                 <SheetTitle className="flex items-center gap-2 truncate font-mono text-sm">
                   <FileIcon className="size-4 shrink-0" />
                   <span className="truncate" title={edit.file.path}>
                     {edit.file.path}
                   </span>
                 </SheetTitle>
-                <span className="text-muted-foreground text-xs">{fmtSize(edit.file.size)}</span>
+                <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                  <span>{fmtSize(edit.file.size)}</span>
+                  {!edit.file.binary && !edit.file.too_large && <span>· {edit.dirty ? t("dirty") : t("synced")}</span>}
+                  {!edit.file.binary && !edit.file.too_large && (
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      className="ml-auto"
+                      onClick={() => api.workspaceDownload(edit.file.path)}
+                    >
+                      <DownloadIcon /> {t("download")}
+                    </Button>
+                  )}
+                </div>
               </SheetHeader>
 
               {edit.file.binary || edit.file.too_large ? (
@@ -300,25 +330,25 @@ export default function WorkspacePage() {
                 </div>
               ) : (
                 <>
-                  <div className="min-h-0 flex-1 p-3">
+                  <div className="min-h-0 flex-1 px-4 py-3">
                     <Textarea
                       value={edit.content}
                       onChange={(ev) => setEdit({ ...edit, content: ev.target.value, dirty: true })}
                       spellCheck={false}
-                      className="h-full min-h-[50vh] resize-none font-mono text-xs leading-relaxed"
+                      className="h-full resize-none font-mono text-xs leading-relaxed"
                     />
                   </div>
-                  <SheetFooter className="flex-row items-center justify-between border-t p-3">
-                    <span className="text-muted-foreground text-xs">{edit.dirty ? t("dirty") : t("synced")}</span>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => api.workspaceDownload(edit.file.path)}>
-                        <DownloadIcon /> {t("download")}
-                      </Button>
-                      <Button onClick={saveFile} disabled={!edit.dirty || edit.saving}>
+                  <DrawerFooter
+                    onCancel={() => setEdit(null)}
+                    onConfirm={saveFile}
+                    confirmDisabled={!edit.dirty}
+                    pending={edit.saving}
+                    confirmLabel={
+                      <>
                         <SaveIcon /> {edit.saving ? t("saving") : t("save")}
-                      </Button>
-                    </div>
-                  </SheetFooter>
+                      </>
+                    }
+                  />
                 </>
               )}
             </>
@@ -327,28 +357,30 @@ export default function WorkspacePage() {
       </Sheet>
 
       {/* 새 폴더 */}
-      <Dialog open={mkdirOpen} onOpenChange={setMkdirOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t("newFolder")}</DialogTitle>
-          </DialogHeader>
-          <Input
-            autoFocus
-            value={mkdirName}
-            onChange={(e) => setMkdirName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && doMkdir()}
-            placeholder={t("folderNamePlaceholder")}
+      <Sheet open={mkdirOpen} onOpenChange={setMkdirOpen}>
+        <SheetContent side="right" size="sm">
+          <SheetHeader>
+            <SheetTitle>{t("newFolder")}</SheetTitle>
+          </SheetHeader>
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-4">
+            <Label htmlFor="ws-mkdir">{t("folderNamePlaceholder")}</Label>
+            <Input
+              id="ws-mkdir"
+              autoFocus
+              value={mkdirName}
+              onChange={(e) => setMkdirName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doMkdir()}
+              placeholder={t("folderNamePlaceholder")}
+            />
+          </div>
+          <DrawerFooter
+            onCancel={() => setMkdirOpen(false)}
+            onConfirm={doMkdir}
+            confirmDisabled={!mkdirName.trim()}
+            confirmLabel={t("create")}
           />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMkdirOpen(false)}>
-              {t("cancel")}
-            </Button>
-            <Button onClick={doMkdir} disabled={!mkdirName.trim()}>
-              {t("create")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

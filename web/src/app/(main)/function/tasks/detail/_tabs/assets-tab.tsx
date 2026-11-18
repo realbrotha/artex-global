@@ -3,8 +3,6 @@
 import * as React from "react";
 
 import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
   GlobeIcon,
   KeyRoundIcon,
   LayoutTemplateIcon,
@@ -19,7 +17,9 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { AssetDslSearch } from "@/components/asset-dsl-search";
+import { DrawerFooter, ListEmpty, TableSkeletonRows } from "@/components/page";
 import { ScopeTextEditor } from "@/components/scope-text-editor";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,9 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,16 +42,14 @@ import { parseCompanyScopeText } from "@/lib/company-scope";
 import type { Asset, NewAssetType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const PAGE_SIZES = [25, 50, 100, 200];
-
 const METHOD_COLOR: Record<string, string> = {
-  DELETE: "bg-red-100 text-red-700",
-  GET: "bg-emerald-100 text-emerald-700",
-  HEAD: "bg-purple-100 text-purple-700",
-  OPTIONS: "bg-slate-100 text-slate-600",
-  PATCH: "bg-orange-100 text-orange-700",
-  POST: "bg-blue-100 text-blue-700",
-  PUT: "bg-amber-100 text-amber-700",
+  DELETE: "bg-danger/10 text-danger",
+  GET: "bg-success/10 text-success",
+  HEAD: "bg-primary/10 text-primary",
+  OPTIONS: "bg-muted text-muted-foreground",
+  PATCH: "bg-caution/10 text-caution",
+  POST: "bg-info/10 text-info",
+  PUT: "bg-warning/10 text-warning",
 };
 
 // Node-type labels are translated at render via `t(`kind.${key}`)` because this
@@ -105,10 +101,10 @@ function MethodBadge({ method }: { method: string }) {
 }
 
 function statusTone(code: number) {
-  if (code >= 500) return "text-red-500";
-  if (code >= 400) return "text-amber-500";
-  if (code >= 300) return "text-blue-500";
-  if (code >= 200) return "text-emerald-500";
+  if (code >= 500) return "text-danger";
+  if (code >= 400) return "text-warning";
+  if (code >= 300) return "text-info";
+  if (code >= 200) return "text-success";
   return "text-muted-foreground";
 }
 
@@ -163,49 +159,22 @@ function AssetCard({
   cols,
   loaded,
   onPage,
-  onSize,
   page,
-  size,
   total,
 }: {
   children: React.ReactNode;
   cols: string[];
   loaded: boolean;
   onPage: (page: number) => void;
-  onSize: (size: number) => void;
   page: number;
-  size: number;
   total: number;
 }) {
   const t = useTranslations("taskDetail.assetsTab");
-  const tp = useTranslations("pagination");
   const rows = React.Children.toArray(children);
-  const pageCount = Math.max(1, Math.ceil(total / size));
-  const start = total === 0 ? 0 : page * size + 1;
-  const end = Math.min(total, page * size + rows.length);
-  let tableRows: React.ReactNode;
-  if (!loaded) {
-    tableRows = (
-      <TableRow>
-        <TableCell colSpan={cols.length} className="py-14 text-center">
-          <Spinner className="mx-auto" />
-        </TableCell>
-      </TableRow>
-    );
-  } else if (rows.length > 0) {
-    tableRows = rows;
-  } else {
-    tableRows = (
-      <TableRow>
-        <TableCell colSpan={cols.length} className="py-10 text-center text-muted-foreground text-sm">
-          {t("empty")}
-        </TableCell>
-      </TableRow>
-    );
-  }
+  if (loaded && rows.length === 0) return <ListEmpty title={t("empty")} />;
   return (
-    <Card className="flex min-h-0 flex-1 flex-col py-0">
-      <CardContent className="scrollbar-thin scrollbar-track-transparent min-h-0 flex-1 overflow-auto p-0">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="scrollbar-thin scrollbar-track-transparent min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow>
@@ -214,61 +183,11 @@ function AssetCard({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody>{tableRows}</TableBody>
+          <TableBody>{loaded ? rows : <TableSkeletonRows columns={cols.length} />}</TableBody>
         </Table>
-      </CardContent>
-      {total > 0 ? (
-        <CardFooter className="gap-2 px-3 py-1.5 text-muted-foreground text-xs">
-          <Select
-            value={String(size)}
-            onValueChange={(value) => {
-              onSize(Number(value));
-              onPage(0);
-            }}
-          >
-            <SelectTrigger size="sm" className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {PAGE_SIZES.map((value) => (
-                  <SelectItem key={value} value={String(value)}>
-                    {value}
-                    {tp("perPage")}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <span className="tabular-nums">{tp("range", { from: start, to: end, total })}</span>
-          {pageCount > 1 ? (
-            <div className="ml-auto flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon-sm"
-                disabled={page <= 0}
-                onClick={() => onPage(Math.max(0, page - 1))}
-                aria-label={tp("prev")}
-              >
-                <ChevronLeftIcon />
-              </Button>
-              <span className="tabular-nums">
-                {page + 1} / {pageCount}
-              </span>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                disabled={page + 1 >= pageCount}
-                onClick={() => onPage(Math.min(pageCount - 1, page + 1))}
-                aria-label={tp("next")}
-              >
-                <ChevronRightIcon />
-              </Button>
-            </div>
-          ) : null}
-        </CardFooter>
-      ) : null}
-    </Card>
+      </div>
+      {total > 0 ? <TablePagination page={page + 1} total={total} onPageChange={(next) => onPage(next - 1)} /> : null}
+    </div>
   );
 }
 
@@ -311,12 +230,12 @@ function AddTaskAssetsSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl">
-        <SheetHeader>
+      <SheetContent size="md" className="gap-0">
+        <SheetHeader className="border-b">
           <SheetTitle>{t("addSheet.title")}</SheetTitle>
           <SheetDescription>{t("addSheet.description")}</SheetDescription>
         </SheetHeader>
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
           <ScopeTextEditor
             id="task-asset-scope"
             value={scopeText}
@@ -326,20 +245,20 @@ function AddTaskAssetsSheet({
             description={t("addSheet.editorDescription")}
           />
         </div>
-        <SheetFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            {t("addSheet.cancel")}
-          </Button>
-          <Button
-            onClick={() => void attach()}
-            disabled={saving || parsedScope.rules.length === 0 || parsedScope.errors.length > 0}
-          >
-            {saving ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}
-            {parsedScope.rules.length > 0
-              ? t("addSheet.submitN", { count: parsedScope.rules.length })
-              : t("addSheet.submit")}
-          </Button>
-        </SheetFooter>
+        <DrawerFooter
+          onCancel={() => onOpenChange(false)}
+          onConfirm={() => void attach()}
+          confirmDisabled={parsedScope.rules.length === 0 || parsedScope.errors.length > 0}
+          pending={saving}
+          confirmLabel={
+            <>
+              {saving ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}
+              {parsedScope.rules.length > 0
+                ? t("addSheet.submitN", { count: parsedScope.rules.length })
+                : t("addSheet.submit")}
+            </>
+          }
+        />
       </SheetContent>
     </Sheet>
   );
@@ -353,7 +272,6 @@ export function AssetsTab({ taskId }: { taskId: string }) {
   const [loaded, setLoaded] = React.useState(false);
   const [tab, setTab] = React.useState<NewAssetType>("root_domain");
   const [page, setPage] = React.useState(0);
-  const [size, setSize] = React.useState(50);
   const [query, setQuery] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [dslError, setDslError] = React.useState("");
@@ -378,9 +296,9 @@ export function AssetsTab({ taskId }: { taskId: string }) {
     setDslError("");
   }, [tab]);
 
-  // Query / tab / page-size changes restart server pagination.
+  // Query / tab changes restart server pagination.
   // biome-ignore lint/correctness/useExhaustiveDependencies: these controls intentionally reset server pagination.
-  React.useEffect(() => setPage(0), [tab, size, query]);
+  React.useEffect(() => setPage(0), [tab, query]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is an explicit manual-reload trigger.
   React.useEffect(() => {
@@ -394,8 +312,8 @@ export function AssetsTab({ taskId }: { taskId: string }) {
         // searchTaskAssets both pin task_id server-side.
         const [current, nextCounts] = await Promise.all([
           dsl
-            ? api.searchTaskAssets(taskId, dsl, tab, size, page * size)
-            : api.taskAssets(taskId, tab, size, page * size),
+            ? api.searchTaskAssets(taskId, dsl, tab, PAGE_SIZE, page * PAGE_SIZE)
+            : api.taskAssets(taskId, tab, PAGE_SIZE, page * PAGE_SIZE),
           api.assetCounts(taskId),
         ]);
         if (!active || assetsRequestRef.current !== request) return;
@@ -428,12 +346,12 @@ export function AssetsTab({ taskId }: { taskId: string }) {
       clearTimeout(debounce);
       clearInterval(timer);
     };
-  }, [page, query, refreshKey, size, tab, taskId]);
+  }, [page, query, refreshKey, tab, taskId]);
 
   React.useEffect(() => {
-    const maxPage = Math.max(0, Math.ceil(total / size) - 1);
+    const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
     if (page > maxPage) setPage(maxPage);
-  }, [page, size, total]);
+  }, [page, total]);
 
   const refresh = React.useCallback(() => {
     setLoaded(false);
@@ -467,7 +385,7 @@ export function AssetsTab({ taskId }: { taskId: string }) {
     </Button>
   );
 
-  const commonCardProps = { loaded, onPage: setPage, onSize: setSize, page, size, total };
+  const commonCardProps = { loaded, onPage: setPage, page, total };
   const totalAll = TABS.reduce((sum, item) => sum + (counts[item.key] ?? 0), 0);
 
   const searchBox = (
@@ -481,38 +399,36 @@ export function AssetsTab({ taskId }: { taskId: string }) {
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="font-medium text-sm">{t("title")}</h2>
-          <p className="text-muted-foreground text-xs">{t("totalAll", { count: totalAll })}</p>
-        </div>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          <PlusIcon data-icon="inline-start" />
-          {t("add")}
-        </Button>
-      </div>
-
+    <div className="flex min-h-0 flex-1 flex-col">
       <Tabs
         value={tab}
         onValueChange={(value) => setTab(value as NewAssetType)}
         className="flex min-h-0 flex-1 flex-col gap-2"
       >
-        <div className="overflow-x-auto overflow-y-hidden">
-          <TabsList className="w-max">
-            {TABS.map((item) => (
-              <TabsTrigger key={item.key} value={item.key}>
-                <item.icon data-icon="inline-start" />
-                {t(`kind.${item.key}`)}
-                <span className="text-muted-foreground tabular-nums">{counts[item.key] ?? 0}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 overflow-x-auto overflow-y-hidden">
+            <TabsList className="w-max">
+              {TABS.map((item) => (
+                <TabsTrigger key={item.key} value={item.key}>
+                  <item.icon data-icon="inline-start" />
+                  {t(`kind.${item.key}`)}
+                  <span className="text-muted-foreground tabular-nums">{counts[item.key] ?? 0}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <span className="ml-auto text-muted-foreground text-xs tabular-nums">
+            {t("totalAll", { count: totalAll })}
+          </span>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <PlusIcon data-icon="inline-start" />
+            {t("add")}
+          </Button>
         </div>
 
         {searchBox}
 
-        <TabsContent value="root_domain" className="mt-0 flex min-h-0 flex-1 flex-col">
+        <TabsContent value="root_domain" className="flex min-h-0 flex-1 flex-col">
           <AssetCard cols={[t("col.domain"), t("col.icp"), t("col.source"), t("col.action")]} {...commonCardProps}>
             {rows.map((asset) => (
               <TableRow key={asset.id}>
@@ -527,7 +443,7 @@ export function AssetsTab({ taskId }: { taskId: string }) {
           </AssetCard>
         </TabsContent>
 
-        <TabsContent value="ip" className="mt-0 flex min-h-0 flex-1 flex-col">
+        <TabsContent value="ip" className="flex min-h-0 flex-1 flex-col">
           <AssetCard
             cols={[
               "IP",
@@ -563,7 +479,7 @@ export function AssetsTab({ taskId }: { taskId: string }) {
           </AssetCard>
         </TabsContent>
 
-        <TabsContent value="subdomain" className="mt-0 flex min-h-0 flex-1 flex-col">
+        <TabsContent value="subdomain" className="flex min-h-0 flex-1 flex-col">
           <AssetCard
             cols={[
               t("col.domain"),
@@ -592,7 +508,7 @@ export function AssetsTab({ taskId }: { taskId: string }) {
           </AssetCard>
         </TabsContent>
 
-        <TabsContent value="app" className="mt-0 flex min-h-0 flex-1 flex-col">
+        <TabsContent value="app" className="flex min-h-0 flex-1 flex-col">
           <AssetCard
             cols={[
               t("col.app"),
@@ -625,7 +541,7 @@ export function AssetsTab({ taskId }: { taskId: string }) {
           </AssetCard>
         </TabsContent>
 
-        <TabsContent value="service" className="mt-0 flex min-h-0 flex-1 flex-col">
+        <TabsContent value="service" className="flex min-h-0 flex-1 flex-col">
           <AssetCard
             cols={[
               t("col.addressService"),
@@ -693,7 +609,7 @@ export function AssetsTab({ taskId }: { taskId: string }) {
           </AssetCard>
         </TabsContent>
 
-        <TabsContent value="endpoint" className="mt-0 flex min-h-0 flex-1 flex-col">
+        <TabsContent value="endpoint" className="flex min-h-0 flex-1 flex-col">
           <AssetCard
             cols={[t("col.method"), t("col.fullAddress"), t("col.params"), t("col.source"), t("col.action")]}
             {...commonCardProps}

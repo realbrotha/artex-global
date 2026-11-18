@@ -148,10 +148,7 @@ function EvidenceRefs({
         const item = index.get(ref);
         if (!item || conflicts.has(ref))
           return (
-            <p
-              key={ref}
-              className="break-all rounded-md border border-amber-500/30 p-3 text-amber-700 text-xs dark:text-amber-300"
-            >
+            <p key={ref} className="break-all rounded-md border border-warning/30 p-3 text-warning text-xs">
               {ref} ·{" "}
               {conflicts.has(ref)
                 ? "서로 다른 원문이 같은 ref를 사용합니다. 내보내기에서 원본을 대조하세요."
@@ -309,7 +306,7 @@ export function HuntingResultView({
           </Alert>
         ) : null}
         {partial ? (
-          <p className="text-amber-700 text-xs dark:text-amber-300">
+          <p className="text-warning text-xs">
             미확인 항목이 남아 있습니다. 보존된 부분 결과를 침해 없음으로 판정하지 않습니다.
           </p>
         ) : null}
@@ -323,7 +320,7 @@ export function HuntingResultView({
           }}
           className="gap-4"
         >
-          <TabsList aria-label="헌팅 결과 단계" className="grid h-10 w-full grid-cols-4">
+          <TabsList aria-label="헌팅 결과 단계" className="grid w-full grid-cols-4">
             {HUNTING_PHASES.map((phase) => (
               <TabsTrigger
                 key={phase.id}
@@ -608,7 +605,7 @@ export function HuntingResultView({
           {events.length ? (
             <ol className="space-y-3">
               {events.map((event, index) => (
-                <li key={`${event.sequence}-${index}`} className="space-y-1 border-sky-500/30 border-l-2 pl-3">
+                <li key={`${event.sequence}-${index}`} className="space-y-1 border-info/30 border-l-2 pl-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <Badge variant="outline">{STAGE_LABELS[event.stage] || event.stage || event.kind}</Badge>
                     <span className="text-muted-foreground">{new Date(event.at).toLocaleString()}</span>

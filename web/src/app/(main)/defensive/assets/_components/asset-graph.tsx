@@ -71,17 +71,17 @@ function lookOf(node: AssetNode, gateway: boolean): Look {
 
 const tileTone: Record<Look, string> = {
   physical: "rounded-md bg-foreground text-background",
-  "openstack-vm": "rounded-full bg-rose-500/10",
+  "openstack-vm": "rounded-full bg-danger/10",
   vm: "rounded-full bg-muted text-muted-foreground",
-  bastion: "rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  bastion: "rounded-full bg-info/15 text-info",
   unknown: "rounded-md border border-dashed text-muted-foreground",
-  group: "rounded-full bg-rose-500/10",
+  group: "rounded-full bg-danger/10",
 };
 
 const statusDot: Record<string, string> = {
-  ok: "bg-emerald-500",
-  down: "bg-red-500",
-  missing: "bg-amber-500",
+  ok: "bg-success",
+  down: "bg-danger",
+  missing: "bg-warning",
 };
 
 function AssetNodeCard({ data }: NodeProps<HostRFNode>) {
@@ -97,8 +97,8 @@ function AssetNodeCard({ data }: NodeProps<HostRFNode>) {
         "relative flex items-center gap-2 border bg-card px-2 text-left shadow-xs transition-opacity",
         square ? "rounded-md" : "rounded-full",
         look === "physical" && "border-2 border-foreground/60",
-        look === "bastion" && "border-sky-500/60",
-        group === "missing" && "border-amber-500 border-dashed",
+        look === "bastion" && "border-info/60",
+        group === "missing" && "border-warning border-dashed",
         active && "ring-2 ring-primary",
         dim && "opacity-25",
       )}
@@ -107,10 +107,8 @@ function AssetNodeCard({ data }: NodeProps<HostRFNode>) {
       <Handle id="t-in" type="target" position={Position.Top} className="!size-1 !border-0 !bg-transparent" />
       <Handle id="t-out" type="source" position={Position.Top} className="!size-1 !border-0 !bg-transparent" />
       <span className={cn("flex size-8 shrink-0 items-center justify-center", tileTone[look])}>
-        {look === "group" && <SimpleIcon icon={siOpenstack} className="size-5 fill-rose-600 dark:fill-rose-400" />}
-        {look === "openstack-vm" && (
-          <SimpleIcon icon={siOpenstack} className="size-4 fill-rose-600 dark:fill-rose-400" />
-        )}
+        {look === "group" && <SimpleIcon icon={siOpenstack} className="size-5 fill-danger" />}
+        {look === "openstack-vm" && <SimpleIcon icon={siOpenstack} className="size-4 fill-danger" />}
         {look === "physical" && <ServerIcon className="size-4.5" />}
         {look === "vm" && <BoxIcon className="size-4.5" />}
         {look === "bastion" && <DoorOpenIcon className="size-4.5" />}
@@ -136,13 +134,13 @@ function AssetNodeCard({ data }: NodeProps<HostRFNode>) {
             </span>
           )}
           {(node.checks?.fail ?? 0) > 0 && (
-            <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 py-px font-semibold text-[10px] text-red-700 leading-none tabular-nums dark:text-red-300">
+            <span className="shrink-0 rounded-full bg-danger/15 px-1.5 py-px font-semibold text-[10px] text-danger leading-none tabular-nums">
               {node.checks?.fail}
             </span>
           )}
         </span>
         {publicIp && (
-          <span className="flex items-center gap-0.5 text-[10px] text-sky-700 dark:text-sky-300">
+          <span className="flex items-center gap-0.5 text-[10px] text-info">
             <GlobeIcon className="size-2.5 shrink-0" />
             <span className="truncate">{publicIp}</span>
           </span>
@@ -164,7 +162,7 @@ function ClusterBox({ data }: NodeProps<HostRFNode>) {
   return (
     <div
       className={cn(
-        "cursor-grab rounded-xl border border-sky-500/40 bg-sky-500/5 transition-opacity active:cursor-grabbing",
+        "cursor-grab rounded-xl border border-info/40 bg-info/5 transition-opacity active:cursor-grabbing",
         active && "ring-2 ring-primary",
         dim && "opacity-25",
       )}
@@ -173,7 +171,7 @@ function ClusterBox({ data }: NodeProps<HostRFNode>) {
       {/* Where a bastion's edge lands. */}
       <Handle id="t-in" type="target" position={Position.Top} className="!size-1 !border-0 !bg-transparent" />
       <div className="flex h-10 items-center gap-2 px-3.5">
-        <SimpleIcon icon={siKubernetes} className="size-4 shrink-0 fill-sky-600 dark:fill-sky-400" />
+        <SimpleIcon icon={siKubernetes} className="size-4 shrink-0 fill-info" />
         <span className="truncate font-medium text-xs">{node.name}</span>
         <span className="shrink-0 text-[10px] text-muted-foreground">{subtitle}</span>
       </div>
@@ -196,12 +194,9 @@ function TierLabel({ data }: NodeProps<RFNode<TierData, "tier">>) {
 // Outline around the bastions of one tier; decoration, not an asset.
 function GroupFrame({ data }: NodeProps<RFNode<FrameData, "frame">>) {
   return (
-    <div
-      className="rounded-xl border border-sky-500/50 border-dashed bg-sky-500/5"
-      style={{ width: data.w, height: data.h }}
-    >
+    <div className="rounded-xl border border-info/50 border-dashed bg-info/5" style={{ width: data.w, height: data.h }}>
       <div className="flex h-10 items-center gap-2 px-3.5">
-        <DoorOpenIcon className="size-4 shrink-0 text-sky-700 dark:text-sky-300" />
+        <DoorOpenIcon className="size-4 shrink-0 text-info" />
         <span className="truncate font-medium text-xs">{data.label}</span>
       </div>
     </div>
@@ -395,8 +390,8 @@ function AssetGraphInner({
               e.kind === "runs_on"
                 ? "[&_path]:!stroke-foreground/60"
                 : e.kind === "gateway_of"
-                  ? "[&_path]:!stroke-sky-500"
-                  : "[&_path]:!stroke-rose-500",
+                  ? "[&_path]:!stroke-info"
+                  : "[&_path]:!stroke-danger",
           };
         }),
     [edges, kindOf, related, selectedId, mode],
@@ -480,14 +475,9 @@ function AssetGraphInner({
       fitViewOptions={{ padding: 0.15 }}
       proOptions={{ hideAttribution: true }}
       minZoom={0.1}
-      className="!bg-[#f0f2f7] dark:!bg-neutral-950"
+      className="!bg-canvas"
     >
-      <Background
-        variant={BackgroundVariant.Dots}
-        gap={16}
-        size={1}
-        className="text-neutral-400/50 dark:text-neutral-700/60"
-      />
+      <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="text-muted-foreground/40" />
       <Panel position="top-left" className="flex overflow-hidden rounded-lg border bg-card text-xs shadow-sm">
         {MODES.map((m) => (
           <button
@@ -571,6 +561,8 @@ function AssetGraphInner({
         position="bottom-left"
         className="!ml-14 !rounded-lg !border !bg-card !shadow-sm"
         maskColor="rgb(148 163 184 / 0.18)"
+        // 미니맵 노드는 테마 회색. 기본값(밝은 회색)은 다크 테마에서 눈부시다.
+        nodeColor="color-mix(in srgb, var(--muted-foreground) 45%, transparent)"
         nodeStrokeWidth={0}
         nodeBorderRadius={4}
       />

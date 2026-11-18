@@ -16,6 +16,7 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, ListEmpty, PageHeader } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -113,15 +114,15 @@ function PoolSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col gap-0 p-0 data-[side=right]:sm:max-w-lg">
-        <SheetHeader className="px-4">
+      <SheetContent side="right" size="sm">
+        <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ZapIcon className="size-4" /> {t("pool.title")}
           </SheetTitle>
           <SheetDescription>{t.rich("pool.desc", { b: (c) => <b>{c}</b> })}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
           <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
             <div className="grid gap-0.5">
               <Label className="text-sm">{t("pool.enable.label")}</Label>
@@ -182,7 +183,7 @@ function PoolSheet({
                         </span>
                         <span className="font-medium">{m.name}</span>
                         {m.active && (
-                          <Badge variant="outline" className="border-amber-400/50 text-amber-500">
+                          <Badge variant="outline" className="border-warning/50 text-warning">
                             {t("pool.badge.active")}
                           </Badge>
                         )}
@@ -427,15 +428,12 @@ function ProfileSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex flex-col gap-0 p-0 data-[side=right]:min-w-[420px] data-[side=right]:sm:max-w-xl"
-      >
-        <SheetHeader className="px-4">
+      <SheetContent side="right" size="md">
+        <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             {isNew ? t("profile.titleNew") : t("profile.titleEdit", { name: profile?.name ?? "" })}
             {profile?.is_default && (
-              <Badge variant="outline" className="border-amber-400/50 text-amber-500">
+              <Badge variant="outline" className="border-warning/50 text-warning">
                 {t("profile.activeBadge")}
               </Badge>
             )}
@@ -702,19 +700,26 @@ function ProfileSheet({
           </div>
 
           <ProfileRetryFields value={retry} onChange={setRetry} />
-        </div>
 
-        <div className="flex gap-2 border-t px-4 py-3">
-          <Button variant="outline" onClick={testConnection} disabled={testing}>
+          {/* 연결 시험은 저장과 별개인 보조 작업이라 하단 버튼 줄이 아닌 폼 끝에 둔다. */}
+          <Button variant="outline" className="w-fit" onClick={testConnection} disabled={testing}>
             {testing ? <Loader2Icon className="animate-spin" /> : <PlugZapIcon />}
             {testing ? t("profile.testing") : t("profile.testConnection")}
           </Button>
-          <Button onClick={save} disabled={saving} className="flex-1">
-            {saving && <Loader2Icon className="animate-spin" />}
-            {!saving && (isNew ? <PlusIcon /> : <SaveIcon />)}
-            {isNew ? t("profile.create") : t("profile.save")}
-          </Button>
         </div>
+
+        <DrawerFooter
+          onCancel={() => onOpenChange(false)}
+          confirmLabel={
+            <>
+              {saving && <Loader2Icon className="animate-spin" />}
+              {!saving && (isNew ? <PlusIcon /> : <SaveIcon />)}
+              {isNew ? t("profile.create") : t("profile.save")}
+            </>
+          }
+          onConfirm={save}
+          pending={saving}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -752,18 +757,18 @@ export default function LLMPage() {
             m.cooldown_secs > 0
               ? t("health.trippedCooldown", { cooldown: cooldownText(m.cooldown_secs) })
               : t("health.tripped"),
-          cls: "border-destructive/50 text-destructive",
+          cls: "border-danger/50 text-danger",
           hint: m.last_error,
         };
       }
       if (m?.state === "degraded") {
         return {
           label: t("health.degraded", { fails: m.fails }),
-          cls: "border-amber-500/50 text-amber-600 dark:text-amber-400",
+          cls: "border-warning/50 text-warning",
           hint: m.last_error,
         };
       }
-      return { label: t("health.ok"), cls: "border-emerald-500/50 text-emerald-600 dark:text-emerald-400" };
+      return { label: t("health.ok"), cls: "border-success/50 text-success" };
     },
     [t],
   );
@@ -823,26 +828,28 @@ export default function LLMPage() {
   const poolOn = pool?.enabled ?? false;
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <Tabs defaultValue="profiles" className="flex-1">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button onClick={() => openEditor(null)}>
+            <PlusIcon /> {t("page.new")}
+          </Button>
+        }
+      />
+      <Tabs defaultValue="profiles">
         <div className="flex flex-wrap items-center gap-2">
           <TabsList>
             <TabsTrigger value="profiles">{t("page.tab.profiles")}</TabsTrigger>
             <TabsTrigger value="retry">{t("page.tab.retry")}</TabsTrigger>
           </TabsList>
-          <span className="ml-auto flex items-center gap-2">
-            <Button size="xs" variant="outline" onClick={() => setPoolOpen(true)}>
-              <ZapIcon /> {t("page.poolConfig")}
-              {poolOn && (
-                <Badge variant="outline" className="ml-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
-                  {t("page.enabled")}
-                </Badge>
-              )}
-            </Button>
-            <Button size="xs" variant="outline" onClick={() => openEditor(null)}>
-              <PlusIcon /> {t("page.new")}
-            </Button>
-          </span>
+          <Button variant="outline" className="ml-auto" onClick={() => setPoolOpen(true)}>
+            <ZapIcon /> {t("page.poolConfig")}
+            {poolOn && (
+              <Badge variant="outline" className="ml-1 border-success/50 text-success">
+                {t("page.enabled")}
+              </Badge>
+            )}
+          </Button>
         </div>
 
         <TabsContent value="profiles">
@@ -864,7 +871,7 @@ export default function LLMPage() {
                   }}
                   className={cn(
                     "cursor-pointer gap-0 py-4 outline-none transition-colors hover:border-foreground/30",
-                    p.is_default && "border-amber-400/50 bg-amber-400/5",
+                    p.is_default && "border-warning/50 bg-warning/5",
                   )}
                 >
                   <CardContent className="grid gap-2 px-4">
@@ -872,7 +879,7 @@ export default function LLMPage() {
                       <StarIcon
                         className={cn(
                           "mt-0.5 size-4 shrink-0",
-                          p.is_default ? "fill-amber-400 text-amber-400" : "text-muted-foreground",
+                          p.is_default ? "fill-warning text-warning" : "text-muted-foreground",
                         )}
                       />
                       <div className="min-w-0 flex-1">
@@ -914,7 +921,7 @@ export default function LLMPage() {
 
                     <div className="mt-1 flex gap-2">
                       <Button
-                        size="sm"
+                        size="xs"
                         variant="outline"
                         className="flex-1"
                         disabled={p.is_default}
@@ -926,7 +933,7 @@ export default function LLMPage() {
                         {p.is_default ? t("card.active") : t("card.activate")}
                       </Button>
                       <Button
-                        size="icon"
+                        size="icon-xs"
                         variant="outline"
                         aria-label={t("card.deleteAria")}
                         onClick={(e) => {
@@ -934,18 +941,14 @@ export default function LLMPage() {
                           void remove(p);
                         }}
                       >
-                        <Trash2Icon className="text-destructive" />
+                        <Trash2Icon className="text-danger" />
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
-            {profiles.length === 0 && (
-              <div className="col-span-full rounded-lg border border-dashed p-10 text-center text-muted-foreground text-sm">
-                {t("page.empty")}
-              </div>
-            )}
+            {profiles.length === 0 && <ListEmpty className="col-span-full" title={t("page.empty")} />}
           </div>
         </TabsContent>
 

@@ -9,6 +9,7 @@ import { ArchiveIcon, ArrowLeftIcon, BrainIcon, CheckIcon, CircleAlertIcon, Paus
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DetailHeader, ListEmpty } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import { TaskLLMProfileChain } from "@/components/task-llm-profile-chain";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,13 +33,12 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import type { LLMProfile, Task } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 import { AssetsTab } from "./_tabs/assets-tab";
 import { BroadcastTab } from "./_tabs/broadcast-tab";
@@ -155,8 +155,9 @@ function TaskLLMControl({ task, profiles, onUpdated }: { task: Task; profiles: L
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
-          size="sm"
-          variant={exhausted ? "destructive" : "outline"}
+          size="xs"
+          variant="outline"
+          className={exhausted ? "text-danger" : undefined}
           aria-label={t("controlAria")}
           title={currentTitle}
         >
@@ -206,6 +207,7 @@ function TaskLLMControl({ task, profiles, onUpdated }: { task: Task; profiles: L
 
 function TaskDetailInner() {
   const t = useTranslations("taskDetail");
+  const tn = useTranslations("nav");
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
@@ -305,14 +307,21 @@ function TaskDetailInner() {
 
   if (!task) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
-        <p className="text-muted-foreground">{loaded ? t("header.notFound", { id }) : t("header.loading")}</p>
-        {loaded && (
-          <Button asChild variant="outline">
-            <Link href="/function/tasks">
-              <ArrowLeftIcon /> {t("header.backToList")}
-            </Link>
-          </Button>
+      <div className="flex flex-col gap-4">
+        <DetailHeader parent={{ label: tn("item.tasks"), href: "/function/tasks" }} title={id} />
+        {loaded ? (
+          <ListEmpty
+            title={t("header.notFound", { id })}
+            action={
+              <Button asChild variant="outline">
+                <Link href="/function/tasks">
+                  <ArrowLeftIcon /> {t("header.backToList")}
+                </Link>
+              </Button>
+            }
+          />
+        ) : (
+          <p className="text-muted-foreground text-sm">{t("header.loading")}</p>
         )}
       </div>
     );
@@ -341,71 +350,72 @@ function TaskDetailInner() {
   }
   const archiveTrigger = (
     <Button
-      size="icon-sm"
-      variant="ghost"
+      size="xs"
+      variant="outline"
       disabled={!canArchive || archiving}
       aria-label={canArchive ? t("archive.triggerAria") : archiveDisabledReason}
     >
-      {archiving ? <Spinner /> : <ArchiveIcon />}
+      {archiving ? <Spinner data-icon="inline-start" /> : <ArchiveIcon data-icon="inline-start" />}
+      {t("archive.triggerAria")}
     </Button>
   );
 
+  const fill = tab === "sessions";
+
   return (
-    <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col gap-0">
-      {/* Top fixed area */}
-      <header className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-background/95 px-3 py-2.5 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Button asChild variant="ghost" size="icon" className="size-7">
-            <Link href="/function/tasks">
-              <ArrowLeftIcon />
-            </Link>
-          </Button>
-          <h1 className="min-w-0 flex-1 truncate text-sm font-semibold" title={task.name || task.description}>
-            {task.name || task.description}
-          </h1>
-          <code className="hidden rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground sm:inline">
-            {task.id}
-          </code>
-          <Separator orientation="vertical" className="mx-1 hidden h-4 sm:block" />
-          <TaskLLMControl task={task} profiles={profiles} onUpdated={load} />
-          <StatusBadge domain={terminal ? "task" : "engine"} value={terminal ? task.status : engineMode} dot />
-          {canArchive ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>{archiveTrigger}</AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t("archive.dialogTitle", { id: task.id })}</AlertDialogTitle>
-                  <AlertDialogDescription>{t("archive.dialogDesc")}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("archive.cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => void archiveTask()}>{t("archive.confirm")}</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex">{archiveTrigger}</span>
-              </TooltipTrigger>
-              <TooltipContent>{archiveDisabledReason}</TooltipContent>
-            </Tooltip>
-          )}
-          <Button size="sm" variant={controlVariant} onClick={togglePause} disabled={terminal}>
-            {controlIcon}
-            {controlLabel}
-          </Button>
-        </div>
-        <p className="truncate text-xs text-muted-foreground">{task.goal}</p>
-        {/* Tabs */}
+    <div className={cn("flex flex-col gap-4", fill && "min-h-0 flex-1")} data-page-fill={fill ? "" : undefined}>
+      <DetailHeader
+        parent={{ label: tn("item.tasks"), href: "/function/tasks" }}
+        title={<span title={task.name || task.description}>{task.name || task.description}</span>}
+        badges={
+          <>
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">{task.id}</code>
+            <StatusBadge domain={terminal ? "task" : "engine"} value={terminal ? task.status : engineMode} dot />
+          </>
+        }
+        actions={
+          <>
+            <TaskLLMControl task={task} profiles={profiles} onUpdated={load} />
+            {canArchive ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>{archiveTrigger}</AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("archive.dialogTitle", { id: task.id })}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("archive.dialogDesc")}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("archive.cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => void archiveTask()}>{t("archive.confirm")}</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">{archiveTrigger}</span>
+                </TooltipTrigger>
+                <TooltipContent>{archiveDisabledReason}</TooltipContent>
+              </Tooltip>
+            )}
+            <Button size="xs" variant={controlVariant} onClick={togglePause} disabled={terminal}>
+              {controlIcon}
+              {controlLabel}
+            </Button>
+          </>
+        }
+      >
+        {task.goal && <p className="truncate text-muted-foreground text-sm">{task.goal}</p>}
+      </DetailHeader>
+
+      <Tabs value={tab} onValueChange={setTab} className={cn(fill && "min-h-0 flex-1")}>
         <div className="no-scrollbar min-w-0 overflow-x-auto">
-          <TabsList variant="default" className="min-w-max">
+          <TabsList className="min-w-max">
             {TAB_VALUES.map((value) => (
               <TabsTrigger key={value} value={value}>
                 {t(`tabs.${value}`)}
                 {value === "intercept" && interceptPendingCount > 0 && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white">
+                  <span className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-warning px-1 font-semibold text-[10px] text-white leading-none">
                     {interceptPendingCount > 99 ? "99+" : interceptPendingCount}
                   </span>
                 )}
@@ -413,42 +423,24 @@ function TaskDetailInner() {
             ))}
           </TabsList>
         </div>
-      </header>
 
-      {/* Tab content */}
-      <div className="flex-1 p-3">
-        <TabsContent value="sessions" className="mt-0">
-          <SessionsTab taskId={id} />
-        </TabsContent>
-        <TabsContent value="overview" className="mt-0">
-          <OverviewTab taskId={id} />
-        </TabsContent>
-        <TabsContent value="graph" className="mt-0">
-          <GraphTab taskId={id} />
-        </TabsContent>
-        <TabsContent value="broadcast" className="mt-0">
-          <BroadcastTab taskId={id} />
-        </TabsContent>
-        <TabsContent value="findings" className="mt-0">
-          <FindingsTab taskId={id} />
-        </TabsContent>
-        <TabsContent value="retests" className="mt-0">
-          <RetestsTab key={id} taskId={id} />
-        </TabsContent>
-        <TabsContent value="assets" className="mt-0">
-          <AssetsTab taskId={id} />
-        </TabsContent>
-        <TabsContent value="coverage" className="mt-0">
-          <CoverageGraphTab taskId={id} coverageEnabled={task?.coverage_enabled !== false} />
-        </TabsContent>
-        <TabsContent value="intercept" className="mt-0">
-          <InterceptTab taskId={id} />
-        </TabsContent>
-        <TabsContent value="report" className="mt-0">
-          <ReportTab taskId={id} />
-        </TabsContent>
-      </div>
-    </Tabs>
+        {/* 선택한 탭 내용만 렌더 */}
+        {tab === "sessions" && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <SessionsTab taskId={id} />
+          </div>
+        )}
+        {tab === "overview" && <OverviewTab taskId={id} />}
+        {tab === "graph" && <GraphTab taskId={id} />}
+        {tab === "broadcast" && <BroadcastTab taskId={id} />}
+        {tab === "findings" && <FindingsTab taskId={id} />}
+        {tab === "retests" && <RetestsTab key={id} taskId={id} />}
+        {tab === "assets" && <AssetsTab taskId={id} />}
+        {tab === "coverage" && <CoverageGraphTab taskId={id} coverageEnabled={task?.coverage_enabled !== false} />}
+        {tab === "intercept" && <InterceptTab taskId={id} />}
+        {tab === "report" && <ReportTab taskId={id} />}
+      </Tabs>
+    </div>
   );
 }
 

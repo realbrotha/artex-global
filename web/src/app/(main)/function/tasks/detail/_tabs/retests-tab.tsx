@@ -8,17 +8,15 @@ import { ArrowUpRightIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-reac
 import { useTranslations } from "next-intl";
 
 import { FindingRetestPanel } from "@/components/finding-retest-panel";
+import { ListEmpty, LoadError } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PAGE_SIZE } from "@/components/table-pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import type { Finding, FindingsPage } from "@/lib/types";
-
-const PAGE_SIZE = 20;
 
 function findingLabel(finding: Finding, unclassified: string) {
   return finding.name?.trim() || finding.vulnclass.trim() || unclassified;
@@ -72,16 +70,7 @@ export function RetestsTab({ taskId }: { taskId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {t("retests.loadError", { error })}
-            <Button variant="outline" size="sm" onClick={refresh}>
-              {t("retests.retry")}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      {error ? <LoadError message={t("retests.loadError", { error })} onRetry={refresh} /> : null}
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
         <Card className="min-w-0">
           <CardHeader>
@@ -112,12 +101,7 @@ export function RetestsTab({ taskId }: { taskId: string }) {
               </React.Fragment>
             ))}
             {loaded && findings.length === 0 ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyTitle>{t("retests.emptyTitle")}</EmptyTitle>
-                  <EmptyDescription>{t("retests.emptyDesc")}</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
+              <ListEmpty className="border-0" title={t("retests.emptyTitle")} description={t("retests.emptyDesc")} />
             ) : null}
           </CardContent>
           {data && data.total > PAGE_SIZE ? (

@@ -5,8 +5,6 @@ import * as React from "react";
 import {
   ArrowDownWideNarrowIcon,
   ArrowUpNarrowWideIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   EraserIcon,
   FilterXIcon,
   ListChecksIcon,
@@ -20,6 +18,8 @@ import { toast } from "sonner";
 
 import { HttpCodeBlock } from "@/components/http-code-block";
 import { LinkTrafficDialog } from "@/components/link-traffic-dialog";
+import { ListEmpty, PageHeader, TableSkeletonRows } from "@/components/page";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,10 +69,10 @@ function fmtBytes(n: number) {
 }
 
 function statusTone(status: number) {
-  if (status >= 500) return "text-red-500";
-  if (status >= 400) return "text-amber-500";
-  if (status >= 300) return "text-blue-500";
-  if (status >= 200) return "text-emerald-500";
+  if (status >= 500) return "text-danger";
+  if (status >= 400) return "text-warning";
+  if (status >= 300) return "text-info";
+  if (status >= 200) return "text-success";
   return "text-muted-foreground";
 }
 
@@ -100,7 +100,6 @@ function requestWithHost(raw: string, exchange: TrafficExchange): string {
 // Fixed method set (server filters exact-match); avoids deriving options from a
 // single page, which would only ever list the methods on that page.
 const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"];
-const PAGE_SIZES = [25, 50, 100, 200];
 type HostCountSortDirection = "asc" | "desc";
 
 // Server-sortable columns. The list is sent to the backend verbatim as `sort`,
@@ -115,18 +114,17 @@ const STATUS_BUCKETS = ["2xx", "3xx", "4xx", "5xx"];
 
 export default function TrafficPage() {
   const t = useTranslations("traffic");
-  const tp = useTranslations("pagination");
   const [selectedFlows, setSelectedFlows] = React.useState<Set<string>>(() => new Set());
   const [linking, setLinking] = React.useState(false);
   const [page, setPage] = React.useState(0);
-  const [size, setSize] = React.useState(50);
+  const size = PAGE_SIZE;
   const [host, setHost] = React.useState(""); // raw host input
   const [hostQ, setHostQ] = React.useState(""); // debounced → server
   const [query, setQuery] = React.useState(""); // raw free-text input
   const [queryQ, setQueryQ] = React.useState(""); // debounced → server
   const [method, setMethod] = React.useState("all");
 
-  // Advanced filters (issue #177): response-body content, path, status class and
+  // Advanced filters (issue 177): response-body content, path, status class and
   // response-size range. Text inputs are debounced like host/query; the status
   // select applies immediately.
   const [body, setBody] = React.useState("");
@@ -197,7 +195,7 @@ export default function TrafficPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: these values intentionally trigger a page reset.
   React.useEffect(() => {
     setPage(0);
-  }, [hostQ, queryQ, method, size, bodyQ, pathQ, statusFilter, respMinQ, respMaxQ, sort]);
+  }, [hostQ, queryQ, method, bodyQ, pathQ, statusFilter, respMinQ, respMaxQ, sort]);
 
   // Load the current page. Auto-refresh only on page 0 (newest) so paging back
   // through history isn't yanked out from under the user.
@@ -339,40 +337,59 @@ export default function TrafficPage() {
 
   const exchanges = React.useMemo(() => traffic?.exchanges ?? [], [traffic]);
   const total = traffic?.total ?? exchanges.length;
-  const pageCount = Math.max(1, Math.ceil(total / size));
-  const rangeStart = total === 0 ? 0 : page * size + 1;
-  const rangeEnd = page * size + exchanges.length;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-4 text-sm">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
-              traffic?.enabled
-                ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                : "border-transparent bg-muted text-muted-foreground",
-            )}
-          >
-            <RadioTowerIcon className="size-3.5" />
-            {traffic?.enabled ? t("recording") : t("stopped")}
-          </span>
-          {traffic?.proxy && <span className="font-mono text-xs text-muted-foreground">{traffic.proxy}</span>}
-          <span className="text-xs text-muted-foreground">
-            {t.rich("total", {
-              n: () => <span className="tabular-nums">{traffic?.count ?? 0}</span>,
-            })}
-          </span>
-        </div>
-      </div>
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      {/* 기록 상태 · 프록시 · 전체 건수는 제목 옆 보조 정보 */}
+      <PageHeader>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
+            traffic?.enabled
+              ? "border-success/20 bg-success/15 text-success"
+              : "border-transparent bg-muted text-muted-foreground",
+          )}
+        >
+          <RadioTowerIcon className="size-3.5" />
+          {traffic?.enabled ? t("recording") : t("stopped")}
+        </span>
+        {traffic?.proxy && <span className="font-mono text-xs text-muted-foreground">{traffic.proxy}</span>}
+        <span className="text-xs text-muted-foreground">
+          {t.rich("total", {
+            n: () => <span className="tabular-nums">{traffic?.count ?? 0}</span>,
+          })}
+        </span>
+      </PageHeader>
 
-      {/* Toolbar */}
+      {/* 도구 줄: 검색 · host · method · 대상 선택 · 끝에 삭제 버튼 */}
       <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-80">
+          <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={t("toolbar.search")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Input placeholder="host…" value={host} onChange={(e) => setHost(e.target.value)} className="w-48" />
+        <Select value={method} onValueChange={setMethod}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder={t("toolbar.method")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("toolbar.allMethods")}</SelectItem>
+            {METHODS.map((m) => (
+              <SelectItem key={m} value={m}>
+                {m}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8">
-              <ListChecksIcon className="size-3.5" />
+            <Button variant="outline">
+              <ListChecksIcon />
               {selectedHosts.length > 0
                 ? t("picker.selectTargetCount", { count: selectedHosts.length })
                 : t("picker.selectTarget")}
@@ -408,8 +425,7 @@ export default function TrafficPage() {
                 {hosts.length > 0 && (
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs"
+                    size="xs"
                     onClick={() => setSelectedHosts(allSelected ? [] : hosts.map((h) => h.host))}
                   >
                     {allSelected ? t("picker.deselectAll") : t("picker.selectAll")}
@@ -458,118 +474,42 @@ export default function TrafficPage() {
             </div>
           </PopoverContent>
         </Popover>
-        <div className="relative w-48">
-          <Input placeholder="host…" value={host} onChange={(e) => setHost(e.target.value)} className="h-8" />
-        </div>
         <Button
           variant="destructive"
-          size="sm"
-          className="h-8"
+          className="ml-auto"
           disabled={!hostQ || deleting}
           title={hostQ ? undefined : t("toolbar.hostHint")}
           onClick={() => setDeleteMode("filter")}
         >
-          <Trash2Icon className="size-3.5" />
+          <Trash2Icon />
           {t("toolbar.deleteHost")}
         </Button>
         {/* 두 번째 파괴적 버튼이 아니라 아웃라인으로 둔다. 이 버튼은 모든 필터를 무시하므로
             "이 대상 삭제" 버튼 바로 옆에서 한 번의 오클릭처럼 보이면 안 된다. */}
         <Button
           variant="outline"
-          size="sm"
-          className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="text-danger hover:bg-danger/10 hover:text-danger"
           disabled={!traffic?.count || deleting}
           title={traffic?.count ? t("toolbar.purgeTitle") : t("toolbar.purgeEmptyTitle")}
           onClick={() => setDeleteMode("all")}
         >
-          <EraserIcon className="size-3.5" />
+          <EraserIcon />
           {t("toolbar.purgeAll")}
         </Button>
-        <div className="relative max-w-sm flex-1">
-          <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder={t("toolbar.search")}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-8 pl-8"
-          />
-        </div>
-        <Select value={method} onValueChange={setMethod}>
-          <SelectTrigger size="sm" className="w-32">
-            <SelectValue placeholder={t("toolbar.method")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("toolbar.allMethods")}</SelectItem>
-            {METHODS.map((m) => (
-              <SelectItem key={m} value={m}>
-                {m}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={String(size)} onValueChange={(v) => setSize(Number(v))}>
-          <SelectTrigger size="sm" className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZES.map((n) => (
-              <SelectItem key={n} value={String(n)}>
-                {n}
-                {tp("perPage")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">
-            {rangeStart}–{rangeEnd} / {total}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page <= 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <span className="tabular-nums">
-            {page + 1} / {pageCount}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page + 1 >= pageCount}
-            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-          >
-            <ChevronRightIcon />
-          </Button>
-        </div>
       </div>
 
-      {/* Advanced filters (issue #177): narrow 660k+ exchanges down to the one packet. */}
-      <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5">
+      {/* Advanced filters (issue 177): narrow 660k+ exchanges down to the one packet.
+          끝에 선택한 흐름 작업(취약점 연결)을 둔다. */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2">
         <span className="pl-1 text-xs font-medium text-muted-foreground">{t("filters.advanced")}</span>
         <div className="relative w-56">
-          <Input
-            placeholder={t("filters.body")}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="h-8"
-          />
+          <Input placeholder={t("filters.body")} value={body} onChange={(e) => setBody(e.target.value)} />
         </div>
         <div className="relative w-52">
-          <Input
-            placeholder={t("filters.path")}
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-            className="h-8"
-          />
+          <Input placeholder={t("filters.path")} value={path} onChange={(e) => setPath(e.target.value)} />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger size="sm" className="w-28">
+          <SelectTrigger className="w-28">
             <SelectValue placeholder={t("filters.status")} />
           </SelectTrigger>
           <SelectContent>
@@ -589,7 +529,7 @@ export default function TrafficPage() {
             placeholder={t("filters.min")}
             value={respMin}
             onChange={(e) => setRespMin(e.target.value)}
-            className="h-8 w-24"
+            className="w-24"
           />
           <span>–</span>
           <Input
@@ -598,19 +538,18 @@ export default function TrafficPage() {
             placeholder={t("filters.max")}
             value={respMax}
             onChange={(e) => setRespMax(e.target.value)}
-            className="h-8 w-24"
+            className="w-24"
           />
         </div>
         {hasAdvancedFilter ? (
-          <Button variant="ghost" size="sm" className="h-8" onClick={resetAdvancedFilters}>
-            <FilterXIcon className="size-3.5" />
+          <Button variant="ghost" onClick={resetAdvancedFilters}>
+            <FilterXIcon />
             {t("filters.clear")}
           </Button>
         ) : null}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">{t("selection.selected", { count: selectedFlows.size })}</span>
+        <span className="ml-auto text-sm text-muted-foreground">
+          {t("selection.selected", { count: selectedFlows.size })}
+        </span>
         <Button variant="outline" size="sm" disabled={selectedFlows.size === 0} onClick={() => setLinking(true)}>
           {t("selection.linkToVuln")}
         </Button>
@@ -621,110 +560,109 @@ export default function TrafficPage() {
         ) : null}
       </div>
       {/* History table */}
-      <div className="flex h-[calc(100vh-10rem)] min-h-0 flex-col">
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
-          <div className="min-h-0 flex-1 overflow-auto">
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-card">
-                <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      aria-label={t("table.selectPage")}
-                      checked={exchanges.length > 0 && exchanges.every((e) => selectedFlows.has(e.id))}
-                      onCheckedChange={(checked) =>
-                        setSelectedFlows((previous) => {
-                          const next = new Set(previous);
-                          for (const e of exchanges) {
-                            if (checked === true) next.add(e.id);
-                            else next.delete(e.id);
-                          }
-                          return next;
-                        })
-                      }
-                    />
-                  </TableHead>
-                  <SortableHead
-                    field="ts"
-                    label={t("table.time")}
-                    activeField={sort.field}
-                    direction={sort.direction}
-                    onSort={toggleSort}
-                    className="w-36"
-                  />
-                  <TableHead className="w-44">host</TableHead>
-                  <TableHead className="w-20">{t("table.method")}</TableHead>
-                  <TableHead>URL</TableHead>
-                  <SortableHead
-                    field="status"
-                    label={t("table.status")}
-                    activeField={sort.field}
-                    direction={sort.direction}
-                    onSort={toggleSort}
-                    className="w-20"
-                  />
-                  <TableHead className="w-36">content-type</TableHead>
-                  <SortableHead
-                    field="resp_len"
-                    label={t("table.respLen")}
-                    activeField={sort.field}
-                    direction={sort.direction}
-                    onSort={toggleSort}
-                    align="right"
-                    className="w-24 text-right"
-                  />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {exchanges.map((e) => (
-                  <TableRow
-                    key={e.id}
-                    className={cn("cursor-pointer", selected?.id === e.id && "bg-accent hover:bg-accent")}
-                    onClick={() => setSelected(e)}
-                  >
-                    <TableCell>
+      {traffic !== null && exchanges.length === 0 ? (
+        <ListEmpty title={t("table.empty")} />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-card">
+                  <TableRow>
+                    <TableHead className="w-10">
                       <Checkbox
-                        aria-label={t("table.selectRow", { id: e.id })}
-                        checked={selectedFlows.has(e.id)}
-                        onClick={(event) => event.stopPropagation()}
+                        aria-label={t("table.selectPage")}
+                        checked={exchanges.length > 0 && exchanges.every((e) => selectedFlows.has(e.id))}
                         onCheckedChange={(checked) =>
                           setSelectedFlows((previous) => {
                             const next = new Set(previous);
-                            if (checked === true) next.add(e.id);
-                            else next.delete(e.id);
+                            for (const e of exchanges) {
+                              if (checked === true) next.add(e.id);
+                              else next.delete(e.id);
+                            }
                             return next;
                           })
                         }
                       />
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtTime(e.ts)}</TableCell>
-                    <TableCell className="font-mono text-xs">{e.host}</TableCell>
-                    <TableCell>
-                      <MethodBadge method={e.method} />
-                    </TableCell>
-                    <TableCell className="max-w-0">
-                      <span className="block truncate font-mono text-xs">{e.url}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={cn("font-mono text-xs font-semibold tabular-nums", statusTone(e.status))}>
-                        {e.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{e.content_type}</TableCell>
-                    <TableCell className="text-right text-xs tabular-nums">{fmtBytes(e.resp_len)}</TableCell>
+                    </TableHead>
+                    <SortableHead
+                      field="ts"
+                      label={t("table.time")}
+                      activeField={sort.field}
+                      direction={sort.direction}
+                      onSort={toggleSort}
+                      className="w-36"
+                    />
+                    <TableHead className="w-44">host</TableHead>
+                    <TableHead className="w-20">{t("table.method")}</TableHead>
+                    <TableHead>URL</TableHead>
+                    <SortableHead
+                      field="status"
+                      label={t("table.status")}
+                      activeField={sort.field}
+                      direction={sort.direction}
+                      onSort={toggleSort}
+                      className="w-20"
+                    />
+                    <TableHead className="w-36">content-type</TableHead>
+                    <SortableHead
+                      field="resp_len"
+                      label={t("table.respLen")}
+                      activeField={sort.field}
+                      direction={sort.direction}
+                      onSort={toggleSort}
+                      align="right"
+                      className="w-24 text-right"
+                    />
                   </TableRow>
-                ))}
-                {exchanges.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
-                      {traffic === null ? t("table.loading") : t("table.empty")}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {exchanges.map((e) => (
+                    <TableRow
+                      key={e.id}
+                      className={cn("cursor-pointer", selected?.id === e.id && "bg-accent hover:bg-accent")}
+                      onClick={() => setSelected(e)}
+                    >
+                      <TableCell>
+                        <Checkbox
+                          aria-label={t("table.selectRow", { id: e.id })}
+                          checked={selectedFlows.has(e.id)}
+                          onClick={(event) => event.stopPropagation()}
+                          onCheckedChange={(checked) =>
+                            setSelectedFlows((previous) => {
+                              const next = new Set(previous);
+                              if (checked === true) next.add(e.id);
+                              else next.delete(e.id);
+                              return next;
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtTime(e.ts)}</TableCell>
+                      <TableCell className="font-mono text-xs">{e.host}</TableCell>
+                      <TableCell>
+                        <MethodBadge method={e.method} />
+                      </TableCell>
+                      <TableCell className="max-w-0">
+                        <span className="block truncate font-mono text-xs">{e.url}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn("font-mono text-xs font-semibold tabular-nums", statusTone(e.status))}>
+                          {e.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{e.content_type}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{fmtBytes(e.resp_len)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {traffic === null && <TableSkeletonRows columns={8} />}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+          <TablePagination page={page + 1} total={total} onPageChange={(p) => setPage(p - 1)} />
+        </div>
+      )}
 
       {linking ? (
         <LinkTrafficDialog
@@ -734,10 +672,10 @@ export default function TrafficPage() {
         />
       ) : null}
       <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <SheetContent className="w-full! max-w-none! gap-0 p-0 sm:w-[48rem]! sm:max-w-[48rem]!">
+        <SheetContent size="md" className="gap-0">
           {selected && (
             <>
-              <SheetHeader className="border-b px-5 py-4">
+              <SheetHeader className="border-b">
                 <div className="flex items-center gap-2 pr-8">
                   <MethodBadge method={selected.method} />
                   <Badge variant="secondary" className={cn("font-mono tabular-nums", statusTone(selected.status))}>
@@ -749,7 +687,7 @@ export default function TrafficPage() {
                 <SheetDescription className="break-all font-mono">{selected.url}</SheetDescription>
               </SheetHeader>
               <Tabs defaultValue="request" className="min-h-0 flex-1 gap-0">
-                <TabsList className="mx-5 mt-4 grid w-auto grid-cols-2">
+                <TabsList className="mx-4 mt-4">
                   <TabsTrigger value="request">{t("detail.request")}</TabsTrigger>
                   <TabsTrigger value="response">{t("detail.response")}</TabsTrigger>
                 </TabsList>
@@ -819,7 +757,7 @@ export default function TrafficPage() {
                 confirmDelete();
               }}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               {deleting
                 ? t(deleteMode === "all" ? "dialog.purging" : "dialog.deleting")

@@ -8,8 +8,9 @@ import { ArrowRightIcon, CheckIcon, PlayIcon, RefreshCwIcon, RotateCcwIcon, Save
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ListEmpty, LoadError, PageHeader, useConfirm } from "@/components/page";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -37,9 +38,7 @@ function Flow({ steps }: { readonly steps: readonly { label: string; human?: boo
           <span
             className={cn(
               "rounded border px-1.5 py-0.5",
-              s.human
-                ? "border-orange-500/50 bg-orange-500/10 text-orange-700 dark:text-orange-300"
-                : "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+              s.human ? "border-caution/50 bg-caution/10 text-caution" : "border-info/40 bg-info/10 text-info",
             )}
           >
             {s.label}
@@ -48,11 +47,11 @@ function Flow({ steps }: { readonly steps: readonly { label: string; human?: boo
       ))}
       <span className="ml-auto flex gap-3 text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span className="inline-block size-2 rounded-sm bg-sky-500" />
+          <span className="inline-block size-2 rounded-sm bg-info" />
           {t("auto")}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block size-2 rounded-sm bg-orange-500" />
+          <span className="inline-block size-2 rounded-sm bg-caution" />
           {t("human")}
         </span>
       </span>
@@ -64,7 +63,7 @@ function Kpi({ label, value, note }: { readonly label: string; readonly value: s
   return (
     <div className="rounded-xl border bg-card px-4 py-3">
       <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="font-semibold text-2xl tabular-nums">{value}</p>
+      <p className="font-semibold text-xl tabular-nums">{value}</p>
       {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
     </div>
   );
@@ -123,7 +122,7 @@ function Overview({ data, s }: { readonly data: QualityState; readonly s: Qualit
           note={t("kpi.checkedNote", { n: s.unchecked })}
         />
       </div>
-      <div className="overflow-x-auto rounded-lg border text-xs">
+      <div className="overflow-x-auto rounded-xl border bg-card text-xs">
         <table className="w-full min-w-[44rem] border-collapse">
           <thead>
             <tr>
@@ -147,26 +146,14 @@ function Overview({ data, s }: { readonly data: QualityState; readonly s: Qualit
                   </td>
                 ))}
                 <td className={cn(td, "text-right tabular-nums")}>{pct(w.agreed, w.reviews)}</td>
-                <td
-                  className={cn(td, "text-right tabular-nums", w.changed > 0 && "text-orange-600 dark:text-orange-400")}
-                >
-                  {w.changed}
-                </td>
-                <td
-                  className={cn(
-                    td,
-                    "text-right tabular-nums",
-                    w.corrected > 0 && "text-violet-600 dark:text-violet-400",
-                  )}
-                >
-                  {w.corrected}
-                </td>
+                <td className={cn(td, "text-right tabular-nums", w.changed > 0 && "text-caution")}>{w.changed}</td>
+                <td className={cn(td, "text-right tabular-nums", w.corrected > 0 && "text-primary")}>{w.corrected}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="rounded-lg border p-3 text-xs">
+      <div className="rounded-xl border bg-card p-3 text-xs">
         <p className="mb-2 font-medium text-sm">{t("loops")}</p>
         <dl className="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-3 gap-y-1">
           <dt className="text-muted-foreground">{t("loop.schedule")}</dt>
@@ -226,7 +213,7 @@ function Reviews({ data, s }: { readonly data: QualityState; readonly s: Quality
       {s.reviews.length === 0 ? (
         <p className={empty}>{t("noReviews")}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border text-xs">
+        <div className="overflow-x-auto rounded-xl border bg-card text-xs">
           <table className="w-full min-w-[52rem] border-collapse">
             <thead>
               <tr>
@@ -270,11 +257,11 @@ function Reviews({ data, s }: { readonly data: QualityState; readonly s: Quality
                   </td>
                   <td className={cn(td, "whitespace-nowrap")}>
                     {r.changed ? (
-                      <span className="text-orange-600 dark:text-orange-400">{t("result.changed")}</span>
+                      <span className="text-caution">{t("result.changed")}</span>
                     ) : r.agreed ? (
-                      <span className="text-emerald-600 dark:text-emerald-400">{t("result.agreed")}</span>
+                      <span className="text-success">{t("result.agreed")}</span>
                     ) : (
-                      <span className="text-amber-600 dark:text-amber-400">{t("result.kept")}</span>
+                      <span className="text-warning">{t("result.kept")}</span>
                     )}
                   </td>
                   <td className={cn(td, "text-muted-foreground")}>{r.pick_reason}</td>
@@ -393,7 +380,7 @@ function Thresholds({ data, s }: { readonly data: QualityState; readonly s: Qual
       <section className="grid grid-cols-1 gap-2">
         <h3 className="font-medium text-sm">{t("thresholds")}</h3>
         <p className="text-muted-foreground text-xs">{t("thresholdsHint")}</p>
-        <div className="overflow-x-auto rounded-lg border text-xs">
+        <div className="overflow-x-auto rounded-xl border bg-card text-xs">
           <table className="w-full min-w-[48rem] border-collapse">
             <thead>
               <tr>
@@ -424,7 +411,7 @@ function Thresholds({ data, s }: { readonly data: QualityState; readonly s: Qual
         {s.watch.length === 0 ? (
           <p className={empty}>{t("noWatch")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border text-xs">
+          <div className="overflow-x-auto rounded-xl border bg-card text-xs">
             <table className="w-full min-w-[52rem] border-collapse">
               <thead>
                 <tr>
@@ -443,7 +430,7 @@ function Thresholds({ data, s }: { readonly data: QualityState; readonly s: Qual
                       <span
                         className={cn(
                           "rounded border px-1.5 py-0.5 text-[10px]",
-                          w.kind === "slow" && "border-orange-500/50 text-orange-700 dark:text-orange-300",
+                          w.kind === "slow" && "border-caution/50 text-caution",
                         )}
                       >
                         {t(`watchKind.${w.kind}`)}
@@ -455,18 +442,12 @@ function Thresholds({ data, s }: { readonly data: QualityState; readonly s: Qual
                       {w.count} / {w.threshold}
                       <span className="mt-0.5 block h-1 w-16 overflow-hidden rounded-full bg-muted">
                         <span
-                          className="block h-full bg-amber-500"
+                          className="block h-full bg-warning"
                           style={{ width: `${Math.min(100, (w.count / w.threshold) * 100)}%` }}
                         />
                       </span>
                     </td>
-                    <td
-                      className={cn(
-                        td,
-                        "text-right tabular-nums",
-                        w.seen_runs >= 3 && "font-medium text-orange-600 dark:text-orange-400",
-                      )}
-                    >
+                    <td className={cn(td, "text-right tabular-nums", w.seen_runs >= 3 && "font-medium text-caution")}>
                       {w.seen_runs}
                     </td>
                     <td className={cn(td, "whitespace-nowrap text-muted-foreground tabular-nums")}>{when(w.last)}</td>
@@ -560,7 +541,7 @@ function Gaps({ s, onChanged }: { readonly s: QualitySource; readonly onChanged:
         {s.unmatched.length === 0 ? (
           <p className={empty}>{t("noUnmatched")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border text-xs">
+          <div className="overflow-x-auto rounded-xl border bg-card text-xs">
             <table className="w-full min-w-[40rem] border-collapse">
               <thead>
                 <tr>
@@ -575,13 +556,7 @@ function Gaps({ s, onChanged }: { readonly s: QualitySource; readonly onChanged:
                 {s.unmatched.map((r) => (
                   <tr key={r.id}>
                     <td className={cn(td, "font-mono text-[11px]")}>{r.id}</td>
-                    <td
-                      className={cn(
-                        td,
-                        "text-right tabular-nums",
-                        r.level >= 10 && "font-medium text-red-600 dark:text-red-400",
-                      )}
-                    >
+                    <td className={cn(td, "text-right tabular-nums", r.level >= 10 && "font-medium text-danger")}>
                       {r.level}
                     </td>
                     <td className={td}>{r.desc}</td>
@@ -602,8 +577,9 @@ function Golden({ s, onChanged }: { readonly s: QualitySource; readonly onChange
   const t = useTranslations("siemQuality");
   const tc = useTranslations("protectedAssets.cases");
   const g = s.golden;
+  const confirm = useConfirm();
   const run = async () => {
-    if (!window.confirm(t("goldenConfirm", { n: s.golden_set }))) return;
+    if (!(await confirm({ title: t("goldenConfirm", { n: s.golden_set }) }))) return;
     await qualityApi.runGolden(s.id).catch(() => undefined);
     setTimeout(onChanged, 1500);
   };
@@ -642,7 +618,7 @@ function Golden({ s, onChanged }: { readonly s: QualitySource; readonly onChange
             />
             <Kpi label={t("goldenAt")} value={when(g.at)} note={g.model} />
           </div>
-          <div className="overflow-x-auto rounded-lg border text-xs">
+          <div className="overflow-x-auto rounded-xl border bg-card text-xs">
             <table className="w-full min-w-[40rem] border-collapse">
               <thead>
                 <tr>
@@ -655,13 +631,13 @@ function Golden({ s, onChanged }: { readonly s: QualitySource; readonly onChange
               </thead>
               <tbody>
                 {g.items.map((i) => (
-                  <tr key={i.case_key} className={cn(i.got !== i.expected && "bg-orange-500/5")}>
+                  <tr key={i.case_key} className={cn(i.got !== i.expected && "bg-caution/5")}>
                     <td className={td}>
                       {i.title || i.case_key}
                       <span className="block font-mono text-[10px] text-muted-foreground">{i.case_key}</span>
                     </td>
                     <td className={td}>{tc(`verdict.${i.expected}`)}</td>
-                    <td className={cn(td, i.got !== i.expected && "font-medium text-orange-600 dark:text-orange-400")}>
+                    <td className={cn(td, i.got !== i.expected && "font-medium text-caution")}>
                       {i.got ? tc(`verdict.${i.got}`) : i.error}
                     </td>
                     <td className={cn(td, "text-muted-foreground")}>{i.method && tc(`method.${i.method}`)}</td>
@@ -706,9 +682,38 @@ export default function QualityPage() {
   const source = data?.sources.find((s) => s.id === sourceId) ?? data?.sources[0];
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      {/* 탭과 도구를 한 줄에 둔다: 버튼 몇 개로 줄을 따로 차지하지 않는다. */}
-      <div className="-mb-1 flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <>
+            {(data?.sources.length ?? 0) > 1 && (
+              <Select value={source?.id} onValueChange={setSourceId}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {data?.sources.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => void load()}
+              disabled={loading}
+              aria-label={t("refresh")}
+              title={t("refresh")}
+            >
+              <RefreshCwIcon className={cn(loading && "animate-spin")} />
+            </Button>
+          </>
+        }
+      />
+      <div className="-mb-2 flex flex-wrap items-center gap-2">
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList>
             {TABS.map((k) => (
@@ -718,46 +723,17 @@ export default function QualityPage() {
             ))}
           </TabsList>
         </Tabs>
-        <span className="ml-auto flex items-center gap-2">
-          {(data?.sources.length ?? 0) > 1 && (
-            <select
-              value={source?.id}
-              onChange={(e) => setSourceId(e.target.value)}
-              className="h-7 rounded-md border bg-background px-2 text-xs"
-            >
-              {data?.sources.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => void load()}
-            disabled={loading}
-            aria-label={t("refresh")}
-            title={t("refresh")}
-          >
-            <RefreshCwIcon className={cn(loading && "animate-spin")} />
-          </Button>
-        </span>
       </div>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <LoadError message={error} onRetry={() => void load()} />}
       {data === null && !error && <Skeleton className="h-96 w-full" />}
-      {data && !source && <p className={empty}>{t("empty")}</p>}
+      {data && !source && <ListEmpty title={t("empty")} />}
       {data && source && tab === "overview" && <Overview data={data} s={source} />}
       {data && source && tab === "reviews" && <Reviews data={data} s={source} />}
       {data && source && tab === "checklist" && <Checklist data={data} s={source} onSaved={() => void load()} />}
       {data && source && tab === "thresholds" && <Thresholds data={data} s={source} />}
       {data && source && tab === "gaps" && <Gaps s={source} onChanged={() => void load()} />}
       {data && source && tab === "golden" && <Golden s={source} onChanged={() => void load()} />}
-      {tab === "feedback" && <FeedbackView embedded />}
+      {tab === "feedback" && <FeedbackView />}
     </div>
   );
 }

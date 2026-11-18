@@ -6,6 +6,7 @@ import { PlusIcon, RefreshCwIcon, ServerIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, ListEmpty, PageHeader } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -357,17 +358,16 @@ export default function MCPPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button onClick={openAdd}>
+            <PlusIcon /> {t("addCard")}
+          </Button>
+        }
+      />
+      {servers.length === 0 && <ListEmpty icon={<ServerIcon />} title={t("empty")} />}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <button
-          type="button"
-          onClick={openAdd}
-          className="text-foreground/70 border-foreground/70 hover:bg-muted/60 hover:shadow-sm flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed transition"
-        >
-          <PlusIcon className="size-6" />
-          <span className="text-sm">{t("addCard")}</span>
-        </button>
-
         {servers.map((s) => (
           <Card
             key={s.id}
@@ -385,8 +385,8 @@ export default function MCPPage() {
                 {/* biome-ignore lint/a11y/useKeyWithClickEvents: 위와 같이 클릭 전파 차단 전용이라 별도 키보드 핸들러가 필요 없다 */}
                 <div className="ml-auto flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <Switch checked={s.enabled} onCheckedChange={() => toggleEnabled(s)} aria-label={t("enableAria")} />
-                  <Button size="icon" variant="outline" aria-label={t("deleteAria")} onClick={() => removeServer(s)}>
-                    <Trash2Icon className="text-destructive" />
+                  <Button size="icon-xs" variant="outline" aria-label={t("deleteAria")} onClick={() => removeServer(s)}>
+                    <Trash2Icon className="text-danger" />
                   </Button>
                 </div>
               </div>
@@ -417,7 +417,7 @@ export default function MCPPage() {
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full data-[side=right]:sm:max-w-lg">
+        <SheetContent side="right" size="md">
           <SheetHeader>
             <SheetTitle>{editing ? editing.name : t("addServer")}</SheetTitle>
             <SheetDescription>{t("sheetDesc")}</SheetDescription>
@@ -438,25 +438,22 @@ export default function MCPPage() {
               </TabsList>
               <TabsContent value="config" className="min-h-0 flex-1 overflow-y-auto">
                 {renderForm()}
-                <div className="flex gap-2 pt-2 pb-6">
-                  <Button onClick={saveForm} disabled={saving}>
-                    {t("save")}
-                  </Button>
-                </div>
               </TabsContent>
               <TabsContent value="tools" className="min-h-0 flex-1 overflow-y-auto">
                 {renderTools()}
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4">
-              {renderForm()}
-              <div className="pt-2 pb-6">
-                <Button onClick={saveForm} disabled={saving}>
-                  <PlusIcon /> {t("add")}
-                </Button>
-              </div>
-            </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4">{renderForm()}</div>
+          )}
+          {/* 도구 탭은 보기 전용이라 하단 버튼 줄을 두지 않는다. */}
+          {(!editing || tab === "config") && (
+            <DrawerFooter
+              onCancel={() => setOpen(false)}
+              confirmLabel={editing ? t("save") : t("add")}
+              onConfirm={saveForm}
+              pending={saving}
+            />
           )}
         </SheetContent>
       </Sheet>

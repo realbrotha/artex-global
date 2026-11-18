@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 
 import { CopyButton } from "@/components/copy-button";
 import { Markdown } from "@/components/markdown";
+import { TableSkeletonRows } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import {
   AlertDialog,
@@ -110,6 +111,8 @@ interface FindingsTableProps {
   onDelete: (finding: Finding) => void;
   /** 全选框的无障碍标签,平铺视图与分组视图措辞不同。 */
   selectAllLabel?: string;
+  /** 첫 읽기 중: 표 뼈대 3줄 */
+  loading?: boolean;
 }
 
 // FindingsTable 是发现列表的表格主体,平铺视图与按任务分组视图共用同一份行渲染
@@ -132,6 +135,7 @@ export function FindingsTable({
   onDeepen,
   onDelete,
   selectAllLabel,
+  loading = false,
 }: FindingsTableProps) {
   const t = useTranslations("findings");
   const builtinLabels = useBuiltinLabels();
@@ -245,7 +249,7 @@ export function FindingsTable({
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   {f.finding_id ? (
                     <Select value={f.status} onValueChange={(v) => onStatusChange(f, v as FindingStatus)}>
-                      <SelectTrigger size="sm" className="h-7 w-full border-none px-1 shadow-none focus-visible:ring-0">
+                      <SelectTrigger size="sm" className="w-full border-none px-1 shadow-none focus-visible:ring-0">
                         <StatusBadge domain="finding" value={f.status} dot />
                       </SelectTrigger>
                       <SelectContent position="popper" align="end">
@@ -417,7 +421,7 @@ export function FindingsTable({
                                 text={reports[rowKey]?.text}
                                 successMessage={t("table.reportCopied")}
                                 variant="ghost"
-                                className="h-6 px-2 text-xs"
+                                className="px-2 text-xs"
                               />
                             )}
                           </div>
@@ -447,7 +451,8 @@ export function FindingsTable({
             </React.Fragment>
           );
         })}
-        {items.length === 0 && (
+        {loading && <TableSkeletonRows columns={COLUMN_COUNT} />}
+        {!loading && items.length === 0 && (
           <TableRow>
             <TableCell colSpan={COLUMN_COUNT} className="py-12 text-center text-sm text-muted-foreground">
               {t("empty")}

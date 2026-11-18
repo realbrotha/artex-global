@@ -52,7 +52,7 @@ function Tile({
         {icon}
         {label}
       </span>
-      <span className={cn("font-semibold text-2xl tabular-nums", tone)}>{value.toLocaleString()}</span>
+      <span className={cn("font-semibold text-xl tabular-nums", tone)}>{value.toLocaleString()}</span>
       <span className="text-[11px] text-muted-foreground">{children}</span>
     </Link>
   );
@@ -127,7 +127,7 @@ export function SiemSummary() {
         icon={<ShieldAlertIcon />}
         label={t("fails")}
         value={summary.fail}
-        tone={summary.fail > 0 ? "text-red-600 dark:text-red-400" : undefined}
+        tone={summary.fail > 0 ? "text-danger" : undefined}
       >
         {t("failsDetail", { hosts: summary.failingHosts, accepted: summary.accepted })}
       </Tile>
@@ -136,7 +136,7 @@ export function SiemSummary() {
         icon={<SirenIcon />}
         label={t("cases")}
         value={summary.live.length}
-        tone={summary.live.length > 0 ? "text-orange-600 dark:text-orange-400" : undefined}
+        tone={summary.live.length > 0 ? "text-caution" : undefined}
       >
         {bySeverity.length > 0 ? bySeverity.map(([s, n]) => `${tc(`severity.${s}`)} ${n}`).join(" · ") : t("casesNone")}
       </Tile>

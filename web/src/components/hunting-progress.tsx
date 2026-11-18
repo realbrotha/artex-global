@@ -59,14 +59,13 @@ export function HuntingProgress({
                 aria-pressed={!!run && activePhase === phase.id}
                 aria-controls={run ? resultTabsId : undefined}
                 className={cn(
-                  "h-full w-full min-w-0 space-y-2 rounded-lg border p-2 text-left transition-colors hover:border-sky-500/60 focus-visible:outline-2 focus-visible:outline-sky-500 focus-visible:outline-offset-4 disabled:cursor-default disabled:opacity-60 motion-reduce:transition-none md:p-3",
-                  status === "completed" && "border-emerald-500/25 bg-emerald-500/5",
+                  "h-full w-full min-w-0 space-y-2 rounded-lg border p-2 text-left transition-colors hover:border-info/60 focus-visible:outline-2 focus-visible:outline-info focus-visible:outline-offset-4 disabled:cursor-default disabled:opacity-60 motion-reduce:transition-none md:p-3",
+                  status === "completed" && "border-success/25 bg-success/5",
                   ["insufficient_data", "cancelled", "interrupted"].includes(status) &&
-                    "border-amber-500/30 bg-amber-500/5",
+                    "border-warning/30 bg-warning/5",
                   status === "failed" && "border-destructive/30 bg-destructive/5",
                   run && activePhase === phase.id && status !== "running" && "ring-1 ring-foreground/30",
-                  status === "running" &&
-                    "border-sky-500 bg-sky-500/15 text-sky-900 shadow-sm ring-2 ring-sky-500/70 dark:bg-sky-500/20 dark:text-sky-100",
+                  status === "running" && "border-info bg-info/15 text-info shadow-sm ring-2 ring-info/70",
                 )}
               >
                 <span className="flex flex-wrap items-center gap-1.5 font-medium text-[11px] md:text-sm">
@@ -85,7 +84,7 @@ export function HuntingProgress({
                   {status === "running" ? (
                     <span
                       aria-hidden="true"
-                      className="inline-flex items-center gap-1 rounded bg-sky-600 px-1 py-0.5 font-semibold text-[8px] text-white leading-none"
+                      className="inline-flex items-center gap-1 rounded bg-info px-1 py-0.5 font-semibold text-[8px] text-white leading-none"
                     >
                       <span className="size-1 rounded-full bg-white motion-safe:animate-pulse" />
                       LIVE

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useTranslations } from "next-intl";
 
+import { AuthStage } from "@/app/(auth)/_components/auth-stage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,86 +70,61 @@ export default function SetupPage() {
   if (checking) return null;
 
   return (
-    <div className="flex h-dvh">
-      {/* Left panel */}
-      <div className="hidden flex-col items-center justify-center bg-primary p-12 text-center lg:flex lg:w-1/3">
-        <div className="relative flex items-center justify-center">
-          <div className="absolute size-80 rounded-full border border-primary-foreground/10" />
-          <div className="absolute size-60 rounded-full border border-primary-foreground/15" />
-          <div className="absolute size-40 rounded-full border border-primary-foreground/20" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="ARTEX" width={160} height={160} className="relative brightness-0 invert" />
+    <AuthStage
+      title={unavailable ? t("setup.unavailableTitle") : t("setup.title")}
+      description={unavailable ? t("setup.unavailableDesc") : t("setup.desc")}
+    >
+      {unavailable ? (
+        <div className="flex flex-col gap-4">
+          {error && <p className="text-center text-sm text-destructive">{error}</p>}
+          <Button type="button" className="w-full" onClick={() => window.location.reload()}>
+            {t("setup.retry")}
+          </Button>
         </div>
-      </div>
-
-      {/* Right panel */}
-      <div className="flex w-full items-center justify-center bg-background p-8 lg:w-2/3">
-        <div className="w-full max-w-md space-y-10 py-24 lg:py-32">
-          <div className="space-y-4 text-center">
-            <h2 className="text-2xl font-medium tracking-tight">
-              {unavailable ? t("setup.unavailableTitle") : t("setup.title")}
-            </h2>
-            <p className="mx-auto max-w-xl text-muted-foreground">
-              {unavailable ? t("setup.unavailableDesc") : t("setup.desc")}
-            </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="setup-token">{t("setup.setupToken")}</Label>
+            <Input
+              id="setup-token"
+              type="text"
+              value={setupToken}
+              onChange={(e) => setSetupToken(e.target.value)}
+              placeholder={t("setup.setupTokenPlaceholder")}
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="text-xs text-muted-foreground">{t("setup.setupTokenHelp")}</p>
           </div>
-          {unavailable ? (
-            <div className="flex flex-col gap-4">
-              {error && <p className="text-center text-sm text-destructive">{error}</p>}
-              <Button type="button" className="w-full" onClick={() => window.location.reload()}>
-                {t("setup.retry")}
-              </Button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="setup-token">{t("setup.setupToken")}</Label>
-                <Input
-                  id="setup-token"
-                  type="text"
-                  value={setupToken}
-                  onChange={(e) => setSetupToken(e.target.value)}
-                  placeholder={t("setup.setupTokenPlaceholder")}
-                  autoFocus
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                <p className="text-xs text-muted-foreground">{t("setup.setupTokenHelp")}</p>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="password">{t("setup.newPassword")}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t("setup.newPasswordPlaceholder")}
-                  autoComplete="new-password"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="confirm">{t("setup.confirmPassword")}</Label>
-                <Input
-                  id="confirm"
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  placeholder={t("setup.confirmPlaceholder")}
-                  autoComplete="new-password"
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading || !setupToken.trim() || !password || !confirm}
-              >
-                {loading ? t("setup.submitting") : t("setup.submit")}
-              </Button>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">{t("setup.newPassword")}</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t("setup.newPasswordPlaceholder")}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm">{t("setup.confirmPassword")}</Label>
+            <Input
+              id="confirm"
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder={t("setup.confirmPlaceholder")}
+              autoComplete="new-password"
+            />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" className="w-full" disabled={loading || !setupToken.trim() || !password || !confirm}>
+            {loading ? t("setup.submitting") : t("setup.submit")}
+          </Button>
+        </form>
+      )}
+    </AuthStage>
   );
 }

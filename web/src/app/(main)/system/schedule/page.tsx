@@ -8,6 +8,7 @@ import { PlayIcon, PlusIcon, SaveIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { LoadError, PageHeader } from "@/components/page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,14 +82,9 @@ export default function SchedulePage() {
 
   if (!draft) {
     return (
-      <div className="flex flex-1 flex-col gap-3">
-        {error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : (
-          <Skeleton className="h-96 w-full" />
-        )}
+      <div className="flex flex-col gap-4">
+        <PageHeader />
+        {error ? <LoadError message={error} onRetry={() => void load()} /> : <Skeleton className="h-96 w-full" />}
       </div>
     );
   }
@@ -153,17 +149,31 @@ export default function SchedulePage() {
     );
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <>
+            <Button variant="outline" onClick={() => void runNow()} disabled={running}>
+              <PlayIcon />
+              {t("runNow")}
+            </Button>
+            <Button onClick={() => void save()} disabled={!dirty || saving}>
+              <SaveIcon />
+              {t("save")}
+            </Button>
+          </>
+        }
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border bg-card px-4 py-3">
           <p className="text-[11px] text-muted-foreground">{t("status")}</p>
-          <p className={cn("font-semibold", state?.schedule.enabled ? "text-emerald-600 dark:text-emerald-400" : "")}>
+          <p className={cn("font-semibold", state?.schedule.enabled ? "text-success" : "")}>
             {state?.schedule.enabled ? t("on") : t("off")}
           </p>
         </div>
@@ -177,16 +187,6 @@ export default function SchedulePage() {
         <div className="rounded-xl border bg-card px-4 py-3">
           <p className="text-[11px] text-muted-foreground">{t("nextRun")}</p>
           <p className="font-semibold">{state?.schedule.enabled ? stamp(state?.next_run) : "—"}</p>
-        </div>
-        <div className="flex flex-row items-center gap-2 sm:flex-col sm:items-stretch sm:justify-center">
-          <Button size="sm" onClick={() => void save()} disabled={!dirty || saving}>
-            <SaveIcon />
-            {t("save")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => void runNow()} disabled={running}>
-            <PlayIcon />
-            {t("runNow")}
-          </Button>
         </div>
       </div>
 
@@ -238,7 +238,7 @@ export default function SchedulePage() {
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                className="h-8 w-28 text-xs"
+                className="w-28 text-xs"
               />
               <Button size="xs" variant="outline" onClick={addTime}>
                 <PlusIcon />
@@ -276,12 +276,7 @@ export default function SchedulePage() {
               {t(`judgeModes.${m}`)}
             </button>
           ))}
-          <span
-            className={cn(
-              "text-xs",
-              runner?.available ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400",
-            )}
-          >
+          <span className={cn("text-xs", runner?.available ? "text-muted-foreground" : "text-warning")}>
             {runner?.available
               ? t("runnerFound", { version: runner.version || runner.command })
               : t("runnerMissing", { command: runner?.command ?? "claude" })}
@@ -294,18 +289,13 @@ export default function SchedulePage() {
               value={draft.runner_model}
               onChange={(e) => set({ runner_model: e.target.value.trim() })}
               placeholder={t("runnerModelDefault")}
-              className="h-8 w-48 text-xs"
+              className="w-48 text-xs"
             />
             <Button size="xs" variant="outline" onClick={() => void testRunner()} disabled={probe === "running"}>
               {probe === "running" ? t("runnerTesting") : t("runnerTest")}
             </Button>
             {probe && probe !== "running" && (
-              <span
-                className={cn(
-                  "break-all text-xs",
-                  probe.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive",
-                )}
-              >
+              <span className={cn("break-all text-xs", probe.ok ? "text-success" : "text-destructive")}>
                 {probe.text}
               </span>
             )}
@@ -331,7 +321,7 @@ export default function SchedulePage() {
             max={100}
             value={draft.review_limit}
             onChange={(e) => set({ review_limit: Math.max(0, Number(e.target.value) || 0) })}
-            className="h-8 w-24 text-xs"
+            className="w-24 text-xs"
             disabled={!draft.auto_judge}
           />
         </Row>
@@ -361,7 +351,7 @@ export default function SchedulePage() {
             max={500}
             value={draft.judge_limit}
             onChange={(e) => set({ judge_limit: Number(e.target.value) || 1 })}
-            className="h-8 w-24 text-xs"
+            className="w-24 text-xs"
             disabled={!draft.auto_judge}
           />
           <span className="text-muted-foreground text-xs">

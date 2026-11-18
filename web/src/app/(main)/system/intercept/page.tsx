@@ -2,19 +2,27 @@
 
 import * as React from "react";
 
-import { BotIcon, ListFilterIcon, PencilIcon, PlusIcon, ShieldAlertIcon, Trash2Icon } from "lucide-react";
+import {
+  BotIcon,
+  ListFilterIcon,
+  PencilIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  ShieldAlertIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, ListEmpty, PageHeader, TableSkeletonRows } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,7 +69,7 @@ function JudgeSparkbars({ daily }: { daily: JudgeDayUsage[] }) {
           <div
             key={d.date}
             title={t("judge.usageBarTitle", { date: d.date, calls: d.calls, tokens: fmtTokens(total) })}
-            className="min-w-[2px] flex-1 rounded-sm bg-violet-500/60 hover:bg-violet-500"
+            className="min-w-[2px] flex-1 rounded-sm bg-primary/60 hover:bg-primary"
             style={{ height: `${h}%` }}
           />
         );
@@ -125,7 +133,7 @@ function ActionBadge({ action, label }: { action: InterceptAction; label: string
   if (action === "allow") return <Badge variant="secondary">{label}</Badge>;
   if (action === "deny") return <Badge variant="destructive">{label}</Badge>;
   return (
-    <Badge variant="outline" className="border-amber-400 text-amber-600">
+    <Badge variant="outline" className="border-warning/50 text-warning">
       {label}
     </Badge>
   );
@@ -230,11 +238,11 @@ function JudgeCard() {
       {/* 사용 스위치 — 독립 강조 바 */}
       <div
         className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 ${
-          cfg.enabled ? "border-violet-400/50 bg-violet-50/40 dark:bg-violet-950/20" : "bg-muted/40"
+          cfg.enabled ? "border-primary/50 bg-primary/40" : "bg-muted/40"
         }`}
       >
         <div className="flex items-center gap-2.5">
-          <BotIcon className={`h-5 w-5 shrink-0 ${cfg.enabled ? "text-violet-600" : "text-muted-foreground"}`} />
+          <BotIcon className={`h-5 w-5 shrink-0 ${cfg.enabled ? "text-primary" : "text-muted-foreground"}`} />
           <div>
             <p className="text-sm font-semibold leading-tight">{t("judge.title")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -262,8 +270,14 @@ function JudgeCard() {
                 <p className="text-sm font-medium">{t("judge.usageTitle")}</p>
                 <p className="text-xs text-muted-foreground">{t("judge.usageDesc")}</p>
               </div>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => void loadUsage()}>
-                {t("judge.usageRefresh")}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t("judge.usageRefresh")}
+                title={t("judge.usageRefresh")}
+                onClick={() => void loadUsage()}
+              >
+                <RefreshCwIcon />
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -295,7 +309,7 @@ function JudgeCard() {
                   <p className="text-sm font-medium">{t("judge.promptTitle")}</p>
                   <p className="text-xs text-muted-foreground">{t("judge.promptDesc")}</p>
                 </div>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={restorePrompt} disabled={saving}>
+                <Button variant="ghost" size="xs" onClick={restorePrompt} disabled={saving}>
                   {t("judge.restoreTemplate")}
                 </Button>
               </div>
@@ -400,7 +414,7 @@ function JudgeCard() {
       )}
 
       <div className="flex justify-end">
-        <Button size="sm" onClick={save} disabled={saving || loading}>
+        <Button onClick={save} disabled={saving || loading}>
           {saving ? t("judge.saving") : t("judge.saveConfig")}
         </Button>
       </div>
@@ -626,8 +640,16 @@ export default function InterceptPage() {
   // ---- render ----
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <Tabs defaultValue="rules" className="flex-1">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button onClick={openNew}>
+            <PlusIcon />
+            {t("rules.add")}
+          </Button>
+        }
+      />
+      <Tabs defaultValue="rules">
         {/* 탭이 먼저, 가로채기 범위(규칙 대조와 모델 폴백 공용)는 같은 줄 오른쪽에 둔다. */}
         <div className="flex flex-wrap items-center gap-2">
           <TabsList>
@@ -636,13 +658,13 @@ export default function InterceptPage() {
           </TabsList>
           <div
             className={`ml-auto flex min-w-0 max-w-full items-center gap-2 rounded-md border px-2 py-1 text-xs ${
-              scopeTools.length === 0 ? "border-amber-400/60 bg-amber-50/50 dark:bg-amber-950/20" : "bg-muted/40"
+              scopeTools.length === 0 ? "border-warning/60 bg-warning/50" : "bg-muted/40"
             }`}
           >
             <ListFilterIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span className="shrink-0 font-medium">{t("scope.label")}</span>
             {scopeTools.length === 0 ? (
-              <span className="text-amber-700 dark:text-amber-500">{t("scope.empty")}</span>
+              <span className="text-warning">{t("scope.empty")}</span>
             ) : (
               <>
                 <Badge variant="secondary" className="shrink-0">
@@ -666,43 +688,38 @@ export default function InterceptPage() {
 
         {/* ---- tab: rules ---- */}
         <TabsContent value="rules" className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">{t("rules.priorityHint")}</p>
-            <Button onClick={openNew} size="sm" className="shrink-0">
-              <PlusIcon className="h-4 w-4" />
-              {t("rules.add")}
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground">{t("rules.priorityHint")}</p>
 
-          <Card>
-            <CardContent className="p-0">
-              {loading ? (
-                <p className="p-6 text-sm text-muted-foreground">{t("rules.loading")}</p>
-              ) : rules.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                  <ShieldAlertIcon className="h-8 w-8 text-muted-foreground/40" />
-                  <p className="text-sm text-muted-foreground">{t("rules.empty")}</p>
-                  <Button size="sm" variant="outline" onClick={openNew}>
-                    <PlusIcon className="h-4 w-4" />
-                    {t("rules.addFirst")}
-                  </Button>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[72px]">{t("rules.colPriority")}</TableHead>
-                      <TableHead>{t("rules.colName")}</TableHead>
-                      <TableHead className="w-[90px]">{t("rules.colTarget")}</TableHead>
-                      <TableHead className="w-[80px]">{t("rules.colType")}</TableHead>
-                      <TableHead>{t("rules.colPattern")}</TableHead>
-                      <TableHead className="w-[72px]">{t("rules.colAction")}</TableHead>
-                      <TableHead className="w-[64px] text-center">{t("rules.colEnabled")}</TableHead>
-                      <TableHead className="w-[80px]" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rules.map((rule) => (
+          {!loading && rules.length === 0 ? (
+            <ListEmpty
+              icon={<ShieldAlertIcon />}
+              title={t("rules.empty")}
+              action={
+                <Button variant="outline" onClick={openNew}>
+                  <PlusIcon />
+                  {t("rules.addFirst")}
+                </Button>
+              }
+            />
+          ) : (
+            <div className="rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[72px]">{t("rules.colPriority")}</TableHead>
+                    <TableHead>{t("rules.colName")}</TableHead>
+                    <TableHead className="w-[90px]">{t("rules.colTarget")}</TableHead>
+                    <TableHead className="w-[80px]">{t("rules.colType")}</TableHead>
+                    <TableHead>{t("rules.colPattern")}</TableHead>
+                    <TableHead className="w-[72px]">{t("rules.colAction")}</TableHead>
+                    <TableHead className="w-[64px] text-center">{t("rules.colEnabled")}</TableHead>
+                    <TableHead className="w-[80px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading && <TableSkeletonRows columns={8} />}
+                  {!loading &&
+                    rules.map((rule) => (
                       <TableRow key={rule.id} className={!rule.enabled ? "opacity-40" : ""}>
                         <TableCell>
                           <span className="font-mono text-xs tabular-nums">{rule.priority}</span>
@@ -731,13 +748,18 @@ export default function InterceptPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-0.5">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(rule)}>
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
+                              aria-label={t("editor.editTitle")}
+                              onClick={() => openEdit(rule)}
+                            >
                               <PencilIcon className="h-3.5 w-3.5" />
                             </Button>
                             <Button
-                              size="icon"
+                              size="icon-xs"
                               variant="ghost"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              className="text-danger hover:text-danger"
                               onClick={() => handleDelete(rule.id)}
                             >
                               <Trash2Icon className="h-3.5 w-3.5" />
@@ -746,11 +768,10 @@ export default function InterceptPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
 
         {/* ---- tab: model ---- */}
@@ -761,13 +782,13 @@ export default function InterceptPage() {
 
       {/* ---- editor sheet ---- */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="flex flex-col gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="border-b px-6 py-4">
+        <SheetContent side="right" size="sm">
+          <SheetHeader>
             <SheetTitle>{editing ? t("editor.editTitle") : t("editor.newTitle")}</SheetTitle>
             <SheetDescription className="text-xs">{t("editor.desc")}</SheetDescription>
           </SheetHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-4">
             <Field label={t("editor.name")}>
               <Input
                 placeholder={t("editor.namePlaceholder")}
@@ -818,11 +839,11 @@ export default function InterceptPage() {
                 placeholder={form.match_type === "regex" ? "^Bash$" : "rm -rf"}
                 value={form.pattern}
                 onChange={(e) => set({ pattern: e.target.value })}
-                className={regexErr ? "border-destructive focus-visible:ring-destructive" : ""}
+                className={regexErr ? "border-danger focus-visible:ring-danger" : ""}
               />
-              {regexErr && <p className="text-xs text-destructive mt-1">{regexErr}</p>}
+              {regexErr && <p className="text-xs text-danger mt-1">{regexErr}</p>}
               {regexWarn && (
-                <p className="text-xs text-amber-600 mt-1">
+                <p className="text-xs text-warning mt-1">
                   {t.rich("editor.regexWarn", { code: (c) => <code className="font-mono">{c}</code> })}
                 </p>
               )}
@@ -908,32 +929,28 @@ export default function InterceptPage() {
             </div>
           </div>
 
-          <SheetFooter className="border-t px-6 py-4 flex-row justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              {t("editor.cancel")}
-            </Button>
-            <Button onClick={handleSave} disabled={saving || !!regexErr}>
-              {saving ? t("editor.saving") : t("editor.save")}
-            </Button>
-          </SheetFooter>
+          <DrawerFooter
+            onCancel={() => setOpen(false)}
+            confirmLabel={saving ? t("editor.saving") : t("editor.save")}
+            onConfirm={handleSave}
+            confirmDisabled={!!regexErr}
+            pending={saving}
+          />
         </SheetContent>
       </Sheet>
 
-      {/* ---- scope dialog ---- */}
-      <Dialog open={scopeOpen} onOpenChange={setScopeOpen}>
-        <DialogContent
-          className="sm:max-w-lg flex flex-col overflow-hidden p-0 gap-0"
-          style={{ maxHeight: "min(80vh, 560px)" }}
-        >
-          <DialogHeader className="shrink-0 border-b px-6 py-4">
-            <DialogTitle className="flex items-center gap-2">
+      {/* ---- scope drawer ---- */}
+      <Sheet open={scopeOpen} onOpenChange={setScopeOpen}>
+        <SheetContent side="right" size="sm">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
               <ListFilterIcon className="h-4 w-4" />
               {t("scope.dialogTitle")}
-            </DialogTitle>
-            <DialogDescription className="text-xs">{t("scope.dialogDesc")}</DialogDescription>
-          </DialogHeader>
+            </SheetTitle>
+            <SheetDescription className="text-xs">{t("scope.dialogDesc")}</SheetDescription>
+          </SheetHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-5">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-4">
             {scopeLoading ? (
               <p className="text-sm text-muted-foreground py-4">{t("rules.loading")}</p>
             ) : (
@@ -972,16 +989,15 @@ export default function InterceptPage() {
             )}
           </div>
 
-          <div className="shrink-0 border-t px-6 py-3 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setScopeOpen(false)}>
-              {t("editor.cancel")}
-            </Button>
-            <Button size="sm" onClick={saveScope} disabled={scopeSaving || scopeLoading}>
-              {scopeSaving ? t("editor.saving") : t("editor.save")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          <DrawerFooter
+            onCancel={() => setScopeOpen(false)}
+            confirmLabel={scopeSaving ? t("editor.saving") : t("editor.save")}
+            onConfirm={saveScope}
+            confirmDisabled={scopeLoading}
+            pending={scopeSaving}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

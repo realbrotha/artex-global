@@ -44,10 +44,10 @@ function Fact({ label, children }: { readonly label: string; readonly children: 
 type StepStatus = AnalysisStep["status"] | "pending" | "waiting" | "skipped";
 
 function StepIcon({ status }: { readonly status: StepStatus }) {
-  if (status === "waiting") return <CirclePauseIcon className="size-3.5 text-amber-600 dark:text-amber-400" />;
+  if (status === "waiting") return <CirclePauseIcon className="size-3.5 text-warning" />;
   if (status === "skipped") return <CircleMinusIcon className="size-3.5 text-muted-foreground" />;
   if (status === "running") return <Spinner className="size-3.5" />;
-  if (status === "done") return <CheckIcon className="size-3.5 text-emerald-600 dark:text-emerald-400" />;
+  if (status === "done") return <CheckIcon className="size-3.5 text-success" />;
   if (status === "failed") return <XIcon className="size-3.5 text-destructive" />;
   return <CircleDashedIcon className="size-3.5 text-muted-foreground" />;
 }
@@ -76,7 +76,7 @@ function Step({
             <span
               className={cn(
                 "ml-1.5 font-normal text-[11px]",
-                status === "waiting" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+                status === "waiting" ? "text-warning" : "text-muted-foreground",
               )}
             >
               {note}
@@ -235,7 +235,7 @@ export function AnalysisPanel({
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {error && <p className="mb-3 break-words text-destructive text-xs">{error}</p>}
         {job.state === "failed" && <p className="mb-3 break-words text-destructive text-xs">{job.error}</p>}
-        {job.state === "stopped" && <p className="mb-3 text-amber-600 text-xs dark:text-amber-400">{t("stopped")}</p>}
+        {job.state === "stopped" && <p className="mb-3 text-warning text-xs">{t("stopped")}</p>}
 
         <ol className="grid grid-cols-1 gap-4">
           <Step status={job.collect.status} title={t("step.collect")}>
@@ -268,7 +268,7 @@ export function AnalysisPanel({
                         <span className="truncate text-foreground">{rule.desc}</span>
                         <span className="h-1 overflow-hidden rounded-full bg-muted">
                           <span
-                            className="block h-full rounded-full bg-sky-500"
+                            className="block h-full rounded-full bg-info"
                             style={{ width: `${(rule.count / mostAlerts) * 100}%` }}
                           />
                         </span>
@@ -292,7 +292,7 @@ export function AnalysisPanel({
                         </span>
                         <span className="h-1 overflow-hidden rounded-full bg-muted">
                           <span
-                            className="block h-full rounded-full bg-sky-500"
+                            className="block h-full rounded-full bg-info"
                             style={{ width: `${(row.count / mostOnHost) * 100}%` }}
                           />
                         </span>
@@ -392,7 +392,7 @@ export function AnalysisPanel({
                 {job.model && ` · ${job.model}`}
               </p>
             )}
-            {job.judge_note && <p className="text-amber-600 dark:text-amber-400">{job.judge_note}</p>}
+            {job.judge_note && <p className="text-warning">{job.judge_note}</p>}
             {(job.reviewed ?? 0) > 0 && (
               <Fact label={t("fact.review")}>
                 {t("reviewed", { count: job.reviewed ?? 0, changed: job.review_changed ?? 0 })}
@@ -449,7 +449,7 @@ export function AnalysisPanel({
                               </span>
                             )}
                             {verdict?.method && verdict.method !== "single" && (
-                              <span className="rounded border border-violet-500/50 px-1 py-px text-violet-700 dark:text-violet-300">
+                              <span className="rounded border border-primary/50 px-1 py-px text-primary">
                                 {tc(`method.${verdict.method}`)}
                               </span>
                             )}

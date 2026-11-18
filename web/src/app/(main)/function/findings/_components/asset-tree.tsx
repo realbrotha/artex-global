@@ -265,9 +265,9 @@ export function AssetTree({
         </InputGroup>
         {onRefresh && (
           <Button
-            size="icon"
+            size="icon-sm"
             variant="ghost"
-            className="size-8 shrink-0 text-muted-foreground"
+            className="shrink-0 text-muted-foreground"
             onClick={onRefresh}
             disabled={loading}
             aria-label={t("assetTree.refresh")}
@@ -290,7 +290,7 @@ export function AssetTree({
         <span className="text-xs tabular-nums text-muted-foreground">{findingTotal}</span>
       </button>
 
-      <div className="max-h-[24rem] min-h-0 flex-1 overflow-y-auto pr-2 lg:max-h-[calc(100vh-11rem)]">
+      <div className="max-h-[24rem] min-h-0 flex-1 overflow-y-auto pr-2 lg:max-h-none">
         <div className="flex flex-col">
           {rows}
           {rows.length === 0 && <p className="px-2 py-8 text-center text-xs text-muted-foreground">{emptyHint}</p>}
@@ -357,12 +357,12 @@ function AssetTreeRow({
       </button>
       <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums">
         {node.critical > 0 && (
-          <span className="text-rose-600" title={t("assetTree.criticalCount", { count: node.critical })}>
+          <span className="text-danger" title={t("assetTree.criticalCount", { count: node.critical })}>
             {node.critical}
           </span>
         )}
         {node.high > 0 && (
-          <span className="text-red-500" title={t("assetTree.highCount", { count: node.high })}>
+          <span className="text-danger" title={t("assetTree.highCount", { count: node.high })}>
             {node.high}
           </span>
         )}

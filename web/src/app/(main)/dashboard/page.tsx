@@ -18,6 +18,7 @@ import {
 import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 
+import { PageHeader } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -67,32 +68,32 @@ function fmtTokens(n: number): string {
 }
 
 const ASSET_COLORS: Record<string, string> = {
-  root_domain: "bg-blue-500",
-  ip: "bg-indigo-400",
-  subdomain: "bg-violet-500",
-  app: "bg-orange-400",
-  service: "bg-cyan-500",
-  endpoint: "bg-emerald-500",
+  root_domain: "bg-info",
+  ip: "bg-info/40",
+  subdomain: "bg-primary",
+  app: "bg-caution/40",
+  service: "bg-info",
+  endpoint: "bg-success",
 };
 
 function statusColor(code: number): string {
-  if (code < 300) return "text-emerald-500";
-  if (code < 400) return "text-blue-400";
-  if (code < 500) return "text-amber-400";
-  return "text-red-400";
+  if (code < 300) return "text-success";
+  if (code < 400) return "text-info";
+  if (code < 500) return "text-warning";
+  return "text-danger";
 }
 
 function statusBg(code: number): string {
-  if (code < 300) return "bg-emerald-500";
-  if (code < 400) return "bg-blue-400";
-  if (code < 500) return "bg-amber-400";
-  return "bg-red-400";
+  if (code < 300) return "bg-success";
+  if (code < 400) return "bg-info/40";
+  if (code < 500) return "bg-warning/40";
+  return "bg-danger/40";
 }
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function LiveDot({ className }: { className?: string }) {
-  return <span className={cn("inline-block size-1.5 shrink-0 animate-pulse rounded-full bg-blue-400", className)} />;
+  return <span className={cn("inline-block size-1.5 shrink-0 animate-pulse rounded-full bg-info/40", className)} />;
 }
 
 function SectionTitle({
@@ -407,22 +408,22 @@ export default function DashboardPage() {
   }
 
   function workerColor(w: string): string {
-    if (w === "planner") return "text-violet-400";
-    if (w === "mainagent") return "text-cyan-400";
-    return "text-blue-400";
+    if (w === "planner") return "text-primary";
+    if (w === "mainagent") return "text-info";
+    return "text-info";
   }
 
   function workerBg(w: string): string {
-    if (w === "planner") return "bg-violet-500/10 text-violet-400 border-violet-500/20";
-    if (w === "mainagent") return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
-    return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    if (w === "planner") return "bg-primary/10 text-primary border-primary/20";
+    if (w === "mainagent") return "bg-info/10 text-info border-info/20";
+    return "bg-info/10 text-info border-info/20";
   }
 
   // ── render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-1 flex-col gap-4 pb-6">
-      {/* ── Header ── */}
+    <div className="flex flex-col gap-4">
+      <PageHeader />
 
       <SiemSummary />
 
@@ -435,23 +436,23 @@ export default function DashboardPage() {
               <TargetIcon className="size-3" /> {t("activeTasks")}
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-semibold tabular-nums">{tasksByStatus.running ?? 0}</span>
+              <span className="text-xl font-semibold tabular-nums">{tasksByStatus.running ?? 0}</span>
               <span className="text-xs text-muted-foreground">/ {tasks.length}</span>
             </div>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[10px]">
             {(tasksByStatus.running ?? 0) > 0 && (
-              <span className="text-blue-400">
+              <span className="text-info">
                 {t("statExplore")} {tasksByStatus.running}
               </span>
             )}
             {(tasksByStatus.paused ?? 0) > 0 && (
-              <span className="text-amber-400">
+              <span className="text-warning">
                 {t("statPaused")} {tasksByStatus.paused}
               </span>
             )}
             {(tasksByStatus.done ?? 0) > 0 && (
-              <span className="text-emerald-400">
+              <span className="text-success">
                 {t("statDone")} {tasksByStatus.done}
               </span>
             )}
@@ -465,19 +466,19 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <BugIcon className="size-3" /> {t("confirmedFindings")}
             </div>
-            <div className="text-2xl font-semibold tabular-nums">{findings.length}</div>
+            <div className="text-xl font-semibold tabular-nums">{findings.length}</div>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2.5 text-[10px]">
-            <span className="text-rose-500">
+            <span className="text-danger">
               {tStatus("severity.critical")} {findingsBySev.critical}
             </span>
-            <span className="text-red-400">
+            <span className="text-danger">
               {tStatus("severity.high")} {findingsBySev.high}
             </span>
-            <span className="text-amber-400">
+            <span className="text-warning">
               {tStatus("severity.medium")} {findingsBySev.medium}
             </span>
-            <span className="text-slate-400">
+            <span className="text-muted-foreground">
               {tStatus("severity.low")} {findingsBySev.low}
             </span>
           </CardContent>
@@ -489,7 +490,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <NetworkIcon className="size-3" /> {t("assetNodes")}
             </div>
-            <div className="text-2xl font-semibold tabular-nums">{totalAssets}</div>
+            <div className="text-xl font-semibold tabular-nums">{totalAssets}</div>
           </CardHeader>
           <CardContent className="text-[10px] text-muted-foreground">{t("crossTaskShared")}</CardContent>
         </Card>
@@ -500,7 +501,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <ActivityIcon className="size-3" /> {t("trafficExchanges")}
             </div>
-            <div className="text-2xl font-semibold tabular-nums">{traffic.length}</div>
+            <div className="text-xl font-semibold tabular-nums">{traffic.length}</div>
           </CardHeader>
           <CardContent className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             {settings?.traffic_capture ? (
@@ -520,7 +521,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <ZapIcon className="size-3" /> {t("tokenUsage")}
             </div>
-            <div className="text-2xl font-semibold tabular-nums">
+            <div className="text-xl font-semibold tabular-nums">
               {fmtTokens(displayedTokens.input + displayedTokens.output) || "—"}
             </div>
           </CardHeader>
@@ -578,9 +579,7 @@ export default function DashboardPage() {
                     <span
                       className={cn(
                         "rounded px-1 py-0 text-[8px]",
-                        tokenTab === resolvedKey
-                          ? "bg-background/20 text-background"
-                          : "bg-emerald-500/20 text-emerald-400",
+                        tokenTab === resolvedKey ? "bg-background/20 text-background" : "bg-success/20 text-success",
                       )}
                     >
                       {t("default")}
@@ -599,7 +598,7 @@ export default function DashboardPage() {
             {/* Total */}
             <div>
               <div className="text-[10px] text-muted-foreground">{t("totalInOut")}</div>
-              <div className="mt-0.5 text-3xl font-bold tabular-nums tracking-tight">
+              <div className="mt-0.5 text-xl font-bold tabular-nums tracking-tight">
                 {fmtTokens(displayedTokens.input + displayedTokens.output) || "—"}
               </div>
               <div className="mt-0.5 text-[10px] text-muted-foreground">
@@ -635,19 +634,19 @@ export default function DashboardPage() {
                     label: t("inputUncached"),
                     value: displayedTokens.input - displayedTokens.cacheRead,
                     barColor: dailyTrendConfig.input.color!,
-                    text: "text-blue-400",
+                    text: "text-info",
                   },
                   {
                     label: t("cacheHit"),
                     value: displayedTokens.cacheRead,
                     barColor: dailyTrendConfig.cacheRead.color!,
-                    text: "text-emerald-400",
+                    text: "text-success",
                   },
                   {
                     label: t("output"),
                     value: displayedTokens.output,
                     barColor: dailyTrendConfig.output.color!,
-                    text: "text-violet-400",
+                    text: "text-primary",
                   },
                 ].map(({ label, value, barColor, text }) => {
                   const pct = total > 0 ? (value / total) * 100 : 0;
@@ -677,9 +676,7 @@ export default function DashboardPage() {
               return (
                 <div className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2 text-[10px]">
                   <span className="text-muted-foreground">{t("cacheHitRate")}</span>
-                  <span
-                    className={cn("font-semibold tabular-nums", hitPct > 50 ? "text-emerald-400" : "text-amber-400")}
-                  >
+                  <span className={cn("font-semibold tabular-nums", hitPct > 50 ? "text-success" : "text-warning")}>
                     {hitPct}%
                   </span>
                 </div>
@@ -1025,7 +1022,7 @@ export default function DashboardPage() {
                   </span>
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                     <div
-                      className={cn("h-full rounded-full", ASSET_COLORS[type] ?? "bg-slate-400")}
+                      className={cn("h-full rounded-full", ASSET_COLORS[type] ?? "bg-muted-foreground")}
                       style={{ width: `${(count / assetMax) * 100}%` }}
                     />
                   </div>
@@ -1073,8 +1070,8 @@ export default function DashboardPage() {
                         className={cn(
                           "shrink-0 rounded border px-1 py-0 font-mono text-[9px]",
                           e.method === "GET"
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                            : "border-blue-500/30 bg-blue-500/10 text-blue-400",
+                            ? "border-success/30 bg-success/10 text-success"
+                            : "border-info/30 bg-info/10 text-info",
                         )}
                       >
                         {e.method}
@@ -1104,8 +1101,8 @@ export default function DashboardPage() {
                 className={cn(
                   "text-[10px]",
                   stats?.llm_configured
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    : "border-red-500/30 bg-red-500/10 text-red-400",
+                    ? "border-success/30 bg-success/10 text-success"
+                    : "border-danger/30 bg-danger/10 text-danger",
                 )}
               >
                 {stats?.llm_configured ? t("configured") : t("notConfigured")}
@@ -1118,9 +1115,7 @@ export default function DashboardPage() {
                 variant="outline"
                 className={cn(
                   "text-[10px]",
-                  settings?.traffic_capture
-                    ? "border-violet-500/30 bg-violet-500/10 text-violet-400"
-                    : "text-muted-foreground",
+                  settings?.traffic_capture ? "border-primary/30 bg-primary/10 text-primary" : "text-muted-foreground",
                 )}
               >
                 {settings?.traffic_capture ? t("on") : t("off")}
@@ -1138,7 +1133,7 @@ export default function DashboardPage() {
           {/* pending approvals */}
           {pendingCount > 0 && (
             <div className="mt-3">
-              <div className="mb-1.5 text-[10px] font-medium text-amber-400">
+              <div className="mb-1.5 text-[10px] font-medium text-warning">
                 {t("pendingApprovals", { count: pendingCount })}
               </div>
               <div className="flex flex-col gap-1.5">
@@ -1146,13 +1141,13 @@ export default function DashboardPage() {
                   <Link
                     key={p.id}
                     href="/system/intercept/approvals"
-                    className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/5 px-2.5 py-2 hover:bg-amber-500/10"
+                    className="flex items-center justify-between rounded-lg border border-warning/20 bg-warning/5 px-2.5 py-2 hover:bg-warning/10"
                   >
                     <div className="min-w-0">
                       <div className="text-[10px] font-medium">{p.tool_name}</div>
                       <div className="text-[9px] text-muted-foreground">{p.agent_name}</div>
                     </div>
-                    <ArrowUpRightIcon className="size-3 shrink-0 text-amber-400" />
+                    <ArrowUpRightIcon className="size-3 shrink-0 text-warning" />
                   </Link>
                 ))}
                 {pendingCount > 3 && (
@@ -1169,7 +1164,7 @@ export default function DashboardPage() {
 
           {pendingCount === 0 && (
             <div className="mt-3 rounded-lg border bg-muted/10 px-3 py-3 text-center text-[10px] text-muted-foreground">
-              <ShieldCheckIcon className="mx-auto mb-1 size-4 text-emerald-500/50" />
+              <ShieldCheckIcon className="mx-auto mb-1 size-4 text-success/50" />
               {t("noPendingIntercepts")}
             </div>
           )}

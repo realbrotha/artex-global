@@ -2,28 +2,11 @@
 
 import * as React from "react";
 
-import {
-  CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CopyIcon,
-  Loader2Icon,
-  SearchIcon,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react";
+import { CheckIcon, CopyIcon, Loader2Icon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ListEmpty, PageHeader, TableSkeletonRows, useConfirm } from "@/components/page";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -110,25 +93,23 @@ function CopyButton({ text }: { text: string }) {
       title={copied ? t("copyCopied") : t("copyTooltip")}
       onClick={copy}
     >
-      {copied ? <CheckIcon className="size-3 text-emerald-600" /> : <CopyIcon className="size-3" />}
+      {copied ? <CheckIcon className="size-3 text-success" /> : <CopyIcon className="size-3" />}
     </Button>
   );
 }
 
-const PAGE_SIZES = [25, 50, 100];
-
 export default function LLMRecordsPage() {
   const t = useTranslations("llmRecords");
-  const tp = useTranslations("pagination");
+  const confirm = useConfirm();
   const [page, setPage] = React.useState(0);
-  const [size, setSize] = React.useState(50);
+  const size = PAGE_SIZE;
   const [session, setSession] = React.useState("");
   const [sessionQ, setSessionQ] = React.useState("");
   const [model, setModel] = React.useState("");
 
   const [records, setRecords] = React.useState<LLMRecordItem[]>([]);
   const [total, setTotal] = React.useState(0);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   // Recording on/off toggle (settings.llm_record; default off). When off the
   // backend records nothing.
@@ -156,7 +137,6 @@ export default function LLMRecordsPage() {
   // Per-task delete (task picker + confirm dialog)
   const [tasks, setTasks] = React.useState<LLMTask[]>([]);
   const [pickedTask, setPickedTask] = React.useState("");
-  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [reloadTick, setReloadTick] = React.useState(0); // manual refetch trigger
 
@@ -199,7 +179,7 @@ export default function LLMRecordsPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: these values intentionally trigger a page reset.
   React.useEffect(() => {
     setPage(0);
-  }, [sessionQ, model, size, pickedTask]);
+  }, [sessionQ, model, pickedTask]);
 
   // Load list.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reloadTick is an explicit manual-refetch trigger.
@@ -237,12 +217,18 @@ export default function LLMRecordsPage() {
   }, [page, size, sessionQ, model, pickedTask, reloadTick]);
 
   // Delete every LLM record for the picked task, then refetch.
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
+    const ok = await confirm({
+      title: t("deleteTitle", { taskId: pickedTask }),
+      description: t("deleteDesc"),
+      confirmLabel: t("confirmDelete"),
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     api
       .llmRecordsDeleteTask(pickedTask)
       .then(() => {
-        setDeleteOpen(false);
         setSelected(null);
         setDetail(null);
         setPickedTask("");
@@ -280,26 +266,23 @@ export default function LLMRecordsPage() {
     };
   }, [selected]);
 
-  const totalPages = Math.max(1, Math.ceil(total / size));
-  const rangeStart = total === 0 ? 0 : page * size + 1;
-  const rangeEnd = page * size + records.length;
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      {/* Toolbar: the total sits at its end instead of on a row of its own. */}
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader />
+      {/* 도구 줄: 검색 · 필터 · 끝에 기록 스위치와 삭제. 건수는 표 아래 쪽 번호에 표시 */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative max-w-sm flex-1">
+        <div className="relative w-80">
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("searchPlaceholder")}
             value={session}
             onChange={(e) => setSession(e.target.value)}
-            className="h-8 pl-8"
+            className="pl-8"
           />
         </div>
-        <Input placeholder="Model" className="h-8 w-48" value={model} onChange={(e) => setModel(e.target.value)} />
+        <Input placeholder="Model" className="w-48" value={model} onChange={(e) => setModel(e.target.value)} />
         <Select value={pickedTask} onValueChange={setPickedTask}>
-          <SelectTrigger size="sm" className="w-56">
+          <SelectTrigger className="w-56">
             <SelectValue placeholder={t("taskPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
@@ -317,33 +300,8 @@ export default function LLMRecordsPage() {
             )}
           </SelectContent>
         </Select>
-        <Button
-          variant="destructive"
-          size="sm"
-          className="h-8"
-          disabled={!pickedTask || deleting}
-          title={pickedTask ? undefined : t("selectTaskFirst")}
-          onClick={() => setDeleteOpen(true)}
-        >
-          <Trash2Icon className="size-3.5" />
-          {t("deleteTaskConversations")}
-        </Button>
-        <Select value={String(size)} onValueChange={(v) => setSize(Number(v))}>
-          <SelectTrigger size="sm" className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZES.map((n) => (
-              <SelectItem key={n} value={String(n)}>
-                {n}
-                {tp("perPage")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         {/* Recording on/off — off means no LLM calls are recorded */}
-        <div className="flex items-center gap-2 rounded-md border px-2.5 py-1">
+        <div className="ml-auto flex h-9 items-center gap-2 rounded-md border px-2.5">
           <Switch
             id="llm-rec-toggle"
             size="sm"
@@ -362,115 +320,92 @@ export default function LLMRecordsPage() {
           </label>
         </div>
 
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">
-            {rangeStart}–{rangeEnd} / {total}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page <= 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <span className="tabular-nums">
-            {page + 1} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page + 1 >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-          >
-            <ChevronRightIcon />
-          </Button>
-        </div>
-        <span className="ml-auto text-muted-foreground text-xs tabular-nums">{t("totalCount", { count: total })}</span>
+        <Button
+          variant="destructive"
+          disabled={!pickedTask || deleting}
+          title={pickedTask ? undefined : t("selectTaskFirst")}
+          onClick={() => void confirmDelete()}
+        >
+          <Trash2Icon />
+          {deleting ? t("deleting") : t("deleteTaskConversations")}
+        </Button>
       </div>
 
       {/* History table + inline detail (Burp-style split) */}
-      <div className="flex h-[calc(100vh-10rem)] min-h-0 flex-col gap-3">
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
-          <div className="min-h-0 flex-1 overflow-auto">
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-card">
-                <TableRow>
-                  <TableHead className="w-[130px]">{t("colTime")}</TableHead>
-                  <TableHead className="w-[60px]">{t("colTask")}</TableHead>
-                  <TableHead className="w-[90px]">Worker</TableHead>
-                  <TableHead className="w-[100px]">Profile</TableHead>
-                  <TableHead className="w-[140px]">Model</TableHead>
-                  <TableHead className="w-[70px]">{t("colLatency")}</TableHead>
-                  <TableHead className="w-[90px]">Tokens</TableHead>
-                  <TableHead className="w-[60px]">{t("colStatus")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading && records.length === 0 ? (
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {!loading && records.length === 0 ? (
+          <ListEmpty title={t("empty")} />
+        ) : (
+          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center">
-                      <Loader2Icon className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                    </TableCell>
+                    <TableHead className="w-[130px]">{t("colTime")}</TableHead>
+                    <TableHead className="w-[60px]">{t("colTask")}</TableHead>
+                    <TableHead className="w-[90px]">Worker</TableHead>
+                    <TableHead className="w-[100px]">Profile</TableHead>
+                    <TableHead className="w-[140px]">Model</TableHead>
+                    <TableHead className="w-[70px]">{t("colLatency")}</TableHead>
+                    <TableHead className="w-[90px]">Tokens</TableHead>
+                    <TableHead className="w-[60px]">{t("colStatus")}</TableHead>
                   </TableRow>
-                ) : records.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
-                      {t("empty")}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  records.map((rec) => (
-                    <TableRow
-                      key={rec.id}
-                      className={cn("cursor-pointer", selected?.id === rec.id && "bg-accent hover:bg-accent")}
-                      onClick={() => setSelected(rec)}
-                    >
-                      <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtTime(rec.ts)}</TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">
-                        {rec.task_id ? `#${rec.task_id}` : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {rec.worker || "-"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs">{rec.profile_name || "-"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs font-mono">{rec.model || "-"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={cn("text-xs", rec.latency_ms > 30000 && "text-amber-500")}>
-                          {fmtLatency(rec.latency_ms)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs">
-                          {fmtTokens(rec.input_tokens)} / {fmtTokens(rec.output_tokens)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {rec.status === "ok" ? (
-                          <Badge variant="secondary" className="text-xs text-emerald-600">
-                            OK
+                </TableHeader>
+                <TableBody>
+                  {loading && records.length === 0 ? (
+                    <TableSkeletonRows columns={8} />
+                  ) : (
+                    records.map((rec) => (
+                      <TableRow
+                        key={rec.id}
+                        className={cn("cursor-pointer", selected?.id === rec.id && "bg-accent hover:bg-accent")}
+                        onClick={() => setSelected(rec)}
+                      >
+                        <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtTime(rec.ts)}</TableCell>
+                        <TableCell className="text-xs font-mono text-muted-foreground">
+                          {rec.task_id ? `#${rec.task_id}` : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs font-mono">
+                            {rec.worker || "-"}
                           </Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs">
-                            Error
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs">{rec.profile_name || "-"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">{rec.model || "-"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={cn("text-xs", rec.latency_ms > 30000 && "text-warning")}>
+                            {fmtLatency(rec.latency_ms)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs">
+                            {fmtTokens(rec.input_tokens)} / {fmtTokens(rec.output_tokens)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {rec.status === "ok" ? (
+                            <Badge variant="secondary" className="text-xs text-success">
+                              OK
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs">
+                              Error
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        )}
+        {total > 0 && <TablePagination page={page + 1} total={total} onPageChange={(p) => setPage(p - 1)} />}
 
         {/* Inline detail panel */}
         {selected && (
@@ -492,11 +427,11 @@ export default function LLMRecordsPage() {
                 </Badge>
               )}
               <span className="text-xs text-muted-foreground">{fmtTime(selected.ts)}</span>
-              <span className={cn("text-xs", selected.latency_ms > 30000 && "text-amber-500")}>
+              <span className={cn("text-xs", selected.latency_ms > 30000 && "text-warning")}>
                 {fmtLatency(selected.latency_ms)}
               </span>
               {selected.status === "ok" ? (
-                <Badge variant="secondary" className="text-xs text-emerald-600">
+                <Badge variant="secondary" className="text-xs text-success">
                   OK
                 </Badge>
               ) : (
@@ -508,15 +443,22 @@ export default function LLMRecordsPage() {
                   보이는 것을 막는다. */}
               <Button
                 variant={showRaw ? "secondary" : "ghost"}
-                size="sm"
-                className="ml-auto h-7 shrink-0 text-xs"
+                size="xs"
+                className="ml-auto shrink-0"
                 disabled={!hasRaw}
                 title={hasRaw ? t("rawTooltipHas") : t("rawTooltipNone")}
                 onClick={() => setRawView((v) => !v)}
               >
                 {t("raw")}
               </Button>
-              <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => setSelected(null)}>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="shrink-0"
+                aria-label={t("close")}
+                title={t("close")}
+                onClick={() => setSelected(null)}
+              >
                 <XIcon />
               </Button>
             </div>
@@ -555,7 +497,7 @@ export default function LLMRecordsPage() {
                     <pre
                       className={cn(
                         "p-3 font-mono text-xs break-all whitespace-pre-wrap",
-                        selected.status !== "ok" && "text-red-600 dark:text-red-400",
+                        selected.status !== "ok" && "text-danger",
                       )}
                     >
                       {respText || t("emptyContent")}
@@ -567,28 +509,6 @@ export default function LLMRecordsPage() {
           </Card>
         )}
       </div>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("deleteTitle", { taskId: pickedTask })}</AlertDialogTitle>
-            <AlertDialogDescription>{t("deleteDesc")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                confirmDelete();
-              }}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? t("deleting") : t("confirmDelete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

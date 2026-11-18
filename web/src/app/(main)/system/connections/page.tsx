@@ -8,7 +8,7 @@ import { ArrowRightIcon, ChevronDownIcon, PencilIcon, PlusIcon, RefreshCwIcon, T
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LoadError, PageHeader, useConfirm } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,25 +33,19 @@ const SYNC_URL = "/function/sync";
 function Section({
   title,
   description,
-  action,
   children,
 }: {
   readonly title: string;
   readonly description: string;
-  // Page controls, in the first section's header rather than on a row of their own.
-  readonly action?: React.ReactNode;
   readonly children: React.ReactNode;
 }) {
   return (
     <section className="grid grid-cols-1 gap-2">
-      <div className="flex items-end gap-3">
-        <div className="min-w-0 flex-1">
-          <h2 className="font-medium text-sm">{title}</h2>
-          <p className="text-muted-foreground text-xs">{description}</p>
-        </div>
-        {action}
+      <div className="min-w-0">
+        <h2 className="font-medium text-sm">{title}</h2>
+        <p className="text-muted-foreground text-xs">{description}</p>
       </div>
-      <div className="grid grid-cols-1 divide-y rounded-lg border">{children}</div>
+      <div className="grid grid-cols-1 divide-y rounded-xl border bg-card">{children}</div>
     </section>
   );
 }
@@ -62,7 +56,7 @@ function EmptyRow({ text, action, href }: { readonly text: string; readonly acti
     <div className="flex flex-wrap items-center gap-3 px-3 py-3">
       <span className="min-w-0 flex-1 text-muted-foreground text-sm">{text}</span>
       {href && (
-        <Button asChild size="sm" variant="outline">
+        <Button asChild size="xs" variant="outline">
           <Link href={href}>{action}</Link>
         </Button>
       )}
@@ -75,6 +69,7 @@ function EmptyRow({ text, action, href }: { readonly text: string; readonly acti
 export default function ConnectionsPage() {
   const t = useTranslations("connections");
   const tw = useTranslations("protectedAssets.connection");
+  const confirm = useConfirm();
   const [wazuh, setWazuh] = React.useState<WazuhSource[] | null>(null);
   const [assets, setAssets] = React.useState<AssetSource[]>([]);
   const [logs, setLogs] = React.useState<SecuritySource[] | null>(null);
@@ -119,20 +114,12 @@ export default function ConnectionsPage() {
   const syncReady = Boolean(sync?.exists && sync.configured && sync.enabled);
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <Section
-        title={t("wazuh.title")}
-        description={t("wazuh.description")}
-        action={
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="xs">
+              <Button>
                 <PlusIcon />
                 {t("add")}
                 <ChevronDownIcon />
@@ -149,7 +136,11 @@ export default function ConnectionsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         }
-      >
+      />
+
+      {error && <LoadError message={error} onRetry={() => void load()} />}
+
+      <Section title={t("wazuh.title")} description={t("wazuh.description")}>
         {wazuh === null && <Skeleton className="m-3 h-10" />}
         {wazuh?.length === 0 && <EmptyRow text={t("none")} action="" />}
         {wazuh?.map((source) => (
@@ -176,7 +167,7 @@ export default function ConnectionsPage() {
               </span>
               <span className="ml-auto flex flex-wrap gap-1.5">
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="outline"
                   disabled={busy !== null}
                   onClick={() =>
@@ -190,7 +181,7 @@ export default function ConnectionsPage() {
                   {tw("test")}
                 </Button>
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="outline"
                   disabled={busy !== null}
                   onClick={() =>
@@ -204,18 +195,19 @@ export default function ConnectionsPage() {
                   {busy === `sync:${source.id}` ? <Spinner /> : <RefreshCwIcon />}
                   {tw("sync")}
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => setSheet({ source })}>
+                <Button size="xs" variant="outline" disabled={busy !== null} onClick={() => setSheet({ source })}>
                   <PencilIcon />
                   {tw("edit")}
                 </Button>
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="outline"
                   disabled={busy !== null}
                   aria-label={tw("delete")}
                   onClick={() =>
                     run(`remove:${source.id}`, async () => {
-                      if (!window.confirm(tw("confirmDelete", { name: source.name }))) return;
+                      if (!(await confirm({ title: tw("confirmDelete", { name: source.name }), destructive: true })))
+                        return;
                       await wazuhApi.remove(source.id, source.revision);
                       toast.success(tw("deleted"));
                       await load();
@@ -227,11 +219,9 @@ export default function ConnectionsPage() {
               </span>
             </div>
             <p className="truncate font-mono text-muted-foreground text-xs">{source.config.manager_url}</p>
-            {source.sync_error && <p className="break-words text-destructive text-xs">{source.sync_error}</p>}
+            {source.sync_error && <p className="break-words text-danger text-xs">{source.sync_error}</p>}
             {addrNote(source.id) && (
-              <p className="break-words text-amber-600 text-xs dark:text-amber-400">
-                {t("wazuh.addrNote", { reason: addrNote(source.id) })}
-              </p>
+              <p className="break-words text-warning text-xs">{t("wazuh.addrNote", { reason: addrNote(source.id) })}</p>
             )}
           </div>
         ))}
@@ -255,7 +245,7 @@ export default function ConnectionsPage() {
             <span className="text-muted-foreground text-xs">
               {t("updatedAt", { when: new Date(source.updated_at).toLocaleString() })}
             </span>
-            <Button asChild size="sm" variant="outline" className="ml-auto">
+            <Button asChild size="xs" variant="outline" className="ml-auto">
               <Link href={SOURCES_URL}>
                 {t("manage")}
                 <ArrowRightIcon />
@@ -270,7 +260,7 @@ export default function ConnectionsPage() {
           <span className="font-medium text-sm">ScopeSentry</span>
           <Badge variant={syncReady ? "secondary" : "outline"}>{syncReady ? t("enabled") : t("notConnected")}</Badge>
           {sync?.url && <span className="truncate font-mono text-muted-foreground text-xs">{sync.url}</span>}
-          <Button asChild size="sm" variant="outline" className="ml-auto">
+          <Button asChild size="xs" variant="outline" className="ml-auto">
             <Link href={SYNC_URL}>
               {syncReady ? t("manage") : t("connect")}
               <ArrowRightIcon />

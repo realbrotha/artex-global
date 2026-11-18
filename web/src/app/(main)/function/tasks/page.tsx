@@ -46,8 +46,9 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { AssetInterceptRulesEditor } from "@/components/asset-intercept-rules-editor";
+import { DrawerFooter, ListEmpty, PageHeader, TableSkeletonRows } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
-import { TablePagination } from "@/components/table-pagination";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import { TaskLLMProfileChain } from "@/components/task-llm-profile-chain";
 import { TaskTemplateControls } from "@/components/task-template-controls";
 import {
@@ -63,7 +64,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -103,20 +103,11 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ApiError, api } from "@/lib/api";
@@ -319,7 +310,7 @@ export default function TasksPage() {
   );
   const { field: sortField, direction: sortDirection } = sortPreference;
   const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(20);
+  const [loaded, setLoaded] = React.useState(false);
   const [nowSec, setNowSec] = React.useState(() => Math.floor(Date.now() / 1000));
   const [batchControlling, setBatchControlling] = React.useState<"pause" | "resume" | null>(null);
   const [movingCategory, setMovingCategory] = React.useState(false);
@@ -396,10 +387,7 @@ export default function TasksPage() {
     setPage(1);
   }, [query, statusFilter, categoryFilter, sortField, sortDirection]);
 
-  const paginated = React.useMemo(
-    () => ordered.slice((page - 1) * pageSize, page * pageSize),
-    [ordered, page, pageSize],
-  );
+  const paginated = React.useMemo(() => ordered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [ordered, page]);
 
   // 多选删除:选择跨翻页/筛选保留,只在任务真的消失(被删或后端不再返回)时收敛。
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(() => new Set());
@@ -465,7 +453,8 @@ export default function TasksPage() {
       })
       .catch(() => {
         // Polling is best-effort; the next interval retries automatically.
-      });
+      })
+      .finally(() => setLoaded(true));
   }, []);
 
   const loadCategories = React.useCallback(() => {
@@ -790,17 +779,41 @@ export default function TasksPage() {
     [movingCategory, refreshCategoriesAndTasks, selectedIds, t],
   );
 
+  const tabList = (
+    <TabsList>
+      <TabsTrigger value="current">{t("tab.current")}</TabsTrigger>
+      <TabsTrigger value="archived">{t("tab.archived")}</TabsTrigger>
+    </TabsList>
+  );
+
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList>
-        <TabsTrigger value="current">{t("tab.current")}</TabsTrigger>
-        <TabsTrigger value="archived">{t("tab.archived")}</TabsTrigger>
-      </TabsList>
-      <TabsContent value="current">
-        <Card>
-          <CardContent className="flex flex-col gap-3 px-0 pt-3">
-            <div className="flex flex-wrap items-center gap-2 px-3">
-              <div className="relative w-full sm:max-w-xs">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <>
+            {/* 보조 설정은 주 작업(새 작업) 앞에 테두리 버튼으로 둔다. 도구 줄이 1280px 에서 두 줄로 넘치지 않게. */}
+            <ConcurrencySettingsDialog />
+            <CategoryManagementSheet
+              categories={categories}
+              tasks={tasks}
+              onChanged={refreshCategoriesAndTasks}
+              onTaskMoved={applyTaskCategoryMove}
+            />
+            <CreateTaskSheet
+              tasks={tasks}
+              categories={categories}
+              onCreated={refreshCategoriesAndTasks}
+              onCategoriesChanged={refreshCategoriesAndTasks}
+            />
+          </>
+        }
+      />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        {activeTab === "current" ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              {tabList}
+              <div className="relative w-80">
                 <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                 <Input
                   placeholder={t("filter.searchPlaceholder")}
@@ -910,38 +923,21 @@ export default function TasksPage() {
                   <BulkDeleteTasksDialog ids={[...selectedIds]} onDelete={deleteTasks} />
                 </>
               )}
-              <ConcurrencySettingsDialog />
-              <CategoryManagementSheet
-                categories={categories}
-                tasks={tasks}
-                onChanged={refreshCategoriesAndTasks}
-                onTaskMoved={applyTaskCategoryMove}
-              />
-              <CreateTaskSheet
-                tasks={tasks}
-                categories={categories}
-                onCreated={refreshCategoriesAndTasks}
-                onCategoriesChanged={refreshCategoriesAndTasks}
-              />
             </div>
 
-            {tasks.length === 0 ? (
-              <div className="text-muted-foreground mx-3 flex items-center justify-center rounded-lg border border-dashed py-20 text-sm lg:mx-6">
-                {t("empty.noTasks")}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-muted-foreground mx-3 flex items-center justify-center rounded-lg border border-dashed py-20 text-sm lg:mx-6">
-                {t("empty.noMatch")}
-              </div>
+            {loaded && tasks.length === 0 ? (
+              <ListEmpty title={t("empty.noTasks")} />
+            ) : loaded && filtered.length === 0 ? (
+              <ListEmpty title={t("empty.noMatch")} />
             ) : (
-              /* @container 로 표가 차지하는 "본문" 폭에 반응한다(뷰포트가 아니라).
+              /* 컨테이너 쿼리(@5xl 등)로 표가 차지하는 "본문" 폭에 반응한다(뷰포트가 아니라).
                  사이드바가 펼쳐지면 같은 뷰포트라도 본문이 좁아지므로, 뷰포트 기준
                  반응형으로는 중간 폭에서 열이 겹친다. 폭이 좁아지면 우선순위 낮은 열
                  (설명·목표 진행도·Worker·생성/실행 시각·Token)부터 숨겨, 고정된 「동작」
                  열이 다른 열 위에 겹치지 않게 한다. */
-              <div className="@container">
+              <div className="@container overflow-hidden rounded-xl border bg-card">
                 <Table className="**:data-[slot='table-cell']:px-4 **:data-[slot='table-head']:px-4">
-                  <TableHeader className="[&_tr]:border-t">
+                  <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">
                         <Checkbox
@@ -997,6 +993,7 @@ export default function TasksPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {!loaded && <TableSkeletonRows columns={13} />}
                     {paginated.map((task) => (
                       <TaskRow
                         key={task.id}
@@ -1017,23 +1014,13 @@ export default function TasksPage() {
                 </Table>
               </div>
             )}
-            <TablePagination
-              page={page}
-              pageSize={pageSize}
-              total={filtered.length}
-              onPageChange={setPage}
-              onPageSizeChange={(nextPageSize) => {
-                setPageSize(nextPageSize);
-                setPage(1);
-              }}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="archived">
-        <TaskArchivesPanel onChanged={load} />
-      </TabsContent>
-    </Tabs>
+            <TablePagination page={page} total={filtered.length} onPageChange={setPage} />
+          </>
+        ) : (
+          <TaskArchivesPanel tabs={tabList} onChanged={load} />
+        )}
+      </Tabs>
+    </div>
   );
 }
 
@@ -1126,18 +1113,18 @@ function ConcurrencySettingsDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="ml-auto" aria-label={t("concurrency.aria")}>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button size="sm" variant="outline" aria-label={t("concurrency.aria")}>
           <SlidersHorizontalIcon /> {t("concurrency.trigger")}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t("concurrency.title")}</DialogTitle>
-          <DialogDescription>{t("concurrency.description")}</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-5 py-2">
+      </SheetTrigger>
+      <SheetContent size="sm" className="gap-0">
+        <SheetHeader className="border-b">
+          <SheetTitle>{t("concurrency.title")}</SheetTitle>
+          <SheetDescription>{t("concurrency.description")}</SheetDescription>
+        </SheetHeader>
+        <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="grid gap-1">
               <Label htmlFor="task-concurrency-enabled">{t("concurrency.enableLabel")}</Label>
@@ -1160,16 +1147,19 @@ function ConcurrencySettingsDialog() {
             </div>
           )}
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">{t("concurrency.cancel")}</Button>
-          </DialogClose>
-          <Button onClick={save} disabled={loading || saving}>
-            {saving && <Loader2Icon className="animate-spin" />} {t("concurrency.save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <DrawerFooter
+          onCancel={() => setOpen(false)}
+          onConfirm={() => void save()}
+          confirmDisabled={loading}
+          pending={saving}
+          confirmLabel={
+            <>
+              {saving && <Loader2Icon className="animate-spin" />} {t("concurrency.save")}
+            </>
+          }
+        />
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1214,7 +1204,7 @@ const TaskRow = React.memo(function TaskRow({
       <TableCell className="font-medium">
         <div className="flex max-w-xs items-center gap-2">
           <TaskNameEditor task={task} onRename={onRename} />
-          {task.active && <StarIcon className="size-4 shrink-0 fill-amber-400 text-amber-400" />}
+          {task.active && <StarIcon className="size-4 shrink-0 fill-warning text-warning" />}
           {taskIsPinned(task) && <PinIcon className="text-primary size-4 shrink-0" aria-label={t("row.pinnedBadge")} />}
         </div>
       </TableCell>
@@ -1248,13 +1238,13 @@ const TaskRow = React.memo(function TaskRow({
           const seg = (n: number, cls: string) => <span className={n > 0 ? cls : "text-muted-foreground"}>{n}</span>;
           return (
             <span className="font-medium whitespace-nowrap" title={t("table.findingsTitle")}>
-              {seg(f.critical, "text-rose-600 dark:text-rose-400")}
+              {seg(f.critical, "text-danger")}
               <span className="text-muted-foreground">/</span>
-              {seg(f.high, "text-red-600 dark:text-red-400")}
+              {seg(f.high, "text-danger")}
               <span className="text-muted-foreground">/</span>
-              {seg(f.medium, "text-amber-600 dark:text-amber-400")}
+              {seg(f.medium, "text-warning")}
               <span className="text-muted-foreground">/</span>
-              {seg(f.low, "text-slate-600 dark:text-slate-400")}
+              {seg(f.low, "text-muted-foreground")}
             </span>
           );
         })()}
@@ -1369,7 +1359,7 @@ function TaskNameEditor({ task, onRename }: { task: Task; onRename: (task: Task,
           autoFocus
           disabled={saving}
           aria-label={t("row.nameAria", { id: task.id })}
-          className="h-7 min-w-28 max-w-48 px-2 font-medium"
+          className="min-w-28 max-w-48 px-2 font-medium"
           onFocus={(event) => event.currentTarget.select()}
           onChange={(event) => setName(event.target.value)}
           onBlur={() => void finishEditing()}
@@ -1665,13 +1655,12 @@ function ArchiveDeleteDialog({
   );
 }
 
-function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
+function TaskArchivesPanel({ tabs, onChanged }: { tabs: React.ReactNode; onChanged: () => void }) {
   const t = useTranslations("tasksPage");
   const [archives, setArchives] = React.useState<TaskArchive[]>([]);
   const [query, setQuery] = React.useState("");
   const [stateFilter, setStateFilter] = React.useState("all");
   const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(20);
   const [total, setTotal] = React.useState(0);
   const [selected, setSelected] = React.useState<Set<number>>(() => new Set());
   const [loading, setLoading] = React.useState(true);
@@ -1681,7 +1670,7 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
     try {
       const result = await api.taskArchives({
         page,
-        size: pageSize,
+        size: PAGE_SIZE,
         q: query.trim(),
         state: stateFilter === "all" ? undefined : stateFilter,
       });
@@ -1709,7 +1698,7 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
     } finally {
       setLoading(false);
     }
-  }, [onChanged, page, pageSize, query, stateFilter, t]);
+  }, [onChanged, page, query, stateFilter, t]);
 
   React.useEffect(() => {
     void load();
@@ -1808,86 +1797,78 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3 px-0 pt-3">
-        <div className="flex flex-wrap items-center gap-2 px-3">
-          <div className="relative w-full sm:max-w-xs">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setPage(1);
-              }}
-              placeholder={t("archive.searchPlaceholder")}
-              className="pl-8"
-            />
-          </div>
-          <Select
-            value={stateFilter}
-            onValueChange={(value) => {
-              setStateFilter(value);
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        {tabs}
+        <div className="relative w-80">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
               setPage(1);
             }}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder={t("archive.statePlaceholder")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">{t("archive.allStates")}</SelectItem>
-                <SelectItem value="archive_queued">{t("archive.state.archive_queued")}</SelectItem>
-                <SelectItem value="archiving">{t("archive.state.archiving")}</SelectItem>
-                <SelectItem value="ready">{t("archive.state.ready")}</SelectItem>
-                <SelectItem value="restore_queued">{t("archive.state.restore_queued")}</SelectItem>
-                <SelectItem value="restoring">{t("archive.state.restoring")}</SelectItem>
-                <SelectItem value="delete_queued">{t("archive.state.delete_queued")}</SelectItem>
-                <SelectItem value="deleting">{t("archive.state.deleting")}</SelectItem>
-                <SelectItem value="archive_failed">{t("archive.state.archive_failed")}</SelectItem>
-                <SelectItem value="restore_failed">{t("archive.state.restore_failed")}</SelectItem>
-                <SelectItem value="delete_failed">{t("archive.state.delete_failed")}</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <span className="text-muted-foreground text-xs tabular-nums">{t("archive.total", { count: total })}</span>
-          {selectedArchives.length > 0 && (
-            <>
-              <span className="text-xs tabular-nums">{t("archive.selected", { count: selectedArchives.length })}</span>
-              {restorable.length > 0 && (
-                <Button size="sm" variant="outline" onClick={() => void restoreMany(restorable)}>
-                  <Undo2Icon data-icon="inline-start" />
-                  {t("archive.restore", { count: restorable.length })}
-                </Button>
-              )}
-              {deletable.length > 0 && (
-                <ArchiveDeleteDialog
-                  archives={deletable}
-                  onConfirm={() => deleteMany(deletable)}
-                  trigger={
-                    <Button size="sm" variant="destructive">
-                      <Trash2Icon data-icon="inline-start" />
-                      {t("archive.deleteSelected", { count: deletable.length })}
-                    </Button>
-                  }
-                />
-              )}
-            </>
-          )}
+            placeholder={t("archive.searchPlaceholder")}
+            className="pl-8"
+          />
         </div>
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <Spinner />
-          </div>
-        ) : archives.length === 0 ? (
-          <Empty className="mx-4 border border-dashed lg:mx-6">
-            <EmptyHeader>
-              <EmptyTitle>{t("archive.emptyTitle")}</EmptyTitle>
-              <EmptyDescription>{t("archive.emptyDescription")}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
+        <Select
+          value={stateFilter}
+          onValueChange={(value) => {
+            setStateFilter(value);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder={t("archive.statePlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">{t("archive.allStates")}</SelectItem>
+              <SelectItem value="archive_queued">{t("archive.state.archive_queued")}</SelectItem>
+              <SelectItem value="archiving">{t("archive.state.archiving")}</SelectItem>
+              <SelectItem value="ready">{t("archive.state.ready")}</SelectItem>
+              <SelectItem value="restore_queued">{t("archive.state.restore_queued")}</SelectItem>
+              <SelectItem value="restoring">{t("archive.state.restoring")}</SelectItem>
+              <SelectItem value="delete_queued">{t("archive.state.delete_queued")}</SelectItem>
+              <SelectItem value="deleting">{t("archive.state.deleting")}</SelectItem>
+              <SelectItem value="archive_failed">{t("archive.state.archive_failed")}</SelectItem>
+              <SelectItem value="restore_failed">{t("archive.state.restore_failed")}</SelectItem>
+              <SelectItem value="delete_failed">{t("archive.state.delete_failed")}</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <span className="text-muted-foreground text-xs tabular-nums">{t("archive.total", { count: total })}</span>
+        {selectedArchives.length > 0 && (
+          <>
+            <span className="text-xs tabular-nums">{t("archive.selected", { count: selectedArchives.length })}</span>
+            {restorable.length > 0 && (
+              <Button size="sm" variant="outline" onClick={() => void restoreMany(restorable)}>
+                <Undo2Icon data-icon="inline-start" />
+                {t("archive.restore", { count: restorable.length })}
+              </Button>
+            )}
+            {deletable.length > 0 && (
+              <ArchiveDeleteDialog
+                archives={deletable}
+                onConfirm={() => deleteMany(deletable)}
+                trigger={
+                  <Button size="sm" variant="destructive">
+                    <Trash2Icon data-icon="inline-start" />
+                    {t("archive.deleteSelected", { count: deletable.length })}
+                  </Button>
+                }
+              />
+            )}
+          </>
+        )}
+      </div>
+      {!loading && archives.length === 0 ? (
+        <ListEmpty title={t("archive.emptyTitle")} description={t("archive.emptyDescription")} />
+      ) : (
+        <div className="overflow-hidden rounded-xl border bg-card">
           <Table className="**:data-[slot='table-cell']:px-4 **:data-[slot='table-head']:px-4">
-            <TableHeader className="[&_tr]:border-t">
+            <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
                   <Checkbox
@@ -1909,6 +1890,7 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {loading && <TableSkeletonRows columns={9} />}
               {archives.map((archive) => {
                 const processing = ARCHIVE_PROCESSING_STATES.has(archive.state);
                 const canRestore = archive.state === "ready" || archive.state === "restore_failed";
@@ -1964,10 +1946,7 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
                           <p className="text-destructive text-xs [overflow-wrap:anywhere]">{archive.error}</p>
                         )}
                         {[...new Set(archive.warnings ?? [])].map((warning) => (
-                          <p
-                            key={warning}
-                            className="text-amber-700 text-xs [overflow-wrap:anywhere] dark:text-amber-400"
-                          >
+                          <p key={warning} className="text-warning text-xs [overflow-wrap:anywhere]">
                             {warning}
                           </p>
                         ))}
@@ -2023,19 +2002,10 @@ function TaskArchivesPanel({ onChanged }: { onChanged: () => void }) {
               })}
             </TableBody>
           </Table>
-        )}
-        <TablePagination
-          page={page}
-          pageSize={pageSize}
-          total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
-        />
-      </CardContent>
-    </Card>
+        </div>
+      )}
+      <TablePagination page={page} total={total} onPageChange={setPage} />
+    </>
   );
 }
 
@@ -2964,8 +2934,8 @@ function CategoryManagementSheet({
             {t("categoryManage.trigger")}
           </Button>
         </SheetTrigger>
-        <SheetContent className="grid h-full w-full! max-w-none! grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:w-[48rem]! sm:max-w-[48rem]!">
-          <SheetHeader className="border-b px-6 py-5">
+        <SheetContent size="md" className="gap-0">
+          <SheetHeader className="border-b">
             <SheetTitle>{t("categoryManage.title")}</SheetTitle>
             <SheetDescription>{t("categoryManage.description")}</SheetDescription>
           </SheetHeader>
@@ -2975,7 +2945,7 @@ function CategoryManagementSheet({
             onDragCancel={() => setActiveTaskID(null)}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid min-h-0 overflow-y-auto lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
+            <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
               <div className="flex min-h-0 flex-col border-b p-3 lg:border-r lg:border-b-0">
                 <Button type="button" variant="outline" className="w-full" onClick={startNew}>
                   <PlusIcon data-icon="inline-start" />
@@ -3006,7 +2976,20 @@ function CategoryManagementSheet({
                 </ScrollArea>
               </div>
               <ScrollArea className="min-h-0">
-                <FieldGroup className="p-6">
+                <FieldGroup className="p-4">
+                  {selectedCategory && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="xs"
+                      className="self-end text-danger"
+                      disabled={saving || deleting}
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      <Trash2Icon data-icon="inline-start" />
+                      {t("categoryManage.deleteCategory")}
+                    </Button>
+                  )}
                   {selectedView !== "uncategorized" && (
                     <Field>
                       <FieldLabel htmlFor="task-category-name">{t("categoryManage.nameLabel")}</FieldLabel>
@@ -3073,33 +3056,18 @@ function CategoryManagementSheet({
             </div>
             <DragOverlay>{activeTask ? <CategoryTaskDragPreview task={activeTask} /> : null}</DragOverlay>
           </DndContext>
-          <SheetFooter className="border-t px-6 py-4 sm:flex-row sm:items-center">
-            {selectedCategory && (
-              <Button
-                type="button"
-                variant="destructive"
-                className="sm:mr-auto"
-                disabled={saving || deleting}
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2Icon data-icon="inline-start" />
-                {t("categoryManage.deleteCategory")}
-              </Button>
-            )}
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              {t("categoryManage.close")}
-            </Button>
-            {selectedView !== "uncategorized" && (
-              <Button
-                type="button"
-                disabled={!draftName.trim() || saving || deleting}
-                onClick={() => void saveCategory()}
-              >
+          <DrawerFooter
+            onCancel={() => setOpen(false)}
+            onConfirm={() => void saveCategory()}
+            confirmDisabled={selectedView === "uncategorized" || !draftName.trim() || deleting}
+            pending={saving}
+            confirmLabel={
+              <>
                 {saving ? <Spinner data-icon="inline-start" /> : <SaveIcon data-icon="inline-start" />}
                 {saveLabel}
-              </Button>
-            )}
-          </SheetFooter>
+              </>
+            }
+          />
         </SheetContent>
       </Sheet>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -3261,23 +3229,18 @@ function CreateTaskSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button size="sm">
+        <Button>
           <PlusIcon /> {t("create.newTask")}
         </Button>
       </SheetTrigger>
-      {/* 45vw 宽的右侧抽屉:整屏高度可滚动,长表单不再受弹窗高度限制。窄屏退化为全宽。
-            内容为 flex 列:头/脚固定,中间字段区 flex-1 独立滚动。 */}
-      <SheetContent
-        ref={sheetContentRef}
-        side="right"
-        className="w-full! max-w-none! gap-0 p-0 sm:w-[45vw]! sm:max-w-[45vw]!"
-      >
-        <SheetHeader className="border-b p-6">
+      {/* 오른쪽 드로어(md): 머리·바닥 고정, 가운데 입력 영역만 스크롤. */}
+      <SheetContent ref={sheetContentRef} side="right" size="md" className="gap-0">
+        <SheetHeader className="border-b">
           <SheetTitle>{t("create.newTask")}</SheetTitle>
           <SheetDescription>{t("create.description")}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <div className="grid gap-5">
             <TaskTemplateControls
               description={description}
@@ -3456,15 +3419,18 @@ function CreateTaskSheet({
           </div>
         </div>
 
-        <SheetFooter className="flex-row justify-end gap-2 border-t p-4">
-          <SheetClose asChild>
-            <Button variant="outline">{t("create.cancel")}</Button>
-          </SheetClose>
-          <Button onClick={createTask} disabled={creating || uploading}>
-            {creating && <Spinner data-icon="inline-start" />}
-            {creating ? t("create.creating") : t("create.create")}
-          </Button>
-        </SheetFooter>
+        <DrawerFooter
+          onCancel={() => setOpen(false)}
+          onConfirm={() => void createTask()}
+          confirmDisabled={uploading}
+          pending={creating}
+          confirmLabel={
+            <>
+              {creating && <Spinner data-icon="inline-start" />}
+              {creating ? t("create.creating") : t("create.create")}
+            </>
+          }
+        />
       </SheetContent>
     </Sheet>
   );

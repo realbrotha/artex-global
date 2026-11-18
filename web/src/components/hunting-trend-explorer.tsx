@@ -102,18 +102,18 @@ export function HuntingTrendExplorer({
           {collection?.busy ? <span>수집 중…</span> : null}
         </div>
         {collection?.last_error ? (
-          <p className="text-amber-700 text-xs">일부 출처 수집 오류: {collection.last_error}</p>
+          <p className="text-warning text-xs">일부 출처 수집 오류: {collection.last_error}</p>
         ) : null}
         {inventory && !inventory.available ? (
-          <p className="text-amber-700 text-xs">자산 제품 지문 대조를 완료하지 못했습니다.</p>
+          <p className="text-warning text-xs">자산 제품 지문 대조를 완료하지 못했습니다.</p>
         ) : null}
         {error ? (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : null}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-80 max-w-full">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               aria-label="위협 동향 검색"
@@ -174,7 +174,7 @@ export function HuntingTrendExplorer({
                       </Badge>
                       <span>{new Date(report.published_at).toLocaleDateString()}</span>
                       {(report.asset_match_count ?? 0) > 0 ? (
-                        <span className="ml-auto text-amber-700">자산 단서 {report.asset_match_count}</span>
+                        <span className="ml-auto text-warning">자산 단서 {report.asset_match_count}</span>
                       ) : null}
                     </span>
                     <span className="mt-1 line-clamp-2 block font-medium text-sm leading-snug">{report.title}</span>
@@ -234,14 +234,14 @@ export function HuntingTrendExplorer({
                     <p className="text-muted-foreground text-sm leading-relaxed">{selected.reason}</p>
                   </div>
                   {(selected.asset_match_count ?? 0) > 0 ? (
-                    <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+                    <div className="space-y-2 rounded-md border border-warning/40 bg-warning/5 p-3 text-xs">
                       <p className="font-medium">
                         등록 자산 제품명 단서 {selected.asset_match_count}건 · 영향 버전·설정 미확인
                       </p>
                       {selected.asset_matches?.map((match) => (
                         <div
                           key={match.asset_id}
-                          className="flex flex-wrap items-center justify-between gap-2 border-amber-500/20 border-t pt-2"
+                          className="flex flex-wrap items-center justify-between gap-2 border-warning/20 border-t pt-2"
                         >
                           <span>
                             {match.label} · {match.observed} ·{" "}

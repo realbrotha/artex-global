@@ -20,10 +20,10 @@ const DAY = 86_400_000;
 // Rows per ranking, so the overview stays one short band above the table.
 const ROWS = 5;
 const barTone: Record<string, string> = {
-  Critical: "bg-red-600",
-  High: "bg-orange-500",
-  Medium: "bg-amber-500",
-  Low: "bg-sky-500",
+  Critical: "bg-danger",
+  High: "bg-caution",
+  Medium: "bg-warning",
+  Low: "bg-info",
   Info: "bg-muted-foreground/40",
 };
 
@@ -120,7 +120,7 @@ export function DetectionsOverview({ cases, counts, clusterOf, windowDays, filte
           <Stat
             label={t("tile.severe")}
             value={counts.severe}
-            tone={counts.severe > 0 ? "text-red-600 dark:text-red-400" : undefined}
+            tone={counts.severe > 0 ? "text-danger" : undefined}
             active={filter.quick === "severe"}
             onClick={() => quick("severe")}
           />

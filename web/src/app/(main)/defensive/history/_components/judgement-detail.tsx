@@ -183,7 +183,7 @@ export function JudgementDetail({ id, hideCase = false }: JudgementDetailProps) 
           <Block title={t("detail.system")} note={size(data.system_prompt)} text={data.system_prompt} />
         )}
         {data.reason && (
-          <p className="rounded-md bg-violet-500/10 p-2 text-violet-700 dark:text-violet-300">
+          <p className="rounded-md bg-primary/10 p-2 text-primary">
             {t("role.reason")}: {data.reason}
           </p>
         )}
@@ -195,7 +195,7 @@ export function JudgementDetail({ id, hideCase = false }: JudgementDetailProps) 
             // biome-ignore lint/suspicious/noArrayIndexKey: attempts are stored in order and never reordered
             <React.Fragment key={index}>
               {prevRole !== role && <p className="mt-1 font-medium text-[11px]">{t(`role.${role}`)}</p>}
-              {retry && <p className="text-[11px] text-amber-600 dark:text-amber-400">{t("detail.retry")}</p>}
+              {retry && <p className="text-[11px] text-warning">{t("detail.retry")}</p>}
               {attempt.system && prevRole !== role && (
                 <Block title={t("role.roleSystem")} note={size(attempt.system)} text={attempt.system} />
               )}

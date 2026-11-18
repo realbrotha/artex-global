@@ -171,12 +171,18 @@
     "updateBadge": "New version {latest}",
     "updateBadgeShort": "New version",
     "updateTitle": "New version {latest} found. Click to go to the update.",
-    "version": "Version · {version}"
+    "version": "Version · {version}",
+    "collapseMenu": "Collapse submenu",
+    "expandMenu": "Expand submenu"
   },
   "nav": {
-    "group": {
-      "main": "Menu"
+    "section": {
+      "collect": "Collection",
+      "ai": "AI",
+      "control": "Blocking & approval",
+      "system": "System"
     },
+    "currentSection": "Current section",
     "item": {
       "agents": "Agents",
       "approvals": "Approvals",
@@ -207,6 +213,8 @@
       "activity": "Activity",
       "config": "Settings",
       "pentest": "Pentest",
+      "home": "Home",
+      "monitor": "Security monitoring",
       "attack-surface": "Attack surface",
       "infra": "Infrastructure",
       "detections": "Event detection",
@@ -218,7 +226,8 @@
       "siem-feedback": "Verdicts and corrections",
       "finding-detail": "Finding detail",
       "agent-detail": "Agent editor"
-    }
+    },
+    "primary": "Main menu"
   },
   "notFound": {
     "back": "Back to home",
@@ -1948,6 +1957,7 @@
   "mcpPage": {
     "subtitle": "External MCP tool servers · exposure allowed per agent",
     "addCard": "Add MCP",
+    "empty": "No MCP servers yet",
     "enableAria": "Enable",
     "deleteAria": "Delete",
     "toolCount": "{count} tools",
@@ -2262,6 +2272,7 @@
     "loading": "Loading…",
     "emptyContent": "(Empty)",
     "copyCopied": "Copied",
+    "close": "Close",
     "copyTooltip": "Copy content",
     "deleteTitle": "Delete all LLM conversations for task “{taskId}”?",
     "deleteDesc": "Permanently deletes all LLM call records for this task (including raw requests/responses). This action can't be undone.",
@@ -3534,6 +3545,7 @@
     "subtitle": "When a vulnerability is found, send notifications to channels like DingTalk, Feishu, and WeCom. Each channel can have its own delivery timing and filter rules.",
     "globalSwitch": "Master switch",
     "addChannel": "Add channel",
+    "empty": "No notification channels yet",
     "disabled": "Disabled",
     "aria": {
       "globalSwitch": "Notifications master switch",
@@ -3896,7 +3908,6 @@
   },
   "securitySources": {
     "title": "Splunk log connections",
-    "description": "Connect the Splunk management API to query real audit logs and alerts. A connection test checks only connectivity and authentication.",
     "createTitle": "Add connection",
     "editTitle": "Edit connection · {name}",
     "formDescription": "Use an existing Splunk account or token with search permission, and specify the audit-log and alert sources and correlation fields.",
@@ -3955,14 +3966,10 @@
     "disabled": "Disabled",
     "save": "Save connection",
     "saved": "Splunk connection saved.",
-    "cancelEdit": "Cancel edit",
-    "clear": "Clear inputs",
     "edit": "Edit",
     "test": "Test connection",
     "testConnection": "Test connection",
     "delete": "Delete",
-    "deleting": "Deleting…",
-    "deleteCancel": "Cancel",
     "deleteTitle": "Delete connection {name}?",
     "deleteDescription": "The connection settings and stored credentials will be deleted. Existing investigation evidence and results remain, but no further Splunk queries can use this connection.",
     "deleted": "Splunk connection deleted.",
@@ -4855,5 +4862,10 @@
       "method": "Method"
     },
     "from": "From"
+  },
+  "common": {
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   }
 }

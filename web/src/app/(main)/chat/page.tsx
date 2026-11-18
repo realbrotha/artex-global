@@ -139,8 +139,8 @@ function groupByAgent(conversations: Conversation[], nameOf: (agentKey: string) 
 function LiveBadge() {
   const t = useTranslations("chat");
   return (
-    <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-      <span className="size-1 animate-pulse rounded-full bg-blue-500" />
+    <span className="inline-flex items-center gap-1 rounded bg-info/15 px-1.5 py-0.5 text-[10px] font-medium text-info">
+      <span className="size-1 animate-pulse rounded-full bg-info" />
       {t("live")}
     </span>
   );
@@ -1411,13 +1411,10 @@ export default function ChatPage() {
   const cancelRename = React.useCallback(() => setRenamingId(null), []);
 
   return (
-    <div
-      data-content-padding="false"
-      className="flex h-[calc(100svh-3rem)] min-w-0 flex-col overflow-hidden p-3 sm:p-4 md:h-[calc(100svh-4rem)] md:p-6"
-    >
-      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(10rem,15rem)_minmax(0,1fr)] gap-3 md:grid-cols-[18rem_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] md:gap-4">
+    <div data-content-padding="false" className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden p-4">
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(10rem,15rem)_minmax(0,1fr)] gap-4 md:grid-cols-[18rem_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
         {/* left: conversation list */}
-        <div className="bg-card flex flex-col overflow-hidden rounded-lg border">
+        <div className="bg-card flex flex-col overflow-hidden rounded-xl border">
           <div className="flex flex-col gap-2 border-b p-2">
             <Button size="sm" className="w-full" onClick={() => selectConversation(null)}>
               <PlusIcon /> {t("newConversation")}
@@ -1571,7 +1568,7 @@ export default function ChatPage() {
         </div>
 
         {/* right: chat view */}
-        <div className="bg-card flex min-w-0 flex-col overflow-hidden rounded-lg border">
+        <div className="bg-card flex min-w-0 flex-col overflow-hidden rounded-xl border">
           {selected ? (
             <ChatView
               key={selected.id}

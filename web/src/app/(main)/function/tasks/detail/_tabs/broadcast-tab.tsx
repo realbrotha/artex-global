@@ -7,7 +7,6 @@ import {
   ArrowUpIcon,
   ArrowUpToLineIcon,
   BugIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   CompassIcon,
   FlagIcon,
@@ -22,12 +21,12 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { ListEmpty } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDateLocale } from "@/i18n/datetime";
 import { api } from "@/lib/api";
@@ -35,7 +34,6 @@ import { type Tone, toneClasses, toneDot } from "@/lib/status";
 import type { Edge, ExploreKind, FindingAsset, TaskNode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const PAGE_SIZES = [20, 50, 100];
 const POLL_MS = 8000;
 
 type KindMeta = { icon: LucideIcon; dot: string; chip: string };
@@ -46,43 +44,43 @@ type KindMeta = { icon: LucideIcon; dot: string; chip: string };
 const KIND_META: Record<string, KindMeta> = {
   begin: {
     icon: FlagIcon,
-    dot: "bg-slate-500",
-    chip: "bg-slate-500/15 text-slate-600 dark:text-slate-300",
+    dot: "bg-muted-foreground",
+    chip: "bg-muted-foreground/15 text-muted-foreground",
   },
   task: {
     icon: FlagIcon,
-    dot: "bg-slate-500",
-    chip: "bg-slate-500/15 text-slate-600 dark:text-slate-300",
+    dot: "bg-muted-foreground",
+    chip: "bg-muted-foreground/15 text-muted-foreground",
   },
   goal: {
     icon: TargetIcon,
-    dot: "bg-emerald-500",
-    chip: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    dot: "bg-success",
+    chip: "bg-success/15 text-success",
   },
   intent: {
     icon: CompassIcon,
-    dot: "bg-blue-500",
-    chip: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    dot: "bg-info",
+    chip: "bg-info/15 text-info",
   },
   fact: {
     icon: FlaskConicalIcon,
-    dot: "bg-amber-500",
-    chip: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    dot: "bg-warning",
+    chip: "bg-warning/15 text-warning",
   },
   finding: {
     icon: BugIcon,
-    dot: "bg-rose-500",
-    chip: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+    dot: "bg-danger",
+    chip: "bg-danger/15 text-danger",
   },
   hint: {
     icon: LightbulbIcon,
-    dot: "bg-violet-500",
-    chip: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    dot: "bg-primary",
+    chip: "bg-primary/15 text-primary",
   },
   digest: {
     icon: LayersIcon,
-    dot: "bg-teal-500",
-    chip: "bg-teal-500/15 text-teal-600 dark:text-teal-400",
+    dot: "bg-success",
+    chip: "bg-success/15 text-success",
   },
 };
 
@@ -430,13 +428,11 @@ function BroadcastRow({
 
 export function BroadcastTab({ taskId }: { taskId: string }) {
   const t = useTranslations("taskDetail.broadcastTab");
-  const tp = useTranslations("pagination");
   const [kinds, setKinds] = React.useState<ExploreKind[]>([]);
   const [queryInput, setQueryInput] = React.useState("");
   const [query, setQuery] = React.useState("");
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
   const [page, setPage] = React.useState(1);
-  const [size, setSize] = React.useState(20);
   const [live, setLive] = React.useState(true);
 
   const [items, setItems] = React.useState<TaskNode[]>([]);
@@ -485,7 +481,7 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
     }
     const load = () =>
       api
-        .explorationNodes(taskId, { page, size, kinds, q: query, order })
+        .explorationNodes(taskId, { page, size: PAGE_SIZE, kinds, q: query, order })
         .then((r) => {
           if (!alive) return;
           // 直播位每轮都刷新;其它位置只渲染第一次,之后轮询仅更新未读计数。
@@ -523,7 +519,7 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
       alive = false;
       clearInterval(timer);
     };
-  }, [taskId, page, size, kinds, query, order, live, atLive]);
+  }, [taskId, page, kinds, query, order, live, atLive]);
 
   const toggleKind = (kind: ExploreKind) => {
     setKinds((cur) => (cur.includes(kind) ? cur.filter((k) => k !== kind) : [...cur, kind]));
@@ -544,9 +540,7 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
     return idx;
   }, [refs, items]);
 
-  const pageCount = Math.max(1, Math.ceil(total / size));
-  const start = total === 0 ? 0 : (page - 1) * size + 1;
-  const end = (page - 1) * size + items.length;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // 换任务或筛选后条数变少时,把越界的页码收回来。
   React.useEffect(() => {
@@ -564,16 +558,16 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
   }
 
   return (
-    <Card className="overflow-hidden py-0">
-      {/* 工具条 */}
-      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
-        <div className="relative w-full sm:w-64">
+    <div className="flex flex-col gap-2">
+      {/* 도구 줄 */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-80">
           <SearchIcon className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
             placeholder={t("toolbar.searchPlaceholder")}
-            className="h-8 pl-8"
+            className="pl-8"
             aria-label={t("toolbar.searchAria")}
           />
         </div>
@@ -599,8 +593,8 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
           {kinds.length > 0 && (
             <Button
               variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
+              size="xs"
+              className="px-2 text-xs"
               onClick={() => {
                 setKinds([]);
                 setPage(1);
@@ -614,7 +608,6 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
           <Button
             variant="outline"
             size="sm"
-            className="h-8"
             onClick={() => {
               setOrder((o) => (o === "desc" ? "asc" : "desc"));
               setPage(1);
@@ -627,7 +620,6 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
           <Button
             variant={live ? "outline" : "secondary"}
             size="sm"
-            className="h-8"
             onClick={() => setLive((v) => !v)}
             aria-label={live ? t("toolbar.pauseAria") : t("toolbar.resumeAria")}
           >
@@ -637,96 +629,53 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
         </div>
       </div>
 
-      {/* 离开直播位时的未读提示 */}
-      {!atLive && pending > 0 && (
-        <button
-          type="button"
-          onClick={backToLive}
-          className="flex w-full items-center justify-center gap-1.5 border-b bg-primary/10 py-1.5 text-xs font-medium text-primary hover:bg-primary/15"
-        >
-          <ArrowUpToLineIcon className="size-3.5" />
-          {t("pending", { count: pending > 99 ? "99+" : pending })}
-        </button>
-      )}
+      <div className="overflow-hidden rounded-xl border bg-card">
+        {/* 离开直播位时的未读提示 */}
+        {!atLive && pending > 0 && (
+          <button
+            type="button"
+            onClick={backToLive}
+            className="flex w-full items-center justify-center gap-1.5 border-b bg-primary/10 py-1.5 text-xs font-medium text-primary hover:bg-primary/15"
+          >
+            <ArrowUpToLineIcon className="size-3.5" />
+            {t("pending", { count: pending > 99 ? "99+" : pending })}
+          </button>
+        )}
 
-      <CardContent className="px-4 py-0">
-        {!loaded ? (
-          <div className="flex flex-col gap-3 py-4">
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            {query || kinds.length > 0 ? t("emptyFiltered") : t("emptyNoNodes")}
-          </p>
-        ) : (
-          groups.map((group) => (
-            <div key={group.day}>
-              <div className="py-2 pl-[6.25rem] text-xs font-medium text-muted-foreground">{group.day}</div>
-              {group.rows.map((node) => (
-                <BroadcastRow
-                  key={node.id}
-                  node={node}
-                  edges={edges}
-                  refs={nodeIndex}
-                  assets={assets}
-                  now={now}
-                  fresh={freshIDs.has(node.id)}
-                />
+        <div className="px-4">
+          {!loaded ? (
+            <div className="flex flex-col gap-3 py-4">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ))
-        )}
-      </CardContent>
-
-      <CardFooter className="flex flex-wrap items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground">
-        <Select
-          value={String(size)}
-          onValueChange={(v) => {
-            setSize(Number(v));
-            setPage(1);
-          }}
-        >
-          <SelectTrigger size="sm" className="h-7 w-24">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {PAGE_SIZES.map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {n}
-                  {tp("perPage")}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <span className="tabular-nums">{tp("range", { from: start, to: end, total })}</span>
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            aria-label={tp("prev")}
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <span className="tabular-nums">
-            {page} / {pageCount}
-          </span>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            disabled={page >= pageCount}
-            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            aria-label={tp("next")}
-          >
-            <ChevronRightIcon />
-          </Button>
+          ) : items.length === 0 ? (
+            <ListEmpty
+              className="border-0"
+              title={query || kinds.length > 0 ? t("emptyFiltered") : t("emptyNoNodes")}
+            />
+          ) : (
+            groups.map((group) => (
+              <div key={group.day}>
+                <div className="py-2 pl-[6.25rem] text-xs font-medium text-muted-foreground">{group.day}</div>
+                {group.rows.map((node) => (
+                  <BroadcastRow
+                    key={node.id}
+                    node={node}
+                    edges={edges}
+                    refs={nodeIndex}
+                    assets={assets}
+                    now={now}
+                    fresh={freshIDs.has(node.id)}
+                  />
+                ))}
+              </div>
+            ))
+          )}
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+
+      <TablePagination page={page} total={total} onPageChange={setPage} />
+    </div>
   );
 }

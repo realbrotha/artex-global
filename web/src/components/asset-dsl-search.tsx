@@ -137,9 +137,9 @@ function applyDslSuggestion(text: string, s: DslSuggestion): { text: string; cur
 }
 
 const KIND_STYLE: Record<string, string> = {
-  field: "text-blue-500 dark:text-blue-400",
-  operator: "text-amber-500 dark:text-amber-400",
-  logic: "text-emerald-500 dark:text-emerald-400",
+  field: "text-info",
+  operator: "text-warning",
+  logic: "text-success",
 };
 
 // AssetDslSearch is the shared DSL search box: a monospace input with a
@@ -220,7 +220,7 @@ export function AssetDslSearch({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="relative max-w-lg">
+      <div className="relative w-80">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           ref={inputRef}
@@ -231,7 +231,7 @@ export function AssetDslSearch({
           onFocus={() => refresh(query, cursorPos())}
           onClick={() => refresh(query, cursorPos())}
           onBlur={() => setTimeout(() => setOpen(false), 120)}
-          className="h-8 pl-8 font-mono text-xs"
+          className="pl-8 font-mono text-xs"
         />
         {open && suggestions.length > 0 && (
           <div className="absolute top-full left-0 z-50 mt-1 w-max min-w-full max-w-sm rounded-md border bg-popover py-1 shadow-md">
@@ -261,7 +261,7 @@ export function AssetDslSearch({
           {loading ? (
             t("loading")
           ) : error ? (
-            <span className="text-destructive">{error}</span>
+            <span className="text-danger">{error}</span>
           ) : (
             t("found", { count: count ?? 0 })
           )}

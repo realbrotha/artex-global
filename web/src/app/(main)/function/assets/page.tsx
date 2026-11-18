@@ -4,8 +4,6 @@ import * as React from "react";
 
 import {
   BuildingIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   GlobeIcon,
   KeyRoundIcon,
   LayoutTemplateIcon,
@@ -20,7 +18,9 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { AssetDslSearch } from "@/components/asset-dsl-search";
+import { DrawerFooter, ListEmpty, PageHeader, TableSkeletonRows, useConfirm } from "@/components/page";
 import { ScopeTextEditor } from "@/components/scope-text-editor";
+import { PAGE_SIZE, TablePagination } from "@/components/table-pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,27 +36,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
@@ -65,13 +47,13 @@ import type { Asset, Company, CompanyScopeRule } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const METHOD_COLOR: Record<string, string> = {
-  GET: "bg-emerald-100 text-emerald-700",
-  POST: "bg-blue-100 text-blue-700",
-  PUT: "bg-amber-100 text-amber-700",
-  PATCH: "bg-orange-100 text-orange-700",
-  DELETE: "bg-red-100 text-red-700",
-  HEAD: "bg-purple-100 text-purple-700",
-  OPTIONS: "bg-slate-100 text-slate-600",
+  GET: "bg-success/10 text-success",
+  POST: "bg-info/10 text-info",
+  PUT: "bg-warning/10 text-warning",
+  PATCH: "bg-caution/10 text-caution",
+  DELETE: "bg-danger/10 text-danger",
+  HEAD: "bg-primary/10 text-primary",
+  OPTIONS: "bg-muted text-muted-foreground",
 };
 
 function MethodBadge({ method }: { method: string }) {
@@ -89,14 +71,12 @@ function MethodBadge({ method }: { method: string }) {
 }
 
 function statusTone(code: number) {
-  if (code >= 500) return "text-red-500";
-  if (code >= 400) return "text-amber-500";
-  if (code >= 300) return "text-blue-500";
-  if (code >= 200) return "text-emerald-500";
+  if (code >= 500) return "text-danger";
+  if (code >= 400) return "text-warning";
+  if (code >= 300) return "text-info";
+  if (code >= 200) return "text-success";
   return "text-muted-foreground";
 }
-
-const PAGE_SIZES = [25, 50, 100, 200];
 
 const TABS: { key: string; labelKey: string; icon: LucideIcon }[] = [
   { key: "company", labelKey: "company", icon: BuildingIcon },
@@ -110,16 +90,18 @@ const TABS: { key: string; labelKey: string; icon: LucideIcon }[] = [
 
 export default function AssetsPage() {
   const t = useTranslations("assets");
+  const confirm = useConfirm();
   const [rows, setRows] = React.useState<Asset[]>([]);
   const [total, setTotal] = React.useState(0);
   const [companies, setCompanies] = React.useState<Company[]>([]);
+  const [companiesLoaded, setCompaniesLoaded] = React.useState(false);
   const [counts, setCounts] = React.useState<Record<string, number>>({});
   const [tab, setTab] = React.useState("company");
   const [query, setQuery] = React.useState("");
   const [loaded, setLoaded] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [page, setPage] = React.useState(0);
-  const [size, setSize] = React.useState(50);
+  const size = PAGE_SIZE;
   const [dslError, setDslError] = React.useState("");
   const [refreshKey, setRefreshKey] = React.useState(0);
   const assetsRequestRef = React.useRef(0);
@@ -127,8 +109,6 @@ export default function AssetsPage() {
 
   // asset selection & delete
   const [selected, setSelected] = React.useState<Set<number>>(new Set());
-  const [deleteIds, setDeleteIds] = React.useState<number[]>([]);
-  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
   // company delete
@@ -143,7 +123,8 @@ export default function AssetsPage() {
       .then(setCompanies)
       .catch(() => {
         /* Keep the last successful company snapshot on a transient failure. */
-      });
+      })
+      .finally(() => setCompaniesLoaded(true));
     api
       .assetCounts()
       .then(setCounts)
@@ -185,12 +166,17 @@ export default function AssetsPage() {
     });
   };
 
-  const openDelete = (ids: number[]) => {
-    setDeleteIds(ids);
-    setDeleteOpen(true);
-  };
-
-  const confirmDelete = async () => {
+  const openDelete = async (deleteIds: number[]) => {
+    const ok = await confirm({
+      title: t("deleteDialog.title"),
+      description: t.rich("deleteDialog.body", {
+        count: deleteIds.length,
+        n: (chunks) => <span className="font-semibold tabular-nums">{chunks}</span>,
+      }),
+      confirmLabel: t("deleteDialog.confirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     try {
       const res = await api.deleteAssets(deleteIds);
@@ -201,7 +187,6 @@ export default function AssetsPage() {
       toast.error(t("toast.deleteFailed", { msg: String((e as Error)?.message ?? e) }));
     } finally {
       setDeleting(false);
-      setDeleteOpen(false);
     }
   };
 
@@ -242,7 +227,7 @@ export default function AssetsPage() {
   }, [tab]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: these controls intentionally reset server pagination.
-  React.useEffect(() => setPage(0), [tab, size, query]);
+  React.useEffect(() => setPage(0), [tab, query]);
 
   const dslMode = query.trim() !== "";
 
@@ -286,7 +271,7 @@ export default function AssetsPage() {
     if (tab === "company") return;
     const lastPage = Math.max(0, Math.ceil(total / size) - 1);
     if (page > lastPage) setPage(lastPage);
-  }, [page, size, tab, total]);
+  }, [page, tab, total]);
 
   const companyById = React.useMemo(() => {
     const m = new Map<number, string>();
@@ -315,7 +300,8 @@ export default function AssetsPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-4.5rem)] min-h-0 flex-col gap-3">
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader actions={<CompanyDialog onSaved={refresh} />} />
       <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-center gap-2">
           <div className="min-w-0 overflow-x-auto overflow-y-hidden">
@@ -337,88 +323,96 @@ export default function AssetsPage() {
               })}
             </span>
             {selected.size > 0 && (
-              <Button variant="destructive" size="xs" onClick={() => openDelete(Array.from(selected) as number[])}>
-                <Trash2Icon className="size-3.5" /> {t("deleteSelected", { count: selected.size })}
+              <Button
+                variant="destructive"
+                disabled={deleting}
+                onClick={() => void openDelete(Array.from(selected) as number[])}
+              >
+                <Trash2Icon /> {t("deleteSelected", { count: selected.size })}
               </Button>
             )}
-            <Button variant="outline" size="xs" onClick={refresh} disabled={loading}>
-              <RefreshCwIcon className={cn("size-4", loading && "animate-spin")} /> {t("refresh")}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={refresh}
+              disabled={loading}
+              aria-label={t("refresh")}
+              title={t("refresh")}
+            >
+              <RefreshCwIcon className={cn(loading && "animate-spin")} />
             </Button>
-            <CompanyDialog onSaved={refresh} />
           </span>
         </div>
 
         {/* 기업 */}
-        <TabsContent value="company" className="mt-0 flex min-h-0 flex-1 flex-col">
-          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
-            <div className="min-h-0 flex-1 overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 z-10 bg-card">
-                  <TableRow>
-                    <TableHead>{t("companyTable.name")}</TableHead>
-                    <TableHead className="w-24 text-right">{t("companyTable.count")}</TableHead>
-                    <TableHead>{t("companyTable.scope")}</TableHead>
-                    <TableHead className="w-36 text-right">{t("companyTable.actions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {companies.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <CompanyAvatar name={c.name} logo={c.logo} />
-                          <span className="font-medium">{c.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-sm">{c.asset_count}</TableCell>
-                      <TableCell>
-                        {c.scope?.length ? (
-                          <div className="flex flex-wrap gap-1">
-                            {c.scope.map((s, i) => (
-                              <Badge key={i} variant="secondary" className="font-mono text-[11px]">
-                                {s.raw}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">{t("noScope")}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <EditScopeDialog company={c} onSaved={refresh} />
-                          <AppendScopeDialog company={c} onSaved={refresh} />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => {
-                              setCompanyDeleteTarget(c);
-                              setCompanyDeleteAssets(false);
-                            }}
-                            aria-label={t("deleteCompanyAria", { name: c.name })}
-                          >
-                            <Trash2Icon className="size-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {companies.length === 0 && (
+        <TabsContent value="company" className="flex min-h-0 flex-1 flex-col">
+          {companiesLoaded && companies.length === 0 ? (
+            <ListEmpty title={t("companyEmpty")} icon={<BuildingIcon />} />
+          ) : (
+            <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
+              <div className="min-h-0 flex-1 overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-card">
                     <TableRow>
-                      <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
-                        {t("companyEmpty")}
-                      </TableCell>
+                      <TableHead>{t("companyTable.name")}</TableHead>
+                      <TableHead className="w-24 text-right">{t("companyTable.count")}</TableHead>
+                      <TableHead>{t("companyTable.scope")}</TableHead>
+                      <TableHead className="w-36 text-right">{t("companyTable.actions")}</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {companies.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <CompanyAvatar name={c.name} logo={c.logo} />
+                            <span className="font-medium">{c.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums text-sm">{c.asset_count}</TableCell>
+                        <TableCell>
+                          {c.scope?.length ? (
+                            <div className="flex flex-wrap gap-1">
+                              {c.scope.map((s, i) => (
+                                <Badge key={i} variant="secondary" className="font-mono text-[11px]">
+                                  {s.raw}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{t("noScope")}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <EditScopeDialog company={c} onSaved={refresh} />
+                            <AppendScopeDialog company={c} onSaved={refresh} />
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-muted-foreground hover:text-danger"
+                              onClick={() => {
+                                setCompanyDeleteTarget(c);
+                                setCompanyDeleteAssets(false);
+                              }}
+                              aria-label={t("deleteCompanyAria", { name: c.name })}
+                            >
+                              <Trash2Icon className="size-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!companiesLoaded && <TableSkeletonRows columns={4} />}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
         </TabsContent>
 
         {/* 루트 도메인 */}
-        <TabsContent value="root_domain" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
+        <TabsContent value="root_domain" className="flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
             cols={["", t("col.domain"), t("col.icp"), t("col.ownerCompany"), ""]}
@@ -426,7 +420,6 @@ export default function AssetsPage() {
             total={total}
             page={page}
             size={size}
-            onSize={setSize}
             onPage={setPage}
             rows={currentRows}
             selected={selected}
@@ -445,9 +438,10 @@ export default function AssetsPage() {
                 <TableCell className="w-8 pl-0">
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => openDelete([a.id])}
+                    size="icon-xs"
+                    className="text-muted-foreground hover:text-danger"
+                    disabled={deleting}
+                    onClick={() => void openDelete([a.id])}
                     aria-label={t("deleteAssetAria", { target: a.domain || a.id })}
                   >
                     <Trash2Icon className="size-3.5" />
@@ -459,7 +453,7 @@ export default function AssetsPage() {
         </TabsContent>
 
         {/* IP */}
-        <TabsContent value="ip" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
+        <TabsContent value="ip" className="flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
             cols={["", "IP", t("col.cSegment"), t("col.boundDomains"), t("col.openPorts"), ""]}
@@ -467,7 +461,6 @@ export default function AssetsPage() {
             total={total}
             page={page}
             size={size}
-            onSize={setSize}
             onPage={setPage}
             rows={currentRows}
             selected={selected}
@@ -492,9 +485,10 @@ export default function AssetsPage() {
                 <TableCell className="w-8 pl-0">
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => openDelete([a.id])}
+                    size="icon-xs"
+                    className="text-muted-foreground hover:text-danger"
+                    disabled={deleting}
+                    onClick={() => void openDelete([a.id])}
                     aria-label={t("deleteAssetAria", { target: a.ip || a.id })}
                   >
                     <Trash2Icon className="size-3.5" />
@@ -506,7 +500,7 @@ export default function AssetsPage() {
         </TabsContent>
 
         {/* 서브도메인 */}
-        <TabsContent value="subdomain" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
+        <TabsContent value="subdomain" className="flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
             cols={["", t("col.domain"), t("col.rootDomain"), t("col.recordType"), t("col.recordValue"), ""]}
@@ -514,7 +508,6 @@ export default function AssetsPage() {
             total={total}
             page={page}
             size={size}
-            onSize={setSize}
             onPage={setPage}
             rows={currentRows}
             selected={selected}
@@ -534,9 +527,10 @@ export default function AssetsPage() {
                 <TableCell className="w-8 pl-0">
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => openDelete([a.id])}
+                    size="icon-xs"
+                    className="text-muted-foreground hover:text-danger"
+                    disabled={deleting}
+                    onClick={() => void openDelete([a.id])}
                     aria-label={t("deleteAssetAria", { target: a.domain || a.id })}
                   >
                     <Trash2Icon className="size-3.5" />
@@ -548,7 +542,7 @@ export default function AssetsPage() {
         </TabsContent>
 
         {/* 애플리케이션 */}
-        <TabsContent value="app" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
+        <TabsContent value="app" className="flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
             cols={["", t("col.appName"), "Bundle ID", t("col.category"), t("col.icp"), ""]}
@@ -556,7 +550,6 @@ export default function AssetsPage() {
             total={total}
             page={page}
             size={size}
-            onSize={setSize}
             onPage={setPage}
             rows={currentRows}
             selected={selected}
@@ -574,9 +567,10 @@ export default function AssetsPage() {
                 <TableCell className="w-8 pl-0">
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => openDelete([a.id])}
+                    size="icon-xs"
+                    className="text-muted-foreground hover:text-danger"
+                    disabled={deleting}
+                    onClick={() => void openDelete([a.id])}
                     aria-label={t("deleteAssetAria", { target: a.app_name || a.id })}
                   >
                     <Trash2Icon className="size-3.5" />
@@ -588,7 +582,7 @@ export default function AssetsPage() {
         </TabsContent>
 
         {/* 서비스 */}
-        <TabsContent value="service" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
+        <TabsContent value="service" className="flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
             cols={[
@@ -607,7 +601,6 @@ export default function AssetsPage() {
             total={total}
             page={page}
             size={size}
-            onSize={setSize}
             onPage={setPage}
             rows={currentRows}
             selected={selected}
@@ -619,12 +612,7 @@ export default function AssetsPage() {
               let domainCell: React.ReactNode = "—";
               if (isHttp && a.url) {
                 domainCell = (
-                  <a
-                    href={a.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 hover:underline dark:text-blue-400"
-                  >
+                  <a href={a.url} target="_blank" rel="noreferrer" className="text-info hover:underline">
                     {a.domain || a.url}
                   </a>
                 );
@@ -680,9 +668,10 @@ export default function AssetsPage() {
                   <TableCell className="w-8 pl-0">
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="size-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => openDelete([a.id])}
+                      size="icon-xs"
+                      className="text-muted-foreground hover:text-danger"
+                      disabled={deleting}
+                      onClick={() => void openDelete([a.id])}
                       aria-label={t("deleteAssetAria", { target: a.url || a.id })}
                     >
                       <Trash2Icon className="size-3.5" />
@@ -695,7 +684,7 @@ export default function AssetsPage() {
         </TabsContent>
 
         {/* 엔드포인트 */}
-        <TabsContent value="endpoint" className="mt-0 flex min-h-0 flex-1 flex-col gap-2">
+        <TabsContent value="endpoint" className="flex min-h-0 flex-1 flex-col gap-2">
           {searchBox}
           <AssetCard
             cols={["", t("col.method"), t("col.fullUrl"), t("col.params"), ""]}
@@ -703,7 +692,6 @@ export default function AssetsPage() {
             total={total}
             page={page}
             size={size}
-            onSize={setSize}
             onPage={setPage}
             rows={currentRows}
             selected={selected}
@@ -732,9 +720,10 @@ export default function AssetsPage() {
                 <TableCell className="w-8 pl-0">
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => openDelete([a.id])}
+                    size="icon-xs"
+                    className="text-muted-foreground hover:text-danger"
+                    disabled={deleting}
+                    onClick={() => void openDelete([a.id])}
                     aria-label={t("deleteAssetAria", { target: a.url || a.id })}
                   >
                     <Trash2Icon className="size-3.5" />
@@ -745,33 +734,6 @@ export default function AssetsPage() {
           </AssetCard>
         </TabsContent>
       </Tabs>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("deleteDialog.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t.rich("deleteDialog.body", {
-                count: deleteIds.length,
-                n: (chunks) => <span className="font-semibold tabular-nums">{chunks}</span>,
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                void confirmDelete();
-              }}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? t("deleting") : t("deleteDialog.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog
         open={!!companyDeleteTarget}
@@ -817,7 +779,7 @@ export default function AssetsPage() {
                 void confirmDeleteCompany();
               }}
               disabled={companyDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               {companyDeleting ? t("deleting") : t("deleteDialog.confirm")}
             </AlertDialogAction>
@@ -834,7 +796,6 @@ function AssetCard({
   total,
   page,
   size,
-  onSize,
   onPage,
   rows: dataRows,
   selected,
@@ -846,7 +807,6 @@ function AssetCard({
   total: number;
   page: number;
   size: number;
-  onSize: React.Dispatch<React.SetStateAction<number>>;
   onPage: React.Dispatch<React.SetStateAction<number>>;
   rows?: Asset[];
   selected?: Set<number>;
@@ -854,97 +814,43 @@ function AssetCard({
   children: React.ReactNode;
 }) {
   const t = useTranslations("assets");
-  const tp = useTranslations("pagination");
   const childRows = React.Children.toArray(children);
-  const pageCount = Math.max(1, Math.ceil(total / size));
-  const start = total === 0 ? 0 : page * size + 1;
-  const end = page * size + childRows.length;
 
   const pageIds = dataRows?.map((r) => r.id) ?? [];
   const allSelected = pageIds.length > 0 && selected != null && pageIds.every((id) => selected.has(id));
   const someSelected = selected != null && pageIds.some((id) => selected.has(id));
 
+  if (loaded && childRows.length === 0) return <ListEmpty title={t("emptyData")} />;
+
   return (
-    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
-      <div className="min-h-0 flex-1 overflow-auto scrollbar-thin scrollbar-track-transparent">
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow>
-              {cols.map((c, i) =>
-                c === "" && i === 0 && onToggleAll ? (
-                  <TableHead key={i} className="w-8 pr-0">
-                    <Checkbox
-                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                      onCheckedChange={() => onToggleAll(pageIds)}
-                    />
-                  </TableHead>
-                ) : (
-                  <TableHead key={c + i}>{c}</TableHead>
-                ),
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {childRows.length > 0 ? (
-              childRows
-            ) : (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden py-0">
+        <div className="min-h-0 flex-1 overflow-auto scrollbar-thin scrollbar-track-transparent">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
-                <TableCell colSpan={cols.length} className="py-12 text-center text-sm text-muted-foreground">
-                  {loaded ? t("emptyData") : t("loading")}
-                </TableCell>
+                {cols.map((c, i) =>
+                  c === "" && i === 0 && onToggleAll ? (
+                    <TableHead key={i} className="w-8 pr-0">
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                        onCheckedChange={() => onToggleAll(pageIds)}
+                      />
+                    </TableHead>
+                  ) : (
+                    <TableHead key={c + i}>{c}</TableHead>
+                  ),
+                )}
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {total > 0 && (
-        <div className="flex shrink-0 items-center gap-2 border-t px-3 py-1.5 text-xs text-muted-foreground">
-          <Select value={String(size)} onValueChange={(v) => onSize(Number(v))}>
-            <SelectTrigger size="sm" className="h-7 w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {PAGE_SIZES.map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                    {tp("perPage")}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <span className="tabular-nums">
-            {start}–{end} / {total}
-          </span>
-          {pageCount > 1 && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-7"
-                disabled={page <= 0}
-                onClick={() => onPage((p) => Math.max(0, p - 1))}
-              >
-                <ChevronLeftIcon />
-              </Button>
-              <span className="tabular-nums">
-                {page + 1} / {pageCount}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-7"
-                disabled={page + 1 >= pageCount}
-                onClick={() => onPage((p) => Math.min(pageCount - 1, p + 1))}
-              >
-                <ChevronRightIcon />
-              </Button>
-            </div>
-          )}
+            </TableHeader>
+            <TableBody>{childRows.length > 0 ? childRows : <TableSkeletonRows columns={cols.length} />}</TableBody>
+          </Table>
         </div>
+      </Card>
+      {total > 0 && (
+        <TablePagination page={page + 1} pageSize={size} total={total} onPageChange={(p) => onPage(p - 1)} />
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -1037,16 +943,16 @@ function CompanyDialog({ onSaved }: { onSaved: () => void }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button size="sm">
+        <Button>
           <BuildingIcon data-icon="inline-start" /> {t("companyDialog.addButton")}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full! max-w-none! gap-0 p-0 sm:w-[520px]! sm:max-w-[520px]!">
-        <SheetHeader className="border-b p-6">
+      <SheetContent size="md" className="gap-0">
+        <SheetHeader className="border-b">
           <SheetTitle>{t("companyDialog.title")}</SheetTitle>
           <SheetDescription>{t("companyDialog.description")}</SheetDescription>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="cn-name">{t("companyDialog.nameLabel")}</FieldLabel>
@@ -1060,14 +966,13 @@ function CompanyDialog({ onSaved }: { onSaved: () => void }) {
             <ScopeTextEditor id="cn-scope" value={scopeText} onValueChange={setScopeText} parsed={parsedScope} />
           </FieldGroup>
         </div>
-        <SheetFooter className="flex-row justify-end gap-2 border-t p-4">
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            {t("cancel")}
-          </Button>
-          <Button onClick={submit} disabled={busy || !name.trim() || parsedScope.errors.length > 0}>
-            {busy ? t("saving") : t("save")}
-          </Button>
-        </SheetFooter>
+        <DrawerFooter
+          onCancel={() => setOpen(false)}
+          onConfirm={() => void submit()}
+          confirmDisabled={!name.trim() || parsedScope.errors.length > 0}
+          pending={busy}
+          confirmLabel={busy ? t("saving") : t("save")}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -1114,44 +1019,45 @@ function EditScopeDialog({ company, onSaved }: { company: Company; onSaved: () =
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7">
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="xs">
           {t("editScope.button")}
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("editScope.title", { name: company.name })}</DialogTitle>
-          <DialogDescription>{t("editScope.description")}</DialogDescription>
-        </DialogHeader>
-        <FieldGroup className="py-2">
-          <ScopeTextEditor
-            id={`edit-company-scope-${company.id}`}
-            value={scopeText}
-            onValueChange={setScopeText}
-            parsed={parsedScope}
-          />
-          <Field>
-            <FieldLabel htmlFor="es-reason">{t("reasonLabel")}</FieldLabel>
-            <Input
-              id="es-reason"
-              placeholder={t("reasonPlaceholder")}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+      </SheetTrigger>
+      <SheetContent size="md" className="gap-0">
+        <SheetHeader className="border-b">
+          <SheetTitle>{t("editScope.title", { name: company.name })}</SheetTitle>
+          <SheetDescription>{t("editScope.description")}</SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <FieldGroup>
+            <ScopeTextEditor
+              id={`edit-company-scope-${company.id}`}
+              value={scopeText}
+              onValueChange={setScopeText}
+              parsed={parsedScope}
             />
-          </Field>
-        </FieldGroup>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            {t("cancel")}
-          </Button>
-          <Button onClick={submit} disabled={busy || parsedScope.errors.length > 0}>
-            {busy ? t("saving") : t("editScope.overwrite")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <Field>
+              <FieldLabel htmlFor="es-reason">{t("reasonLabel")}</FieldLabel>
+              <Input
+                id="es-reason"
+                placeholder={t("reasonPlaceholder")}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </Field>
+          </FieldGroup>
+        </div>
+        <DrawerFooter
+          onCancel={() => setOpen(false)}
+          onConfirm={() => void submit()}
+          confirmDisabled={parsedScope.errors.length > 0}
+          pending={busy}
+          confirmLabel={busy ? t("saving") : t("editScope.overwrite")}
+        />
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1196,43 +1102,44 @@ function AppendScopeDialog({ company, onSaved }: { company: Company; onSaved: ()
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7">
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="xs">
           {t("appendScope.button")}
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("appendScope.title", { name: company.name })}</DialogTitle>
-          <DialogDescription>{t("appendScope.description")}</DialogDescription>
-        </DialogHeader>
-        <FieldGroup className="py-2">
-          <ScopeTextEditor
-            id={`append-company-scope-${company.id}`}
-            value={scopeText}
-            onValueChange={setScopeText}
-            parsed={parsedScope}
-          />
-          <Field>
-            <FieldLabel htmlFor="as-reason">{t("reasonLabel")}</FieldLabel>
-            <Input
-              id="as-reason"
-              placeholder={t("reasonPlaceholder")}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+      </SheetTrigger>
+      <SheetContent size="md" className="gap-0">
+        <SheetHeader className="border-b">
+          <SheetTitle>{t("appendScope.title", { name: company.name })}</SheetTitle>
+          <SheetDescription>{t("appendScope.description")}</SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <FieldGroup>
+            <ScopeTextEditor
+              id={`append-company-scope-${company.id}`}
+              value={scopeText}
+              onValueChange={setScopeText}
+              parsed={parsedScope}
             />
-          </Field>
-        </FieldGroup>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            {t("cancel")}
-          </Button>
-          <Button onClick={submit} disabled={busy || parsedScope.rules.length === 0 || parsedScope.errors.length > 0}>
-            {busy ? t("saving") : t("appendScope.button")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <Field>
+              <FieldLabel htmlFor="as-reason">{t("reasonLabel")}</FieldLabel>
+              <Input
+                id="as-reason"
+                placeholder={t("reasonPlaceholder")}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </Field>
+          </FieldGroup>
+        </div>
+        <DrawerFooter
+          onCancel={() => setOpen(false)}
+          onConfirm={() => void submit()}
+          confirmDisabled={parsedScope.rules.length === 0 || parsedScope.errors.length > 0}
+          pending={busy}
+          confirmLabel={busy ? t("saving") : t("appendScope.button")}
+        />
+      </SheetContent>
+    </Sheet>
   );
 }

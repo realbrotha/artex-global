@@ -6,6 +6,7 @@ import { BellIcon, PlusIcon, SendIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, ListEmpty, PageHeader } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -270,7 +271,14 @@ export default function NotifyPage() {
   const defaultRate = meta?.kinds.find((k) => k.kind === form.kind)?.default_rate_per_min ?? 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        actions={
+          <Button onClick={openAdd}>
+            <PlusIcon /> {t("addChannel")}
+          </Button>
+        }
+      />
       <Tabs value={tab} onValueChange={(v) => setTab(v as NotifyTab)}>
         {/* 탭이 먼저, 전체 켜기·끄기는 같은 줄 오른쪽 끝. */}
         <div className="flex flex-wrap items-center gap-2">
@@ -352,16 +360,8 @@ export default function NotifyPage() {
         </TabsContent>
 
         <TabsContent value="channels">
+          {channels.length === 0 && <ListEmpty icon={<BellIcon />} title={t("empty")} />}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <button
-              type="button"
-              onClick={openAdd}
-              className="text-foreground/70 border-foreground/70 hover:bg-muted/60 hover:shadow-sm flex min-h-[130px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed transition"
-            >
-              <PlusIcon className="size-6" />
-              <span className="text-sm">{t("addChannel")}</span>
-            </button>
-
             {channels.map((ch) => (
               <Card
                 key={ch.id}
@@ -384,7 +384,7 @@ export default function NotifyPage() {
                         aria-label={t("aria.enable")}
                       />
                       <Button
-                        size="icon"
+                        size="icon-xs"
                         variant="outline"
                         aria-label={t("aria.delete")}
                         onClick={(e) => {
@@ -394,7 +394,7 @@ export default function NotifyPage() {
                           void removeChannel(ch);
                         }}
                       >
-                        <Trash2Icon className="text-destructive" />
+                        <Trash2Icon className="text-danger" />
                       </Button>
                     </div>
                   </div>
@@ -418,7 +418,7 @@ export default function NotifyPage() {
       </Tabs>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full data-[side=right]:sm:max-w-lg">
+        <SheetContent side="right" size="sm">
           <SheetHeader>
             <SheetTitle>{editing ? editing.name : t("sheet.addTitle")}</SheetTitle>
             <SheetDescription>
@@ -585,17 +585,21 @@ export default function NotifyPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 pb-6">
-              <Button onClick={saveForm} disabled={saving}>
-                {editing ? t("sheet.save") : t("sheet.add")}
-              </Button>
-              {editing && (
+            {/* 시험 발송은 저장과 별개인 보조 작업이라 폼 끝에 둔다. */}
+            {editing && (
+              <div className="pb-4">
                 <Button variant="outline" onClick={testChannel} disabled={testing}>
                   <SendIcon /> {t("sheet.sendTest")}
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+          <DrawerFooter
+            onCancel={() => setOpen(false)}
+            confirmLabel={editing ? t("sheet.save") : t("sheet.add")}
+            onConfirm={saveForm}
+            pending={saving}
+          />
         </SheetContent>
       </Sheet>
     </div>

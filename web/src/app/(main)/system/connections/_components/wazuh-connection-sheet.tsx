@@ -5,7 +5,7 @@ import * as React from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { DrawerFooter } from "@/components/page";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
@@ -113,14 +113,15 @@ export function WazuhConnectionSheet({ open, onOpenChange, source, onSaved }: Wa
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-lg">
+      <SheetContent size="sm">
         <SheetHeader>
           <SheetTitle>{form.id ? t("editTitle") : t("createTitle")}</SheetTitle>
           <SheetDescription>{t("formDescription")}</SheetDescription>
         </SheetHeader>
 
         <form
-          className="grid gap-4 px-4 pb-6"
+          id="wazuh-connection-form"
+          className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto px-4 pb-4"
           onSubmit={(event) => {
             event.preventDefault();
             void save();
@@ -219,26 +220,25 @@ export function WazuhConnectionSheet({ open, onOpenChange, source, onSaved }: Wa
                 required
               />
             )}
-            {form.tlsMode === "skip" && (
-              <p className="text-amber-600 text-xs dark:text-amber-400">{t("tlsSkipHelp")}</p>
-            )}
+            {form.tlsMode === "skip" && <p className="text-warning text-xs">{t("tlsSkipHelp")}</p>}
           </div>
 
           <div className="flex items-center gap-2">
             <Switch id="wz-enabled" checked={form.enabled} onCheckedChange={(v) => set("enabled", v)} />
             <Label htmlFor="wz-enabled">{t("enabled")}</Label>
           </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t("cancel")}
-            </Button>
-            <Button type="submit" disabled={busy}>
+        </form>
+        <DrawerFooter
+          form="wazuh-connection-form"
+          onCancel={() => onOpenChange(false)}
+          confirmLabel={
+            <>
               {busy && <Spinner />}
               {t("save")}
-            </Button>
-          </div>
-        </form>
+            </>
+          }
+          pending={busy}
+        />
       </SheetContent>
     </Sheet>
   );

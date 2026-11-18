@@ -9,6 +9,7 @@ import { ChevronDownIcon, DownloadIcon, PlayIcon, PlusIcon, RefreshCwIcon, Squar
 import { HuntingProgress } from "@/components/hunting-progress";
 import { HuntingResultView } from "@/components/hunting-result-view";
 import { HuntingTrendExplorer } from "@/components/hunting-trend-explorer";
+import { PageHeader } from "@/components/page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -459,13 +460,14 @@ export default function HuntingPage() {
   };
 
   return (
-    <div className="flex w-full flex-col gap-3 lg:h-[calc(100svh-4.5rem)]">
-      <Tabs value={view} onValueChange={(next) => setView(next as "trends" | "hunt")} className="lg:min-h-0 lg:flex-1">
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader />
+      <Tabs value={view} onValueChange={(next) => setView(next as "trends" | "hunt")} className="min-h-0 flex-1">
         <TabsList aria-label="자율 위협 헌팅 화면">
           <TabsTrigger value="trends">위협 동향 · {trendReports.length}</TabsTrigger>
           <TabsTrigger value="hunt">헌팅 작업</TabsTrigger>
         </TabsList>
-        <TabsContent value="trends" className="mt-0 lg:min-h-0 lg:flex-1">
+        <TabsContent value="trends" className="min-h-0 flex-1">
           <HuntingTrendExplorer
             reports={trendReports}
             collection={trendCollection}
@@ -477,7 +479,7 @@ export default function HuntingPage() {
             onHunt={startFromReport}
           />
         </TabsContent>
-        <TabsContent value="hunt" className="mt-0 space-y-3 lg:min-h-0 lg:overflow-y-auto">
+        <TabsContent value="hunt" className="flex min-h-0 flex-col gap-3 overflow-y-auto">
           <HuntingProgress
             run={run}
             loading={!!selectedId && !run && detailLoading}
@@ -485,7 +487,7 @@ export default function HuntingPage() {
             onPhaseSelect={selectPhase}
             resultTabsId={resultTabsId}
           />
-          <div className="space-y-3 rounded-lg border p-3">
+          <div className="space-y-3 rounded-xl border bg-card p-3">
             <div className="flex flex-wrap items-end gap-2">
               <div className="w-full min-w-0 space-y-1.5 lg:w-auto lg:flex-1">
                 <Label htmlFor={`${fieldId}-run`}>헌팅 이력</Label>
@@ -513,8 +515,10 @@ export default function HuntingPage() {
                 <PlusIcon />새 헌팅
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="새로고침"
+                title="새로고침"
                 onClick={() => {
                   void load();
                   if (selectedId) {
@@ -525,7 +529,6 @@ export default function HuntingPage() {
                 disabled={loading || detailLoading || !!busy}
               >
                 <RefreshCwIcon className={loading ? "animate-spin" : undefined} />
-                새로고침
               </Button>
               {selectedId ? (
                 <>

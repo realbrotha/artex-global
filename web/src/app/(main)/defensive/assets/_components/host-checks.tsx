@@ -14,10 +14,10 @@ import { type AssetChecks, type AssetIssue, wazuhApi } from "@/lib/wazuh-api";
 type View = AssetIssue["result"] | "accepted";
 
 const viewTone: Record<View, string> = {
-  fail: "text-red-600 dark:text-red-400",
-  review: "text-sky-600 dark:text-sky-400",
-  error: "text-amber-600 dark:text-amber-400",
-  accepted: "text-violet-600 dark:text-violet-400",
+  fail: "text-danger",
+  review: "text-info",
+  error: "text-warning",
+  accepted: "text-primary",
 };
 
 const sevRank: Record<string, number> = { 상: 0, 중: 1, 하: 2 };
@@ -110,8 +110,7 @@ export function CheckTiles({ checks, view, onSelect }: CheckTilesProps) {
             <div
               className={cn(
                 "font-semibold text-sm tabular-nums",
-                tile.value > 0 &&
-                  (tile.key === "pass" ? "text-emerald-600 dark:text-emerald-400" : viewTone[tile.key as View]),
+                tile.value > 0 && (tile.key === "pass" ? "text-success" : viewTone[tile.key as View]),
               )}
             >
               {tile.value}
@@ -248,8 +247,8 @@ export function HostChecks({ sourceId, nodeId, checks }: HostChecksProps) {
                   {expanded && (
                     <div className="grid grid-cols-1 gap-2 border-t bg-muted/20 px-3 py-2.5 text-xs">
                       {acceptance && (
-                        <div className="grid grid-cols-1 gap-0.5 rounded bg-violet-500/10 p-2">
-                          <p className="font-medium text-violet-700 dark:text-violet-300">
+                        <div className="grid grid-cols-1 gap-0.5 rounded bg-primary/10 p-2">
+                          <p className="font-medium text-primary">
                             {t("acceptedBy", {
                               who: acceptance.approved_by,
                               until: acceptance.until || t("noExpiry"),

@@ -1,25 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import * as React from "react";
-
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-import { useTranslations } from "next-intl";
-
+// 방어 메뉴 첫 화면은 위협 헌팅.
 export default function DefensivePage() {
-  const router = useRouter();
-  const t = useTranslations("nav.item");
-
-  React.useEffect(() => {
-    router.replace("/defensive/hunting/");
-  }, [router]);
-
-  return (
-    <main className="mx-auto max-w-3xl p-6 text-sm">
-      <Link href="/defensive/hunting/" className="underline underline-offset-2">
-        {t("defensive-hunting")}
-      </Link>
-    </main>
-  );
+  redirect("/defensive/hunting/");
 }

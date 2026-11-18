@@ -29,9 +29,9 @@ import { api } from "@/lib/api";
 import type { Activity, InterceptPending } from "@/lib/types";
 
 // ---- per-agent lane color (planner + work#1/#2/#3 …) ---------------------------
-const workerColors = ["bg-sky-600", "bg-violet-600", "bg-teal-600", "bg-pink-600", "bg-orange-600"];
+const workerColors = ["bg-info", "bg-primary", "bg-success", "bg-primary", "bg-caution"];
 function workerColor(name: string): string {
-  if (name === "planner") return "bg-amber-600"; // the intent generator, distinct
+  if (name === "planner") return "bg-warning"; // the intent generator, distinct
   if (name === "mainagent") return "bg-primary";
   const m = /#(\d+)/.exec(name);
   const i = m ? (parseInt(m[1], 10) - 1) % workerColors.length : 0;
@@ -264,16 +264,14 @@ function InterceptCard({ step, getDetail }: { step: Activity; getDetail: (seq: n
     : null;
 
   return (
-    <div className="my-2 rounded-lg border border-amber-400/50 bg-amber-50/40 dark:bg-amber-950/15 p-3 text-xs">
+    <div className="my-2 rounded-lg border border-warning/50 bg-warning/40 p-3 text-xs">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-2 min-w-0">
-          <ShieldAlertIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+          <ShieldAlertIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
           <div className="min-w-0 space-y-0.5">
             <div className="flex items-center gap-1.5 font-medium">
-              <span className="text-amber-700 dark:text-amber-400">{t("approval.request")}</span>
-              <code className="rounded bg-amber-100 dark:bg-amber-900/50 px-1 font-mono text-amber-800 dark:text-amber-300">
-                {toolName}
-              </code>
+              <span className="text-warning">{t("approval.request")}</span>
+              <code className="rounded bg-warning/10 px-1 font-mono text-warning">{toolName}</code>
               {pendingId && <span className="text-muted-foreground">#{pendingId}</span>}
             </div>
             {inputStr && <p className="font-mono text-muted-foreground truncate">{inputStr}</p>}
@@ -287,10 +285,10 @@ function InterceptCard({ step, getDetail }: { step: Activity; getDetail: (seq: n
             className={
               "shrink-0 rounded px-2 py-0.5 text-[11px] font-medium " +
               (decided === "allowed"
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                ? "bg-success/10 text-success"
                 : decided === "timeout"
-                  ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                  : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400")
+                  ? "bg-muted text-muted-foreground"
+                  : "bg-danger/10 text-danger")
             }
           >
             {decided === "allowed"
@@ -302,8 +300,8 @@ function InterceptCard({ step, getDetail }: { step: Activity; getDetail: (seq: n
         ) : (
           <div className="flex shrink-0 gap-1.5">
             <Button
-              size="sm"
-              className="h-6 px-2 text-xs"
+              size="xs"
+              className="px-2 text-xs"
               disabled={deciding || !pendingId}
               onClick={() => decide("allowed")}
             >
@@ -311,9 +309,9 @@ function InterceptCard({ step, getDetail }: { step: Activity; getDetail: (seq: n
               {t("approval.allow")}
             </Button>
             <Button
-              size="sm"
+              size="xs"
               variant="destructive"
-              className="h-6 px-2 text-xs"
+              className="px-2 text-xs"
               disabled={deciding || !pendingId}
               onClick={() => decide("denied")}
             >
@@ -386,11 +384,7 @@ function ToolBlock({
   const ToolIcon = toolName === "Bash" ? Terminal : Wrench;
   const running = !result;
   const ok = !!result && !result.is_error;
-  const statusTone = running
-    ? "text-muted-foreground"
-    : ok
-      ? "text-emerald-600 dark:text-emerald-400"
-      : "text-red-600 dark:text-red-400";
+  const statusTone = running ? "text-muted-foreground" : ok ? "text-success" : "text-danger";
   const rawCmd =
     use && use.summary.startsWith(toolName) ? use.summary.slice(toolName.length).trimStart() : (use?.summary ?? "");
   const cmd = toolInputText(toolName, rawCmd);
@@ -474,9 +468,9 @@ function ToolBlock({
         <span className="mt-0.5 text-muted-foreground">
           {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
         </span>
-        <ToolIcon className={"mt-0.5 size-3.5 shrink-0 " + (running ? "text-sky-600 dark:text-sky-400" : statusTone)} />
+        <ToolIcon className={"mt-0.5 size-3.5 shrink-0 " + (running ? "text-info" : statusTone)} />
         {showWorker && <span className={chip(group.worker)}>{group.worker}</span>}
-        <span className="shrink-0 font-medium text-sky-600 dark:text-sky-400">{toolName}</span>
+        <span className="shrink-0 font-medium text-info">{toolName}</span>
         {cmd && <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground">{cmd}</span>}
         <span className={"ml-auto shrink-0 font-medium " + statusTone}>{statusText}</span>
       </button>
@@ -511,7 +505,7 @@ function MessageBlock({
   const isError = group.steps.some((s) => s.is_error);
   const body = (speak.length ? speak : group.steps).map((s) => s.summary).join("  ") || "…";
   const Icon = isError ? Flag : MessageSquare;
-  const tone = isError ? "text-red-600 dark:text-red-400" : "text-foreground";
+  const tone = isError ? "text-danger" : "text-foreground";
 
   const detailKey = group.steps.map((s) => s.seq).join(",");
   React.useEffect(() => {
@@ -676,8 +670,7 @@ function AnswerBlock({ step, getDetail }: { step: Activity; getDetail: (seq: num
     <div ref={ref} className="mb-2 mt-1 flex min-w-0 flex-col gap-1">
       <div
         className={
-          "min-w-0 flex-1 break-words rounded-lg bg-muted px-3 py-2 " +
-          (step.is_error ? "text-sm text-red-600 dark:text-red-400" : "")
+          "min-w-0 flex-1 break-words rounded-lg bg-muted px-3 py-2 " + (step.is_error ? "text-sm text-danger" : "")
         }
       >
         {step.is_error ? (
@@ -791,9 +784,9 @@ export function Transcript({
       {live && (
         <div className="flex items-center gap-2 pl-2 pt-1 text-xs text-muted-foreground">
           <span className="flex gap-1">
-            <span className="size-1.5 animate-bounce rounded-full bg-blue-500 [animation-delay:-0.3s]" />
-            <span className="size-1.5 animate-bounce rounded-full bg-blue-500 [animation-delay:-0.15s]" />
-            <span className="size-1.5 animate-bounce rounded-full bg-blue-500" />
+            <span className="size-1.5 animate-bounce rounded-full bg-info [animation-delay:-0.3s]" />
+            <span className="size-1.5 animate-bounce rounded-full bg-info [animation-delay:-0.15s]" />
+            <span className="size-1.5 animate-bounce rounded-full bg-info" />
           </span>
           {t("streaming")}
         </div>

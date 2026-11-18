@@ -17,6 +17,7 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { DrawerFooter, PageHeader, useConfirm } from "@/components/page";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getDateLocale } from "@/i18n/datetime";
@@ -204,8 +205,8 @@ function SkillsOverview({
       {/* 指标卡 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border p-3">
-            <p className="text-2xl font-semibold tabular-nums">{s.value}</p>
+          <div key={s.label} className="rounded-xl border bg-card p-3">
+            <p className="text-xl font-semibold tabular-nums">{s.value}</p>
             <p className="text-xs font-medium">{s.label}</p>
             {s.hint && <p className="text-muted-foreground mt-0.5 text-[11px]">{s.hint}</p>}
           </div>
@@ -305,6 +306,7 @@ function SkillsOverview({
 export default function SkillsPage() {
   const t = useTranslations("skillsPage");
   const agentLabels = useAgentLabels();
+  const confirm = useConfirm();
   const [skills, setSkills] = React.useState<SkillItem[]>([]);
   const [agents, setAgents] = React.useState<Agent[]>([]);
   const [selected, setSelected] = React.useState<Selected | null>(null);
@@ -405,7 +407,7 @@ export default function SkillsPage() {
       // offer overwrite when the skill already exists (server_mgmt.go 가 409 로 응답).
       // 문구는 표시 언어에 따라 달라지므로 status 로 판정한다.
       if (!overwrite && e instanceof ApiError && e.status === 409) {
-        if (window.confirm(t("overwriteConfirm", { msg }))) {
+        if (await confirm({ title: t("overwriteConfirm", { msg }), destructive: true })) {
           await uploadZip(file, true);
           return;
         }
@@ -666,13 +668,14 @@ export default function SkillsPage() {
     return (
       <div key="__inline_create__" className="flex items-center gap-1 py-0.5 pr-2" style={{ paddingLeft: indent }}>
         {creating?.kind === "dir" ? (
-          <FolderIcon className="size-3.5 shrink-0 text-amber-500" />
+          <FolderIcon className="size-3.5 shrink-0 text-warning" />
         ) : (
           <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
         )}
-        <Input
+        {/* 파일 트리 줄 안의 이름 입력: 트리 줄 높이(24px)에 맞춘 인라인 편집 칸이라 폼 컨트롤(Input) 대신 기본 input 사용 */}
+        <input
           ref={inlineRef}
-          className="h-6 flex-1 px-1 py-0 font-mono text-xs"
+          className="h-6 min-w-0 flex-1 rounded border border-input bg-card px-1 py-0 font-mono text-xs outline-none focus-visible:border-ring"
           placeholder={creating?.kind === "dir" ? "folder-name" : "filename.py"}
           value={newEntryName}
           onChange={(e) => setNewEntryName(e.target.value)}
@@ -718,9 +721,9 @@ export default function SkillsPage() {
             >
               <ChevronRightIcon className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")} />
               {open ? (
-                <FolderOpenIcon className="size-3.5 shrink-0 text-amber-500" />
+                <FolderOpenIcon className="size-3.5 shrink-0 text-warning" />
               ) : (
-                <FolderIcon className="size-3.5 shrink-0 text-amber-500" />
+                <FolderIcon className="size-3.5 shrink-0 text-warning" />
               )}
               <span className="min-w-0 flex-1 truncate" title={node.path}>
                 {node.name}
@@ -761,7 +764,7 @@ export default function SkillsPage() {
                     setPendingDelete({ kind: "dir", skill, path: node.path });
                   }}
                 >
-                  <Trash2Icon className="size-3 text-destructive" />
+                  <Trash2Icon className="size-3 text-danger" />
                 </Button>
               </span>
             </div>
@@ -816,7 +819,7 @@ export default function SkillsPage() {
                 setPendingDelete({ kind: "file", skill, path: node.path });
               }}
             >
-              <Trash2Icon className="size-3 text-destructive" />
+              <Trash2Icon className="size-3 text-danger" />
             </Button>
           </span>
         </div>
@@ -827,65 +830,59 @@ export default function SkillsPage() {
   const selectedSkill = selected ? (skills.find((s) => s.name === selected.skill) ?? null) : null;
 
   return (
-    <div data-content-padding="false" className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b px-3 py-2.5">
-        {/* 缺口清单：agent 点名调用、但库里没有的 skill —— 直接是该补什么的依据。 */}
-        {missing.length > 0 && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button size="sm" variant="outline" className="ml-auto">
-                <AlertTriangleIcon className="size-3.5 text-amber-500" />
-                {t("missingCount", { count: missing.length })}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80">
-              <p className="mb-2 text-xs text-muted-foreground">{t("missingHint")}</p>
-              <div className="space-y-1">
-                {missing.map((m) => (
-                  <div key={m.skill} className="flex items-center gap-2 text-sm">
-                    <code className="min-w-0 flex-1 truncate font-mono text-xs" title={m.skill}>
-                      {m.skill}
-                    </code>
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                      {t("callsCount", { count: m.calls })}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {fmtTime(m.last_used, t("neverCalled"))}
-                    </span>
+    <div data-page-fill className="flex min-h-0 flex-1 flex-col gap-4">
+      <input ref={uploadRef} type="file" accept=".zip,application/zip" className="hidden" onChange={onUploadPick} />
+      <PageHeader
+        actions={
+          <>
+            {/* 缺口清单：agent 点名调用、但库里没有的 skill —— 直接是该补什么的依据。 */}
+            {missing.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline">
+                    <AlertTriangleIcon className="size-3.5 text-warning" />
+                    {t("missingCount", { count: missing.length })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80">
+                  <p className="mb-2 text-xs text-muted-foreground">{t("missingHint")}</p>
+                  <div className="space-y-1">
+                    {missing.map((m) => (
+                      <div key={m.skill} className="flex items-center gap-2 text-sm">
+                        <code className="min-w-0 flex-1 truncate font-mono text-xs" title={m.skill}>
+                          {m.skill}
+                        </code>
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                          {t("callsCount", { count: m.calls })}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {fmtTime(m.last_used, t("neverCalled"))}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-      </div>
-      <div className="flex flex-1 overflow-hidden">
-        {/* ── 左侧文件树 ── */}
-        <div className="flex w-64 shrink-0 flex-col border-r">
-          <div className="flex flex-col gap-2 border-b p-2">
-            <Button size="sm" variant="outline" className="w-full" onClick={() => setNewOpen(true)}>
-              <PlusIcon className="size-3.5" />
-              {t("newSkill")}
-            </Button>
-            <input
-              ref={uploadRef}
-              type="file"
-              accept=".zip,application/zip"
-              className="hidden"
-              onChange={onUploadPick}
-            />
+                </PopoverContent>
+              </Popover>
+            )}
             <Button
-              size="sm"
               variant="outline"
-              className="w-full"
               disabled={uploading}
               onClick={() => uploadRef.current?.click()}
               title={t("uploadTitle")}
             >
-              <UploadIcon className="size-3.5" />
+              <UploadIcon />
               {uploading ? t("uploading") : t("uploadZip")}
             </Button>
-          </div>
+            <Button onClick={() => setNewOpen(true)}>
+              <PlusIcon />
+              {t("newSkill")}
+            </Button>
+          </>
+        }
+      />
+      <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border bg-card">
+        {/* ── 左侧文件树 ── */}
+        <div className="flex w-64 shrink-0 flex-col border-r">
           {/* Radix viewport wraps children in a display:table div that grows with
               content — force it to block so long names truncate instead of
               widening the rows past the sidebar. */}
@@ -923,9 +920,9 @@ export default function SkillsPage() {
                         className={cn("size-3.5 shrink-0 transition-transform", isOpen && "rotate-90")}
                       />
                       {isOpen ? (
-                        <FolderOpenIcon className="size-3.5 shrink-0 text-blue-500" />
+                        <FolderOpenIcon className="size-3.5 shrink-0 text-info" />
                       ) : (
-                        <FolderIcon className="size-3.5 shrink-0 text-blue-500" />
+                        <FolderIcon className="size-3.5 shrink-0 text-info" />
                       )}
                       <span className="min-w-0 flex-1 truncate font-semibold" title={s.name}>
                         {s.name}
@@ -978,7 +975,7 @@ export default function SkillsPage() {
                             setPendingDelete({ kind: "skill", skill: s.name });
                           }}
                         >
-                          <Trash2Icon className="size-3 text-destructive" />
+                          <Trash2Icon className="size-3 text-danger" />
                         </Button>
                       </span>
                     </div>
@@ -1207,12 +1204,12 @@ export default function SkillsPage() {
 
       {/* ── 新建 Skill 对话框 ── */}
       <Sheet open={newOpen} onOpenChange={setNewOpen}>
-        <SheetContent side="right" className="flex w-full flex-col gap-0 data-[side=right]:sm:max-w-xl">
-          <SheetHeader className="px-4 pt-4">
+        <SheetContent side="right" size="md">
+          <SheetHeader>
             <SheetTitle>{t("newSkill")}</SheetTitle>
           </SheetHeader>
           <Tabs defaultValue="basic" className="flex min-h-0 flex-1 flex-col">
-            <TabsList className="mx-3 mt-3 shrink-0 justify-start">
+            <TabsList className="mx-4 shrink-0 justify-start">
               <TabsTrigger value="basic">{t("tabBasic")}</TabsTrigger>
               <TabsTrigger value="mcp">
                 {t("linkedMcp")}
@@ -1235,11 +1232,11 @@ export default function SkillsPage() {
             {/* 基本信息 */}
             <TabsContent
               value="basic"
-              className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden"
+              className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 data-[state=inactive]:hidden"
             >
               <div className="grid gap-1.5">
                 <Label htmlFor="sk-name">
-                  {t("nameLabel")} <span className="text-destructive">*</span>
+                  {t("nameLabel")} <span className="text-danger">*</span>
                 </Label>
                 <Input
                   id="sk-name"
@@ -1251,7 +1248,7 @@ export default function SkillsPage() {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="sk-desc">
-                  {t("descLabel")} <span className="text-destructive">*</span>
+                  {t("descLabel")} <span className="text-danger">*</span>
                 </Label>
                 <Textarea
                   id="sk-desc"
@@ -1295,7 +1292,7 @@ export default function SkillsPage() {
             </TabsContent>
 
             {/* 关联 MCP */}
-            <TabsContent value="mcp" className="overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden">
+            <TabsContent value="mcp" className="overflow-y-auto px-4 pb-4 data-[state=inactive]:hidden">
               <p className="mb-3 text-xs text-muted-foreground">{t("mcpSheetHint")}</p>
               {mcpOptions.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t("noMcp")}</p>
@@ -1317,7 +1314,7 @@ export default function SkillsPage() {
             </TabsContent>
 
             {/* 可见性 */}
-            <TabsContent value="visibility" className="overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden">
+            <TabsContent value="visibility" className="overflow-y-auto px-4 pb-4 data-[state=inactive]:hidden">
               <p className="mb-3 text-xs text-muted-foreground">{t("visSheetHint")}</p>
               {agents.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t("noAgents")}</p>
@@ -1339,14 +1336,12 @@ export default function SkillsPage() {
             </TabsContent>
           </Tabs>
 
-          <SheetFooter className="flex-row justify-end gap-2 border-t px-4 py-3">
-            <Button variant="outline" onClick={() => setNewOpen(false)}>
-              {t("cancel")}
-            </Button>
-            <Button onClick={createNewSkill} disabled={creatingSkill}>
-              {creatingSkill ? t("creating") : t("create")}
-            </Button>
-          </SheetFooter>
+          <DrawerFooter
+            onCancel={() => setNewOpen(false)}
+            confirmLabel={creatingSkill ? t("creating") : t("create")}
+            onConfirm={createNewSkill}
+            pending={creatingSkill}
+          />
         </SheetContent>
       </Sheet>
     </div>

@@ -40,7 +40,7 @@ export function RunCases({ detail, inRun, latest }: RunCasesProps) {
   const ofRun = React.useMemo(() => new Map(inRun.map((j) => [j.case_key, j])), [inRun]);
 
   return (
-    <div className="overflow-x-auto rounded-lg border text-xs">
+    <div className="overflow-x-auto rounded-xl border bg-card text-xs">
       <div className="min-w-[50rem]">
         <div className={cn(COLUMNS, "border-b bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground")}>
           <span />
@@ -193,7 +193,7 @@ export function RunCases({ detail, inRun, latest }: RunCasesProps) {
                       <p className="break-words rounded-md bg-destructive/10 p-2 text-destructive">{c.judge_error}</p>
                     )}
                     {record && !mine && (
-                      <p className="text-amber-600 dark:text-amber-400">
+                      <p className="text-warning">
                         {t("earlierNote", { when: new Date(record.judged_at).toLocaleString() })}
                       </p>
                     )}
@@ -228,7 +228,7 @@ export function RunCases({ detail, inRun, latest }: RunCasesProps) {
                         <p className="text-[11px] text-muted-foreground">
                           {verdict.model} · {new Date(verdict.judged_at).toLocaleString()}
                         </p>
-                        <p className="text-[11px] text-amber-600 dark:text-amber-400">{t("noRecord")}</p>
+                        <p className="text-[11px] text-warning">{t("noRecord")}</p>
                       </div>
                     )}
                     {!record && !verdict && c.judge !== "failed" && (

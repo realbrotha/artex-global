@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { AssetInterceptRulesEditor } from "@/components/asset-intercept-rules-editor";
+import { DrawerFooter } from "@/components/page";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +31,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
@@ -206,12 +207,12 @@ function TaskTemplateManager({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="grid h-full w-full! max-w-none! grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:w-[48rem]! sm:max-w-[48rem]!">
-          <SheetHeader className="border-b px-6 py-5">
+        <SheetContent size="md" className="gap-0">
+          <SheetHeader className="border-b">
             <SheetTitle>{t("manager.title")}</SheetTitle>
             <SheetDescription>{t("manager.description")}</SheetDescription>
           </SheetHeader>
-          <div className="grid min-h-0 overflow-y-auto lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
+          <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[15rem_minmax(0,1fr)] lg:overflow-hidden">
             <div className="flex min-h-0 flex-col border-b p-3 lg:border-r lg:border-b-0">
               <Button type="button" variant="outline" className="w-full" onClick={startNew}>
                 <PlusIcon data-icon="inline-start" />
@@ -240,7 +241,19 @@ function TaskTemplateManager({
               </ScrollArea>
             </div>
             <ScrollArea className="min-h-0">
-              <FieldGroup className="p-6">
+              <FieldGroup className="p-4">
+                {selectedID != null && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    className="self-end text-danger"
+                    onClick={() => setDeleteOpen(true)}
+                  >
+                    <Trash2Icon data-icon="inline-start" />
+                    {t("manager.delete")}
+                  </Button>
+                )}
                 <Field>
                   <FieldLabel htmlFor="task-template-name">{t("manager.nameLabel")}</FieldLabel>
                   <Input
@@ -301,21 +314,17 @@ function TaskTemplateManager({
               </FieldGroup>
             </ScrollArea>
           </div>
-          <SheetFooter className="border-t px-6 py-4 sm:flex-row sm:items-center">
-            {selectedID != null && (
-              <Button type="button" variant="destructive" className="sm:mr-auto" onClick={() => setDeleteOpen(true)}>
-                <Trash2Icon data-icon="inline-start" />
-                {t("manager.delete")}
-              </Button>
-            )}
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t("manager.close")}
-            </Button>
-            <Button type="button" disabled={saving} onClick={() => void save()}>
-              {saving ? <Spinner data-icon="inline-start" /> : <SaveIcon data-icon="inline-start" />}
-              {saveLabel}
-            </Button>
-          </SheetFooter>
+          <DrawerFooter
+            onCancel={() => onOpenChange(false)}
+            onConfirm={() => void save()}
+            pending={saving}
+            confirmLabel={
+              <>
+                {saving ? <Spinner data-icon="inline-start" /> : <SaveIcon data-icon="inline-start" />}
+                {saveLabel}
+              </>
+            }
+          />
         </SheetContent>
       </Sheet>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

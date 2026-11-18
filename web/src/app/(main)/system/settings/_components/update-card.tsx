@@ -13,6 +13,7 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { useConfirm } from "@/components/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +41,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function UpdateCard() {
   const t = useTranslations("settingsPage");
+  const confirm = useConfirm();
   const richTags = {
     code: (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>,
   };
@@ -141,14 +143,24 @@ export function UpdateCard() {
     [waitForNewVersion, t],
   );
 
-  const doUpdate = () => {
+  const doUpdate = async () => {
     if (!info) return;
     const from = info.current;
-    const ok = window.confirm(
-      `${t("update.confirm.title", { latest: info.latest ?? "" })}\n\n` +
-        t("update.confirm.restart") +
-        (info.mode === "docker" ? `\n\n${t("update.confirm.docker")}` : ""),
-    );
+    const ok = await confirm({
+      title: t("update.confirm.title", { latest: info.latest ?? "" }),
+      description: (
+        <>
+          {t("update.confirm.restart")}
+          {info.mode === "docker" && (
+            <>
+              <br />
+              <br />
+              {t("update.confirm.docker")}
+            </>
+          )}
+        </>
+      ),
+    });
     if (!ok) return;
 
     setBusy(true);
@@ -162,9 +174,16 @@ export function UpdateCard() {
     });
   };
 
-  const doRollback = () => {
+  const doRollback = async () => {
     if (!info) return;
-    if (!window.confirm(t("update.confirm.rollback"))) return;
+    if (
+      !(await confirm({
+        title: t("update.rollback"),
+        description: <span className="whitespace-pre-line">{t("update.confirm.rollback")}</span>,
+        destructive: true,
+      }))
+    )
+      return;
     const from = info.current;
     setBusy(true);
     api
@@ -188,7 +207,7 @@ export function UpdateCard() {
 
   return (
     // 设置页是多列瀑布流布局，卡片自己负责行间距并禁止跨列断开（见 page.tsx 的注释）。
-    <Card className="mb-4 break-inside-avoid md:mb-6">
+    <Card className="mb-4 break-inside-avoid">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <DownloadIcon className="size-4" />
@@ -233,14 +252,14 @@ export function UpdateCard() {
         </div>
 
         {info?.boot_notice && (
-          <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+          <p className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-warning">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
             {info.boot_notice}
           </p>
         )}
 
         {info?.error && (
-          <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+          <p className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
             {t("update.connectError", { error: info.error })}
           </p>
@@ -249,7 +268,7 @@ export function UpdateCard() {
         {info && !info.comparable && info.reason && <p className="text-xs text-muted-foreground">{info.reason}</p>}
 
         {info?.has_update && info.asset_available === false && (
-          <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+          <p className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger">
             <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
             {t("update.noAsset", { latest: info.latest ?? "", os: info.os, arch: info.arch, asset: info.asset ?? "" })}
           </p>
@@ -266,7 +285,7 @@ export function UpdateCard() {
 
         {info && !info.has_update && info.comparable && !info.error && (
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckCircle2Icon className="size-3.5 text-emerald-600" />
+            <CheckCircle2Icon className="size-3.5 text-success" />
             {t("update.upToDate")}
           </p>
         )}
@@ -283,20 +302,19 @@ export function UpdateCard() {
         )}
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => check(false)} disabled={checking || busy || restarting}>
+          <Button variant="outline" onClick={() => check(false)} disabled={checking || busy || restarting}>
             <RefreshCwIcon className={checking ? "size-4 animate-spin" : "size-4"} />
             {t("update.check")}
           </Button>
           <Button
-            size="sm"
-            onClick={doUpdate}
+            onClick={() => void doUpdate()}
             disabled={busy || restarting || !info?.has_update || info?.asset_available === false}
           >
             <DownloadIcon className="size-4" />
             {info?.has_update ? t("update.updateToVersion", { latest: info.latest ?? "" }) : t("update.updateNow")}
           </Button>
           {info?.has_backup && (
-            <Button variant="ghost" size="sm" onClick={doRollback} disabled={busy || restarting}>
+            <Button variant="ghost" onClick={() => void doRollback()} disabled={busy || restarting}>
               <RotateCcwIcon className="size-4" />
               {t("update.rollback")}
             </Button>

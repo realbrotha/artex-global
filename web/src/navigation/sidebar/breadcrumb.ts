@@ -1,4 +1,4 @@
-import { type NavGroup, sidebarItems } from "./sidebar-items";
+import { areaLinks, type NavArea, navAreas } from "./sidebar-items";
 
 // One step of the page location shown in the header: a nav.item.<id>
 // message key and, when it is a page of its own, where it leads.
@@ -30,41 +30,32 @@ const clean = (path: string) => {
 
 const under = (path: string, url: string) => path === url || path.startsWith(`${url}/`);
 
-// trailOf returns the sidebar path to an entry: [entry] for a top-level one,
-// [parent, entry] for one inside a collapsible menu.
-function trailOf(id: string, groups: readonly NavGroup[]): Crumb[] | null {
-  for (const group of groups) {
-    for (const item of group.items) {
-      if (item.subItems) {
-        const sub = item.subItems.find((s) => s.id === id);
-        if (sub) return [{ id: item.id }, { id: sub.id, url: sub.url }];
-      } else if (item.id === id) {
-        return [{ id: item.id, url: item.url }];
-      }
-    }
+// trailOf returns the menu path to an entry: [area, entry].
+function trailOf(id: string, areas: readonly NavArea[]): Crumb[] | null {
+  for (const area of areas) {
+    const link = areaLinks(area).find((l) => l.id === id);
+    if (link) return [{ id: area.id }, { id: link.id, url: link.url }];
   }
   return null;
 }
 
-// breadcrumbFor derives the page location from the sidebar, so the header
-// always says what the menu says: "진단 > 작업". The longest matching url
-// wins; a page listed in EXTRA_ROUTES is appended to its parent's trail.
-export function breadcrumbFor(pathname: string, groups: readonly NavGroup[] = sidebarItems): Crumb[] {
+// breadcrumbFor derives the page location from the menu, so titles always
+// say what the menu says: "진단 > 작업". The longest matching url wins; a
+// page listed in EXTRA_ROUTES is appended to its parent's trail.
+export function breadcrumbFor(pathname: string, areas: readonly NavArea[] = navAreas): Crumb[] {
   const path = clean(pathname);
   const extra = [...EXTRA_ROUTES].sort((a, b) => b.url.length - a.url.length).find((r) => under(path, r.url));
   if (extra) {
-    const parent = trailOf(extra.parent, groups);
+    const parent = trailOf(extra.parent, areas);
     if (parent) return [...parent, { id: extra.id }];
   }
   let best: { id: string; url: string } | null = null;
-  for (const group of groups) {
-    for (const item of group.items) {
-      for (const entry of item.subItems ?? [item]) {
-        if (under(path, entry.url) && (!best || entry.url.length > best.url.length)) {
-          best = { id: entry.id, url: entry.url };
-        }
+  for (const area of areas) {
+    for (const entry of areaLinks(area)) {
+      if (under(path, entry.url) && (!best || entry.url.length > best.url.length)) {
+        best = { id: entry.id, url: entry.url };
       }
     }
   }
-  return best ? (trailOf(best.id, groups) ?? []) : [];
+  return best ? (trailOf(best.id, areas) ?? []) : [];
 }
